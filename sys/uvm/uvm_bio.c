@@ -42,6 +42,7 @@ __KERNEL_RCSID(0, "$NetBSD: uvm_bio.c,v 1.37.2.1.2.1 2006/07/28 12:32:37 tron Ex
 #include <sys/systm.h>
 #include <sys/malloc.h>
 #include <sys/kernel.h>
+#include <sys/vnode.h>
 
 #include <uvm/uvm.h>
 
@@ -360,8 +361,9 @@ again:
 		 * is marked as PG_RDONLY.
 		 */
 
-		rdonly = (access_type & VM_PROT_WRITE) == 0 &&
-		    (pg->flags & PG_RDONLY) != 0;
+		rdonly = ((access_type & VM_PROT_WRITE) == 0 &&
+		    (pg->flags & PG_RDONLY) != 0) ||
+		    UVM_OBJ_NEEDS_WRITEFAULT(uobj);
 		KASSERT((pg->flags & PG_RDONLY) == 0 ||
 		    (access_type & VM_PROT_WRITE) == 0 ||
 		    pg->offset < umap->writeoff ||
