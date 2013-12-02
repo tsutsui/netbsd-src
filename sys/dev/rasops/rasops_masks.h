@@ -53,8 +53,8 @@
  */
 #if BYTE_ORDER == BIG_ENDIAN
 
-#define MBL(x,y)	((y) > 31 ? 0 : (x) >> (y))
-#define MBR(x,y)    	((y) > 31 ? 0 : (x) << (y))
+#define MBL(x,y)	((y) > 31 ? 0 : (x) << (y))
+#define MBR(x,y)    	((y) > 31 ? 0 : (x) >> (y))
 #define MBE(x)		(x)
 
 #else
@@ -95,8 +95,8 @@
 } while(0);
 
 /* rasops_masks.c */
-extern const int32_t	rasops_lmask[32+1];
-extern const int32_t	rasops_rmask[32+1];
-extern const int32_t	rasops_pmask[32][32];
+extern const uint32_t	rasops_lmask[32+1];
+extern const uint32_t	rasops_rmask[32+1];
+extern const uint32_t	rasops_pmask[32][32];
 
 #endif /* _RASOPS_MASKS_H_ */

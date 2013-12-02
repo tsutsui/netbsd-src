@@ -8,7 +8,6 @@ Issues/TODO:
 
 - There is no generic `putchar' function for 2bpp
 - Color handling for 2bpp is broken
-- copycols() from rasops_bitops.h is broken in right->left case
 - The stamp mutex is not particularly safe
 - 64-bit types are not used on machines that are 64-bit
 - We should never be doing reads/writes of less than 32-bits
