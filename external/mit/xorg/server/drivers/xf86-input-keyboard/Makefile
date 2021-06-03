@@ -16,7 +16,8 @@ CPPFLAGS+=	-DPCVT_SUPPORT
 .if ${MACHINE_ARCH} == "powerpc" || ${MACHINE} == "sparc" || \
     ${MACHINE} == "sparc64" || ${MACHINE} == "sgimips" || \
     ${MACHINE} == "shark" || ${MACHINE} == "vax" || \
-    ${MACHINE} == "evbarm" || ${MACHINE} == "mac68k"
+    ${MACHINE} == "evbarm" || ${MACHINE} == "mac68k" || \
+    ${MACHINE} == "amiga"
 CPPFLAGS+=	-DDEFAULT_TO_WSKBD
 .endif
 
