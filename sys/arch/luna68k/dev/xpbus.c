@@ -45,7 +45,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #include <luna68k/dev/xpbusvar.h>
 
-// load default xplx firmware
+/* load default xplx firmware */
 #include "xplxfirm.c"
 
 /*
@@ -139,6 +139,7 @@ xpbus_attach(device_t parent, device_t self, void *aux)
 u_int
 xp_acquire(int xplx_devid, u_int excl)
 {
+
 	for (;;) {
 		unsigned int before, after;
 		before = xp_acquired;
@@ -157,6 +158,7 @@ xp_acquire(int xplx_devid, u_int excl)
 void
 xp_release(int xplx_devid)
 {
+
 	for (;;) {
 		unsigned int before, after;
 		before = xp_acquired;
@@ -171,6 +173,7 @@ xp_release(int xplx_devid)
 void
 xp_set_shm_dirty(void)
 {
+
 	xp_shm_dirty = true;
 }
 
@@ -178,12 +181,13 @@ xp_set_shm_dirty(void)
 void
 xp_ensure_firmware(void)
 {
+
 	if (xp_shm_dirty) {
-		// firmware transfer
+		/* firmware transfer */
 		xp_cpu_reset_hold();
 		delay(100);
 		memcpy((void *)XP_SHM_BASE, xplx, xplx_size);
-		// XXX いるの?
+		/* XXX maybe not necessary */
 		delay(100);
 		xp_cpu_reset_release();
 		xp_shm_dirty = false;
@@ -205,6 +209,7 @@ put_pio0c(uint8_t bit, uint8_t set)
 void
 xp_cpu_reset_hold(void)
 {
+
 	put_pio0c(XP_RESET, ON);
 }
 
@@ -212,6 +217,7 @@ xp_cpu_reset_hold(void)
 void
 xp_cpu_reset_release(void)
 {
+
 	put_pio0c(XP_RESET, OFF);
 }
 
@@ -219,6 +225,7 @@ xp_cpu_reset_release(void)
 void
 xp_cpu_reset(void)
 {
+
 	xp_cpu_reset_hold();
 	delay(100);
 	xp_cpu_reset_release();
@@ -228,6 +235,7 @@ xp_cpu_reset(void)
 void
 xp_intr1_enable(void)
 {
+
 	put_pio0c(XP_INT1_ENA, ON);
 }
 
@@ -235,6 +243,7 @@ xp_intr1_enable(void)
 void
 xp_intr1_disable(void)
 {
+
 	put_pio0c(XP_INT1_ENA, OFF);
 }
 
@@ -242,10 +251,11 @@ xp_intr1_disable(void)
 void
 xp_intr1_acknowledge(void)
 {
+
 	/* reset the interrupt request: read PIO0 port A */
-	// XXX: たぶん
+	/* XXX: probably */
 	*(volatile uint8_t *)OBIO_PIO0A;
-	// XXX: たちまち、勘で。
+	/* XXX: just a guess */
 	*(volatile uint8_t *)OBIO_PIO0B;
 }
 
@@ -253,6 +263,7 @@ xp_intr1_acknowledge(void)
 void
 xp_intr5_enable(void)
 {
+
 	put_pio0c(XP_INT5_ENA, ON);
 }
 
@@ -260,6 +271,7 @@ xp_intr5_enable(void)
 void
 xp_intr5_disable(void)
 {
+
 	put_pio0c(XP_INT5_ENA, OFF);
 }
 
@@ -267,14 +279,16 @@ xp_intr5_disable(void)
 void
 xp_intr5_acknowledge(void)
 {
+
 	/* reset the interrupt request: read PIO0 port A */
-	*(volatile uint8_t *)OBIO_PIO0A;
+	(void)*(volatile uint8_t *)OBIO_PIO0A;
 }
 
 /* get XP shared memory pointer */
 void *
 xp_shmptr(int offset)
 {
+
 	return (uint8_t *)XP_SHM_BASE + offset;
 }
 
@@ -282,6 +296,7 @@ xp_shmptr(int offset)
 int
 xp_readmem8(int offset)
 {
+
 	return *((volatile uint8_t *)xp_shmptr(offset));
 }
 
@@ -289,6 +304,7 @@ xp_readmem8(int offset)
 int
 xp_readmem16le(int offset)
 {
+
 	return le16toh(*(volatile uint16_t *)xp_shmptr(offset));
 }
 
@@ -296,6 +312,7 @@ xp_readmem16le(int offset)
 void
 xp_writemem8(int offset, int v)
 {
+
 	*(volatile uint8_t *)(xp_shmptr(offset)) = v;
 }
 
@@ -303,5 +320,6 @@ xp_writemem8(int offset, int v)
 void
 xp_writemem16le(int offset, int v)
 {
+
 	*((volatile uint16_t *)xp_shmptr(offset)) = htole16((uint16_t)v);
 }

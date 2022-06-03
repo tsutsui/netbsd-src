@@ -149,8 +149,8 @@ xp_open(dev_t dev, int flags, int devtype, struct lwp *l)
 	if (sc->sc_isopen)
 		return EBUSY;
 
-	if (flags & FWRITE) {
-		// exclusive if write
+	if ((flags & FWRITE) != 0) {
+		/* exclusive if write */
 		a = xp_acquire(DEVID_XPBUS, XP_ACQ_EXCL);
 		if (a == 0)
 			return EBUSY;
@@ -204,7 +204,7 @@ xp_ioctl(dev_t dev, u_long cmd, void *addr, int flags, struct lwp *l)
 
 	switch (cmd) {
 	case XPIOCDOWNLD:
-		if (!(sc->sc_flags & FWRITE)) {
+		if ((sc->sc_flags & FWRITE) == 0) {
 			return EACCES;
 		}
 		downld = addr;
@@ -254,7 +254,7 @@ xp_mmap(dev_t dev, off_t offset, int prot)
 		pa = m68k_btop(m68k_trunc_page(sc->sc_shm_base) + offset);
 	}
 
-	if (prot & PROT_WRITE)
+	if ((prot & PROT_WRITE) != 0)
 		xp_set_shm_dirty();
 
 	return pa;
