@@ -48,9 +48,19 @@ attach siotty at sio
 file arch/luna68k/dev/siotty.c		siotty needs-flag
 
 # HD647180X I/O processor
+device xpbus {}
+attach xpbus at mainbus
+file arch/luna68k/dev/xpbus.c		xpbus
+file arch/luna68k/dev/xpcmd.c		xpbus
+
 device xp
-attach xp at mainbus
+attach xp at xpbus
 file arch/luna68k/dev/xp.c		xp
+
+device psgpam: audiobus
+attach psgpam at xpbus
+file arch/luna68k/dev/psgpam.c		psgpam
+file arch/luna68k/dev/psgpam_enc.c	psgpam
 
 device ws: wskbddev,wsmousedev
 attach ws at sio
@@ -80,5 +90,8 @@ include "compat/aoutm68k/files.aoutm68k"
 # SunOS binary compatibility (COMPAT_SUNOS)
 include "compat/sunos/files.sunos"
 file	arch/m68k/m68k/sunos_machdep.c	compat_sunos
+
+# OSS audio driver compatibility
+include "compat/ossaudio/files.ossaudio"
 
 include "arch/luna68k/conf/majors.luna68k"

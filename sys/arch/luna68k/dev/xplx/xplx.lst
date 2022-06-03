@@ -1,0 +1,2421 @@
+                        ; --------------------------------------
+                        ; zasm: assemble "xplx.asm"
+                        ; opts: --z180
+                        ; date: 2018-07-31 04:42:22
+                        ; --------------------------------------
+
+
+                        ; vi: set ts=8:
+                        ;
+                        ; LUNA XP multiplexed device firmware
+                        ;
+                        ; (C) 2018 moveccr
+                        ; BSD Licence
+                        ;
+                        ;
+                        ; used language:
+                        ;  zasm 4.1
+                        ;  http://k1.spdns.de/Develop/Projects/zasm
+                        ;
+                        ; XP memory map
+                        ;
+                        ; type : SH, PR, IN, NC
+                        ;     SH: host shared memory, 64kB, PA 00000 - 0FFFF
+                        ;     PR: private memory, 32kB, PA 28000-2FFFF
+                        ;     IN: HD647180 internal 512 bytes memory
+                        ;     NC: not connected (00 or FF or image readable, maybe)
+                        ;
+                        ; start end type desc
+                        ;  0000 00FF SH RESET/RST etc.
+                        ;  0100 01FF SH shared variables
+                        ;  0200 0FFF SH resident program
+                        ;  1000 7FFF SH PAM/PCM buffer 28K
+                        ;  8000 8FFF SH PSG buffer 4K
+                        ;  9000 9FFF SH LPR buffer 4K
+                        ;  A000 DFFF SH FDC buffer 16K
+                        ;  E000 EFFF PR program/stack
+                        ;  F000 FDFF NC bus error (00 or FF)
+                        ;  FE00 FFDF IN PAM player
+                        ;  FFE0 FFFF IN interrupt vector
+                        ;
+                        ; shared variable area
+                        ;  0100    XPBUS
+                        ;  0110    TIME
+                        ;  0120    PAM
+                        ;  0130    PCM
+                        ;  0140    PSG
+                        ;  0150    SPK
+                        ;  0160    LPR
+                        ;  0170    FDC
+                        ;  0180    SIO0
+                        ;  0190    SIO1
+                        ; device ID = bit 7-4
+                        ;
+                        ; XP internal device usage
+                        ;  PRT0  device dispatcher/TIME
+                        ;  PRT1  PCM
+                        ;  PT2   unused
+                        ;  ASCI0 SIO0
+                        ;  ASCI1 SIO1	本体表記の関係で、入れ替える?
+                        ;
+                        ; READY-CMD-RESULT-RUN プロトコル
+                        ; XP 視点
+                        ; READY
+                        ;   コマンドを受け付けできるとき != 0
+                        ;   受付できないとき 0
+                        ; CMD
+                        ;   ホスト側が送信してくるコマンド
+                        ;   コマンドなしは 0
+                        ;   XP がコマンドを受け付けると、READY=0 CMD=0 の順で、XP が 0 にする
+                        ; RESULT
+                        ;   コマンド実行結果。
+                        ;   RESULT=x READY=1 の順で書き込む。
+                        ;   ハードリセット、またはホストが 0 クリアする。
+                        ; RUN
+                        ;   コマンド実行中は != 0
+                        ;   実行していないときは 0
+                        ;   実行完了時、RESULT=x RUN=0 READY=1 の順で書き込む。
+                        ;
+                        ; 通常シーケンス
+                        ;  READY を上げる
+                        ;  CMD の立ち上がりを待つ
+                        ;  READY を下げる
+                        ;  RUN を上げる
+                        ;  CMD を下げる
+                        ;  実行
+                        ;  RESULT を書く
+                        ;  RUN を下げる
+                        ;  READY を上げる
+                        ;
+                        ; ホスト視点
+                        ; 実行完了を待つとき
+                        ;  while (READY == 0);	// 受付可能待ち
+                        ;  RESULT=0;		// 結果クリア
+                        ;  CMD=x;		// コマンド送信
+                        ;  while (RESULT == 0);	// 実行完了待ち
+                        ;  if (RESULT==ERROR) error();	// エラー確認
+                        ;
+                        
+                        ;
+                        ; XPBUS
+                        ;  +0.b READY
+                        ;  +1.b CMD
+                        ;  +2.b RESULT
+                        ;  +3.b RUN
+                        ;
+                        ;  +4.b STAT_RESET
+                        ;        ファームウェア転送で 0　にされる。
+                        ;        リセット位置の実行のたびに +1 
+                        ;        すなわち何もなければ 1 になっている。
+                        ;  +5.3 align
+                        ;  +8.w PRT0_TIMER
+                        ;        ==256(1200Hz)
+                        ;  +A.w INTR1_DEV
+                        ;        bitmap of INTR1 device ID
+                        ;  +C.w INTR5_DEV
+                        ;        bitmap of INTR5 device ID
+                        ;
+                        ; TIME
+                        ;  +0.b READY
+                        ;  +1.b CMD
+                        ;  +2.b RESULT
+                        ;  +3.b RUN
+                        ;
+                        ;  +4.w TIMECOUNTER
+                        ;
+                        ; PAM
+                        ;  +0.b READY
+                        ;  +1.b CMD
+                        ;  +2.b RESULT
+                        ;  +3.b RUN
+                        ;
+                        ;  +4.b ENC
+                        ;        エンコードフォーマット識別子。
+                        ;  +5.b REPT
+                        ;        REPT 回数。
+                        ;  +6.w CYCLE_CLK
+                        ;        基準クロック数
+                        ;        クエリで返される。
+                        ;  +8.b REPT_CLK
+                        ;        1 REPT あたりのクロック数。
+                        ;        クエリで返される。
+                        ;  +9.b REPT_MAX
+                        ;        REPT に設定できる最大値。
+                        ;        クエリで返される。
+                        ;
+                        ;  +E.w STAT_PTR
+                        ;
+                        ; PCM
+                        ;  +0.b READY
+                        ;  +1.b CMD
+                        ;  +2.b RESULT
+                        ;  +3.b RUN
+                        ;  +4.b ENC
+                        ;  +6.w PRT1_TIMER
+                        ;        PCM >=10(30.72kHz,200clk)
+                        ;
+                        ;  +E.w STAT_PTR
+                        ;
+                        ; PSG
+                        ;  +0.b READY
+                        ;  +1.b CMD
+                        ;  +2.b RESULT
+                        ;  +3.b RUN
+                        ;
+                        ; SPK
+                        ;  +0.b READY
+                        ;  +1.b CMD
+                        ;  +2.b RESULT
+                        ;  +3.b RUN
+                        ;
+                        ;  +4.b VOL
+                        ;        PSG ボリュームレジスタ値。
+                        ;  +6.w FREQ
+                        ;        PSG FREQ レジスタ値。
+                        ;  +8.w TIME
+                        ;        1200Hz 単位の持続時間。
+                        ;  +A.w REMAIN
+                        ;        内部変数：残り時間。
+                        ;
+                        ; LPR
+                        ;  TBD.
+                        ; FDC
+                        ;  TBD.
+                        ;
+                        ; SIO0
+                        ;  +0.b READY
+                        ;  +1.b CMD
+                        ;  +2.b RESULT
+                        ;  +3.b RUN
+                        ;				; 送受信のバッファリングも検討したが
+                        ;				; わりに合わない
+                        ;  +4.b TXCMD
+                        ;  +5.b TXSTAT
+                        ;  +6.b TX
+                        ;  +A.b RXCMD
+                        ;  +B.b RXSTAT
+                        ;  +C.b RX
+                        ;
+                        ; SIO1
+                        ;  +0.b READY
+                        ;  +1.b CMD
+                        ;  +2.b RESULT
+                        ;  +3.b RUN
+                        ;				; 送受信のバッファリングも検討したが
+                        ;				; わりに合わない
+                        ;  +4.b TXCMD
+                        ;  +5.b TXSTAT
+                        ;  +6.b TX
+                        ;  +A.b RXCMD
+                        ;  +B.b RXSTAT
+                        ;  +C.b RX
+                        
+                        	.Z180
+                        
+                        ; ######## device ID
+                        
+0000:                   #define DEVID_XPBUS	0
+0001:                   #define DEVID_TIME	1
+0002:                   #define DEVID_PAM	2
+0003:                   #define DEVID_PCM	3
+0004:                   #define DEVID_PSG	4
+0005:                   #define DEVID_SPK	5
+0006:                   #define DEVID_LPR	6
+0007:                   #define DEVID_FDC	7
+0008:                   #define DEVID_SIO0	8
+0009:                   #define DEVID_SIO1	9
+                        ; ######## define
+                        
+0001:                   #define PAM_CMD_START	1
+0002:                   #define PAM_CMD_QUERY	2
+                        
+0001:                   #define PAM_ENC_PAM2A	1
+0002:                   #define PAM_ENC_PAM2B	2
+0003:                   #define PAM_ENC_PAM3A	3
+0004:                   #define PAM_ENC_PAM3B	4
+0005:                   #define PAM_ENC_PAM1P	5
+                        
+0001:                   #define PCM_CMD_START	1
+                        
+0001:                   #define PCM_ENC_PCM1	1
+0002:                   #define PCM_ENC_PCM2	2
+0003:                   #define PCM_ENC_PCM3	3
+                        
+0001:                   #define SPK_CMD_START	1
+0002:                   #define SPK_CMD_STOP	2
+0003:                   #define SPK_CMD_KEEP	3
+                        
+                        
+                        ; #### RESULT
+0001:                   #define XPLX_R_OK		1
+00FE:                   #define XPLX_R_ERROR_PARAM	254
+00FF:                   #define XPLX_R_UNKNOWN_CMD	255
+                        
+                        
+                        ; ######## switch
+                        ; 0 = USE STAT_PTR for userland test mode
+                        ; 1 = USE HOSTINTR for kernel (normal)
+0001:                   #define USE_INTR	1
+                        
+                        ; ######## constants
+                        ; xp to host level 1 interrupt port
+00B0:                   HOSTINTR1	.EQU	0B0H
+                        ; xp to host level 5 interrupt port
+00A0:                   HOSTINTR5	.EQU	0A0H
+                        
+                        ; PAM use HOSTINTR5
+00A0:                   PAM_HOSTINTR	.EQU	HOSTINTR5
+                        ; PCM use HOSTINTR5
+00A0:                   PCM_HOSTINTR	.EQU	HOSTINTR5
+                        
+                        ; I/O PORT
+000C:                   TMDR0L	.EQU	0CH
+000D:                   TMDR0H	.EQU	0DH
+000E:                   RLDR0L	.EQU	0EH
+000F:                   RLDR0H	.EQU	0FH
+0010:                   TCR	.EQU	10H
+0014:                   TMDR1L	.EQU	14H
+0015:                   TMDR1H	.EQU	15H
+0016:                   RLDR1L	.EQU	16H
+0017:                   RLDR1H	.EQU	17H
+                        
+0083:                   PSG_ADR	.EQU	83H		; PSG address (out)
+0082:                   PSG_DAT	.EQU	82H		; data output
+0083:                   PSG_IN	.EQU	83H		; data input (in)
+                        
+1000:                   INITIAL_SP:	.EQU	01000H
+F000:                   PRIVATE_SP:	.EQU	0F000H
+                        
+                        ; ######## macros
+                        
+                        ADD_HL_A:	.MACRO
+                        	ADD	A,L
+                        	LD	L,A
+                        	JR	NC,$ + 3
+                        	INC	H
+                        	.ENDM
+                        
+                        WAIT3	.MACRO
+                        	NOP
+                        	.ENDM
+                        
+                        WAIT4	.MACRO
+                        	LD	A,A
+                        	.ENDM
+                        
+                        WAIT6	.MACRO
+                        	NOP
+                        	NOP
+                        	.ENDM
+                        
+                        WAIT7	.MACRO
+                        	LD	A,A			; 4+3=7
+                        	NOP
+                        	.ENDM
+                        
+                        WAIT8	.MACRO
+                        	LD	A,A			; 4*2=8
+                        	LD	A,A
+                        	.ENDM
+                        
+                        WAIT9	.MACRO
+                        	NOP				; 3*3=9
+                        	NOP
+                        	NOP
+                        	.ENDM
+                        
+                        WAIT10	.MACRO
+                        	LD	A,A			; 4+3*2=10
+                        	NOP
+                        	NOP
+                        	.ENDM
+                        
+                        WAIT11	.MACRO
+                        	LD	A,A			; 4*2+3=11
+                        	LD	A,A
+                        	NOP
+                        	.ENDM
+                        
+                        WAIT12	.MACRO
+                        	LD	A,A			; 4*3=12
+                        	LD	A,A
+                        	LD	A,A
+                        	.ENDM
+                        
+                        WAIT13	.MACRO
+                        	LD	A,A			; 4+3*3=13
+                        	NOP
+                        	NOP
+                        	NOP
+                        	.ENDM
+                        
+                        WAIT16	.MACRO
+                        	LD	A,A
+                        	LD	A,A
+                        	LD	A,A
+                        	LD	A,A
+                        	.ENDM
+                        
+                        WAIT17	.MACRO
+                        	LD	A,A			; 4*2+3*3=17
+                        	LD	A,A
+                        	NOP
+                        	NOP
+                        	NOP
+                        	.ENDM
+                        
+                        WAIT19	.MACRO
+                        	LD	A,A			; 4*4+3=19
+                        	LD	A,A
+                        	LD	A,A
+                        	LD	A,A
+                        	NOP
+                        	.ENDM
+                        
+                        ; ######## RESET/RST
+0000:                   	.ORG	0000H
+0000:                   RESET:
+0000: C30002   [10]     	JP	ENTRY
+                        
+0003: FFFFFFFF          	.ORG	0038H
+0007: FF...             
+0038:                   INT0:
+0038: C33CE2   [10]     	JP	INTR_INT0
+                        
+003B: FFFFFFFF          	.ORG	0066H
+003F: FF...             
+0066:                   NMI:
+0066: ED45     [14]     	RETN
+                        
+0068: FFFFFFFF          	.ORG	0080H
+006C: FF...             
+0080: 00                DEBUG0::	.DB	0
+0081: 00                DEBUG1::	.DB	0
+0082: 00                DEBUG2::	.DB	0
+0083: 00                DEBUG3::	.DB	0
+0084: 00                DEBUG4::	.DB	0
+0085: 00                DEBUG5::	.DB	0
+0086: 00                DEBUG6::	.DB	0
+0087: 00                DEBUG7::	.DB	0
+0088: 00                DEBUG8::	.DB	0
+0089: 00                DEBUG9::	.DB	0
+008A: 00                DEBUG10::	.DB	0
+                        
+008B: FFFFFFFF          	.ORG	00FCH
+008F: FF...             
+00FC:                   XPLX_MAGIC::			; MAGIC
+00FC: 58504C58          	.DB	"XPLX"
+                        
+                        ; ######## shared variables
+                        ; XPBUS
+                        	.ORG	0100H
+0100:                   XPLX_VAR_BASE::
+0100:                   XPBUS_READY::
+0100: 00                	.DB	0
+0101:                   XPBUS_CMD::
+0101: 00                	.DB	0
+0102:                   XPBUS_RESULT::
+0102: 00                	.DB	0
+0103:                   XPBUS_RUN::
+0103: 00                	.DB	0
+                        
+0104:                   XPBUS_STAT_RESET::		; reset count
+0104: 00                	.DB	0
+0105: 000000            	.DB	0,0,0		; reserved
+                        
+0108:                   XPBUS_PRT0_TIMER::		; PRT0 TIMER TLDR (devices dispatch)
+0108: 0001              	.DW	256
+010A:                   XPBUS_INTR1_DEV::		; HOSTINTR1 device
+010A: 0000              	.DW	0
+010C:                   XPBUS_INTR5_DEV::		; HOSTINTR5 device
+010C: 0000              	.DW	0
+                        
+                        ; TIME
+010E: FFFF              	.ORG	0110H
+0110:                   TIME_READY::
+0110: 00                	.DB	0
+0111:                   TIME_CMD::
+0111: 00                	.DB	0
+0112:                   TIME_RESULT::
+0112: 00                	.DB	0
+0113:                   TIME_RUN::
+0113: 00                	.DB	0
+0114:                   TIME_TIMECOUNTER::		; timecounter (TBD.)
+0114: 0000              	.DW	0
+                        
+                        ; PAM
+0116: FFFFFFFF          	.ORG	0120H
+011A: FF...             
+0120:                   PAM_READY::
+0120: 00                	.DB	0
+0121:                   PAM_CMD::
+0121: 00                	.DB	0
+0122:                   PAM_RESULT::
+0122: 00                	.DB	0
+0123:                   PAM_RUN::
+0123: 00                	.DB	0
+                        
+0124:                   PAM_ENC::
+0124: 00                	.DB	0
+0125:                   PAM_REPT::
+0125: 00                	.DB	0
+0126:                   PAM_CYCLE_CLK::
+0126: 0000              	.DW	0
+0128:                   PAM_REPT_CLK::
+0128: 00                	.DB	0
+0129:                   PAM_REPT_MAX::
+0129: 00                	.DB	0
+                        
+012A: 00000000          	.DB	0,0,0,0		; reserved
+012E:                   PAM_STAT_PTR::
+012E: 0000              	.DW	0
+                        
+                        ; PCM
+                        	.ORG	0130H
+0130:                   PCM_READY::
+0130: 00                	.DB	0
+0131:                   PCM_CMD::
+0131: 00                	.DB	0
+0132:                   PCM_RESULT::
+0132: 00                	.DB	0
+0133:                   PCM_RUN::
+0133: 00                	.DB	0
+                        
+0134:                   PCM_ENC::
+0134: 00                	.DB	0
+0135: 00                	.DB	0		; reserved
+0136:                   PCM_PRT1_TIMER::			; PRT1 TIMER TLDR (PCM)
+0136: 0000              	.DW	0
+                        
+0138: 00000000          	.DB	0,0,0,0,0,0	; reserved
+013C: 0000              
+013E:                   PCM_STAT_PTR::
+013E: 0000              	.DW	0
+                        
+                        ; PSG
+                        	.ORG	0140H
+0140:                   PSG_READY::
+0140: 00                	.DB	0
+0141:                   PSG_CMD::
+0141: 00                	.DB	0
+0142:                   PSG_RESULT::
+0142: 00                	.DB	0
+0143:                   PSG_RUN::
+0143: 00                	.DB	0
+                        
+                        ; SPK
+0144: FFFFFFFF          	.ORG	0150H
+0148: FF...             
+0150:                   SPK_READY::
+0150: 00                	.DB	0
+0151:                   SPK_CMD::
+0151: 00                	.DB	0
+0152:                   SPK_RESULT::
+0152: 00                	.DB	0
+0153:                   SPK_RUN::
+0153: 00                	.DB	0
+                        
+0154:                   SPK_VOL::
+0154: 00                	.DB	0
+0155: 00                	.DB	0		; reserved
+0156:                   SPK_FREQ::
+0156: 0000              	.DW	0
+0158:                   SPK_TIME::
+0158: 0000              	.DW	0
+015A:                   SPK_REMAIN::
+015A: 0000              	.DW	0
+                        
+                        ; LPR
+015C: FFFFFFFF          	.ORG	0160H
+0160:                   LPR_READY::
+0160: 00                	.DB	0
+0161:                   LPR_CMD::
+0161: 00                	.DB	0
+0162:                   LPR_RESULT::
+0162: 00                	.DB	0
+0163:                   LPR_RUN::
+0163: 00                	.DB	0
+                        	; TBD.
+                        
+0001:                   LPR_CMD_START	.EQU	1
+                        
+                        ; FDC
+0164: FFFFFFFF          	.ORG	0170H
+0168: FF...             
+0170:                   FDC_READY::
+0170: 00                	.DB	0
+0171:                   FDC_CMD::
+0171: 00                	.DB	0
+0172:                   FDC_RESULT::
+0172: 00                	.DB	0
+0173:                   FDC_RUN::
+0173: 00                	.DB	0
+                        ; TBD.
+                        
+0001:                   FDC_CMD_START	.EQU	1
+                        
+                        ; SIO0
+0174: FFFFFFFF          	.ORG	0180H
+0178: FF...             
+0180:                   SIO0_READY::
+0180: 00                	.DB	0
+0181:                   SIO0_CMD::
+0181: 00                	.DB	0
+0182:                   SIO0_RESULT::
+0182: 00                	.DB	0
+0183:                   SIO0_RUN::
+0183: 00                	.DB	0
+                        
+0184:                   SIO0_TXCMD::
+0184: 00                	.DB	0
+0185:                   SIO0_TXSTAT::
+0185: 00                	.DB	0
+0186:                   SIO0_TX::
+0186: 00                	.DB	0
+0187: FFFFFF            	.DS	3
+018A:                   SIO0_RXCMD::
+018A: 00                	.DB	0
+018B:                   SIO0_RXSTAT::
+018B: 00                	.DB	0
+018C:                   SIO0_RX::
+018C: 00                	.DB	0
+                        
+                        ; SIO1
+018D: FFFFFF            	.ORG	0190H
+0190:                   SIO1_READY::
+0190: 00                	.DB	0
+0191:                   SIO1_CMD::
+0191: 00                	.DB	0
+0192:                   SIO1_RESULT::
+0192: 00                	.DB	0
+0193:                   SIO1_RUN::
+0193: 00                	.DB	0
+                        
+0194:                   SIO1_TXCMD::
+0194: 00                	.DB	0
+0195:                   SIO1_TXSTAT::
+0195: 00                	.DB	0
+0196:                   SIO1_TX::
+0196: 00                	.DB	0
+0197: FFFFFF            	.DS	3
+019A:                   SIO1_RXCMD::
+019A: 00                	.DB	0
+019B:                   SIO1_RXSTAT::
+019B: 00                	.DB	0
+019C:                   SIO1_RX::
+019C: 00                	.DB	0
+                        
+                        
+                        ; ######## Bootstrap program
+019D: FFFFFFFF          	.ORG	0200H
+01A1: FF...             
+0200:                   ENTRY:
+0200: F3       [ 4]     	DI
+0201: 310010   [14]     	LD	SP,INITIAL_SP
+                        
+                        				; inc reset count
+0204: 210401   [24]     	LD	HL, XPBUS_STAT_RESET
+0207: 34       [35]     	INC	(HL)
+                        
+                        				; initial devices
+                        				; READY=0
+0208: AF       [39]     	XOR	A
+0209: 320001   [52]     	LD	(XPBUS_READY),A
+020C: 321001   [65]     	LD	(TIME_READY),A
+020F: 322001   [78]     	LD	(PAM_READY),A
+0212: 323001   [91]     	LD	(PCM_READY),A
+0215: 324001   [104]    	LD	(PSG_READY),A
+0218: 325001   [117]    	LD	(SPK_READY),A
+021B: 326001   [130]    	LD	(LPR_READY),A
+021E: 327001   [143]    	LD	(FDC_READY),A
+0221: 328001   [156]    	LD	(SIO0_READY),A
+0224: 329001   [169]    	LD	(SIO1_READY),A
+                        
+0227: 3E01     [176]    	LD	A,1
+0229: 328000   [189]    	LD	(DEBUG0),A
+                        
+                        				; init XP internal devices
+                        				; internal I/O address = 00H - 3FH
+022C: 3E00     [196]    	LD	A,00H		; IOA7[7]=0 IOSTP[5]=0
+003F:                   ICR	.EQU	3FH
+022E: ED393F   [204]    	OUT0	(ICR),A
+                        
+                        				; memory wait = 0
+                        				; I/O wait = 3
+                        				; no DMA
+0231: 3E20     [211]    	LD	A,20H		; MWI[76]=0 IWI[54]=2(3wait) DMS[32]=0 DIM[10]=0
+0032:                   DCNTL	.EQU	32H
+0233: ED3932   [219]    	OUT0	(DCNTL),A
+                        				; disable refresh
+0236: 3E03     [226]    	LD	A,03H		; REFE[7]=0 REFW[6]=0 CYC[10]=3(80state)
+0036:                   RCR	.EQU	36H
+0238: ED3936   [234]    	OUT0	(RCR),A
+                        
+023B: 3E02     [241]    	LD	A,2
+023D: 328000   [254]    	LD	(DEBUG0),A
+                        
+                        				; prepare memory map
+                        				; MMU
+0038:                   CBR	.EQU	38H
+0039:                   BBR	.EQU	39H
+003A:                   CBAR	.EQU	3AH
+                        				; Common0: VA=0000H -> PA=00000H SH
+                        				; Bank   : VA=E000H -> PA=28000H PR
+                        				; Common1: VA=F000H -> PA=FF000H IN
+0240: 3EFE     [261]    	LD	A,0FEH
+0242: ED393A   [269]    	OUT0	(CBAR),A
+0245: 3EF0     [276]    	LD	A,0F0H
+0247: ED3938   [284]    	OUT0	(CBR),A
+024A: 3E1A     [291]    	LD	A,1AH
+024C: ED3939   [299]    	OUT0	(BBR),A
+                        
+024F: 3E03     [306]    	LD	A,3
+0251: 328000   [319]    	LD	(DEBUG0),A
+                        
+                        				; internal RAM addressing
+                        				; for no-wait access
+                        				; PA=FxxxxH にしたらノーウェイトになった。
+                        				; PA=0xxxxH だとウェイトが入った。
+                        				; ほかのアドレスは未調査。
+                        				; built-in RAM VA=FE00H PA=FFE00H
+0254: 3EF0     [326]    	LD	A,0F0H
+0051:                   RMCR	.EQU	51H
+0256: ED3951   [334]    	OUT0	(RMCR),A
+                        				; disable external interrupt
+                        				; TODO: if use "Host to XP" interrupt, change here
+0259: 3E00     [341]    	LD	A,00H		; TRAP[7]=0 ITE2[2]=0 ITE1[1]=0 ITE0[0]=0
+0034:                   ITC	.EQU	34H
+025B: ED3934   [349]    	OUT0	(ITC),A
+                        				; Interrupt Vector Low = E
+                        				; I = FFH
+                        				; Interrupt Vector Address = FFE0H
+025E: 3EE0     [356]    	LD	A,0E0H
+0033:                   IL	.EQU	33H
+0260: ED3933   [364]    	OUT0	(IL),A
+0263: 3EFF     [371]    	LD	A,0FFH
+0265: ED47     [380]    	LD	I,A
+                        				; interrupt mode 1
+0267: ED56     [388]    	IM	1
+                        
+0269: 3E04     [395]    	LD	A,4
+026B: 328000   [408]    	LD	(DEBUG0),A
+                        
+026E: CDA802   [425]    	CALL	INIT_PSG
+                        
+                        	; TODO
+                        	; INIT FDC
+                        	; INIT LPR
+                        	; INIT SIO
+                        
+                        				; INIT PRT0,1
+                        				; TIE1[5]=TIE0[4]=0
+                        				; TOC1[3]=TOC0[2]=0
+                        				; TDE1[1]=TDE0[0]=0
+0271: 3E00     [432]    	LD	A,00H
+0273: ED3910   [440]    	OUT0	(TCR),A
+                        				; prepare PRT0
+0276: 2A0801   [456]    	LD	HL,(XPBUS_PRT0_TIMER)
+0279: ED290E   [464]    	OUT0	(RLDR0L),L
+027C: ED290C   [472]    	OUT0	(TMDR0L),L
+027F: ED210F   [480]    	OUT0	(RLDR0H),H
+0282: ED210D   [488]    	OUT0	(TMDR0H),H
+                        				; TIE0, TID0 ON
+                        				; TIE0[4]=1 TDE0[0]=1
+0285: 3E11     [495]    	LD	A,11H
+0287: ED3910   [503]    	OUT0	(TCR),A
+                        
+                        				; copy to private memory
+028A: 21CD02   [513]    	LD	HL,PROG_ORG
+028D: 1100E0   [523]    	LD	DE,PRIVATE_RAM
+0290: 018F04   [533]    	LD	BC,PROG_ORG_LEN
+0293: EDB0     [549|21] 	LDIR
+                        				; interrupt vector copy to internal memory
+0295: 215C07   [559]    	LD	HL,VECTOR_ORG
+0298: 11E0FF   [569]    	LD	DE,VECTOR
+029B: 011B00   [579]    	LD	BC,VECTOR_ORG_LEN
+029E: EDB0     [595|21] 	LDIR
+                        
+02A0: 3E05     [602]    	LD	A,5
+02A2: 328000   [615]    	LD	(DEBUG0),A
+                        				; jump to XPBUS
+02A5: C300E0   [625]    	JP	XPBUS
+                        
+                        ; initialize PSG registers
+                        ; break all regs
+02A8:                   INIT_PSG:
+                        				; init PSG
+                        				; PSG R0-R6 All 00H
+02A8: 3E00     [ 7]     	LD	A,0
+02AA: 0607     [14]     	LD	B,7
+02AC: 0E82     [21]     	LD	C,PSG_DAT
+02AE: 1600     [28]     	LD	D,0
+02B0:                   PSG_CLEAR_06:
+02B0: D383     [11]     	OUT	(PSG_ADR),A
+02B2: ED51     [23]     	OUT	(C),D
+02B4: 3C       [27]     	INC	A
+02B5: 10F9     [35|40]  	DJNZ	PSG_CLEAR_06
+                        				; PSG mixer
+                        				; tone = off, noise = off
+                        				; IOA, IOB = output
+02B7: 3E07     [42]     	LD	A,7
+02B9: 16FF     [49]     	LD	D,0FFH
+02BB: D383     [60]     	OUT	(PSG_ADR),A
+02BD: ED51     [72]     	OUT	(C),D
+                        				; PSG volume and envelope
+                        				; PSG R8-R15 all 0
+02BF: 3E08     [79]     	LD	A,8
+02C1: 0608     [86]     	LD	B,8
+02C3: 1600     [93]     	LD	D,0
+02C5:                   PSG_CLEAR_8F:
+02C5: D383     [11]     	OUT	(PSG_ADR),A
+02C7: ED51     [23]     	OUT	(C),D
+02C9: 3C       [27]     	INC	A
+02CA: 10F9     [35|40]  	DJNZ	PSG_CLEAR_8F
+                        				; TODO: PSG I/O Port
+02CC: C9       [45]     	RET
+                        
+                        ; ######## buffers
+                        	.PHASE	1000H
+1000:                   PAM_BUF::
+1000:                   PCM_BUF::
+                        	.DEPHASE
+                        	.PHASE 08000H
+7000:                   PAM_BUF_LEN::	.EQU	$-PAM_BUF
+7000:                   PCM_BUF_LEN::	.EQU	$-PCM_BUF
+8000:                   PSG_BUF::
+                        	.DEPHASE
+                        	.PHASE 09000H
+1000:                   PSG_BUF_LEN::	.EQU	$-PSG_BUF
+9000:                   LPR_BUF::
+                        	.DEPHASE
+                        	.PHASE 0A000H
+1000:                   LPR_BUF_LEN::	.EQU	$-LPR_BUF
+A000:                   FDC_BUF::
+                        	.DEPHASE
+                        
+                        ; ######## private memory program
+                        	.PHASE 0E000H
+4000:                   FDC_BUF_LEN::	.EQU	$-FDC_BUF
+                        
+02CD:                   PROG_ORG:	.EQU	$$
+E000:                   PRIVATE_RAM:
+                        
+E000:                   XPBUS:
+02CD: 3E06     [ 7]     	LD	A,6
+02CF: 328000   [20]     	LD	(DEBUG0),A
+                        
+02D2: 3100F0   [30]     	LD	SP,PRIVATE_SP
+                        
+                        				; devices READY=1
+02D5: 3E01     [37]     	LD	A,1
+02D7: 320001   [50]     	LD	(XPBUS_READY),A
+02DA: 321001   [63]     	LD	(TIME_READY),A
+02DD: 322001   [76]     	LD	(PAM_READY),A
+02E0: 323001   [89]     	LD	(PCM_READY),A
+02E3: 324001   [102]    	LD	(PSG_READY),A
+02E6: 325001   [115]    	LD	(SPK_READY),A
+02E9: 326001   [128]    	LD	(LPR_READY),A
+02EC: 327001   [141]    	LD	(FDC_READY),A
+02EF: 328001   [154]    	LD	(SIO0_READY),A
+02F2: 329001   [167]    	LD	(SIO1_READY),A
+                        
+                        				; wait for PRT0
+02F5: FB       [171]    	EI
+E029:                   XPBUS_LOOP:
+02F6: 76       [175]    	HALT
+02F7: 18FD     [187]    	JR	XPBUS_LOOP
+                        
+E02C:                   INTR_PRT0:
+                        ; #### Periodic devices
+                        ; 1200Hz
+                        ; ここから呼び出される DISPATCH ルーチンは、
+                        ; o. A にコマンドが入っている
+                        ; o. AF, HL は破壊して良い。
+                        ; o. EI 状態で呼ばれることに注意。
+                        ; o. EI 状態でリターンすること。
+                        ; o. 裏レジスタは PCM 専用。
+                        ; o. PAM 以外、0.83 msec 以内にリターンすること。
+                        
+02F9: F5       [198]    	PUSH	AF
+02FA: E5       [209]    	PUSH	HL
+                        
+02FB: 3E07     [216]    	LD	A,7
+02FD: 328000   [229]    	LD	(DEBUG0),A
+                        				; reset PRT0 interrupt
+0300: ED3010   [237]    	IN0	F,(TCR)
+0303: ED300C   [245]    	IN0	F,(TMDR0L)
+                        				; first EI, for PRT1
+0306: FB       [249]    	EI
+                        
+E03A:                   TIMECOUNTER_INCR:
+                        				; timecounter
+0307: 2A1401   [265]    	LD	HL,(TIME_TIMECOUNTER)
+030A: 23       [271]    	INC	HL
+030B: 221401   [287]    	LD	(TIME_TIMECOUNTER),HL
+                        
+                        ; #### XPBUS devices dispatcher
+                        
+E041:                   DEVICES_DISPATCH:
+030E: 3A0101   [300]    	LD	A,(XPBUS_CMD)
+0311: B7       [304]    	OR	A
+0312: C489E0   [314|321]	CALL	NZ,XPBUS_DISPATCH
+                        
+0315: 3A2101   [327]    	LD	A,(PAM_CMD)
+0318: B7       [331]    	OR	A
+0319: C43FE2   [341|348]	CALL	NZ,PAM_DISPATCH
+                        
+031C: 3A3101   [354]    	LD	A,(PCM_CMD)
+031F: B7       [358]    	OR	A
+0320: C49DE0   [368|375]	CALL	NZ,PCM_DISPATCH
+                        
+0323: 3A4101   [381]    	LD	A,(PSG_CMD)
+0326: B7       [385]    	OR	A
+0327: C40AE2   [395|402]	CALL	NZ,PSG_DISPATCH
+                        
+032A: 3A5101   [408]    	LD	A,(SPK_CMD)
+032D: B7       [412]    	OR	A
+032E: C47AE1   [422|429]	CALL	NZ,SPK_DISPATCH
+                        
+0331: 3A6101   [435]    	LD	A,(LPR_CMD)
+0334: B7       [439]    	OR	A
+0335: C414E2   [449|456]	CALL	NZ,LPR_DISPATCH
+                        
+0338: 3A7101   [462]    	LD	A,(FDC_CMD)
+033B: B7       [466]    	OR	A
+033C: C41EE2   [476|483]	CALL	NZ,FDC_DISPATCH
+                        
+033F: 3A8101   [489]    	LD	A,(SIO0_CMD)
+0342: B7       [493]    	OR	A
+0343: C428E2   [503|510]	CALL	NZ,SIO0_DISPATCH
+                        
+0346: 3A9101   [516]    	LD	A,(SIO1_CMD)
+0349: B7       [520]    	OR	A
+034A: C432E2   [530|537]	CALL	NZ,SIO1_DISPATCH
+                        
+034D: 3E08     [537]    	LD	A,8
+034F: 328000   [550]    	LD	(DEBUG0),A
+                        
+0352: E1       [560]    	POP	HL
+0353: F1       [570]    	POP	AF
+0354: ED4D     [584]    	RETI
+                        
+                        ; #### XPBUS
+                        
+E089:                   XPBUS_DISPATCH:
+                        	; not implemented
+0356: AF       [588]    	XOR	A
+0357: 320101   [601]    	LD	(XPBUS_CMD),A
+035A: 3EFF     [608]    	LD	A,XPLX_R_UNKNOWN_CMD
+035C: 320201   [621]    	LD	(XPBUS_RESULT),A
+035F: C9       [631]    	RET
+                        
+                        ; #### TIME
+                        
+E093:                   TIME_DISPATCH:
+                        	; not implemented
+0360: AF       [635]    	XOR	A
+0361: 321101   [648]    	LD	(TIME_CMD),A
+0364: 3EFF     [655]    	LD	A,XPLX_R_UNKNOWN_CMD
+0366: 321201   [668]    	LD	(TIME_RESULT),A
+0369: C9       [678]    	RET
+                        
+                        ; #### PAM は末尾
+                        
+                        ; #### PCM driver core
+                        
+                        ; PCM 割り込みは裏レジスタを専有します。
+                        ; メインルーチン側では裏レジスタを使用してはいけません。
+                        
+                        ; #### PCM play start
+E09D:                   PCM_DISPATCH:
+036A: FE01     [685]    	CP	PCM_CMD_START
+036C: 2806     [692|697]	JR	Z,PCM_START
+                        
+036E: 3EFF     [699]    	LD	A,XPLX_R_UNKNOWN_CMD
+E0A3:                   PCM_ERROR:
+0370: 323201   [712]    	LD	(PCM_RESULT),A
+0373: C9       [722]    	RET
+                        
+E0A7:                   PCM_START:
+                        				; if READY==0 return
+0374: 3A3001   [735]    	LD	A,(PCM_READY)
+0377: B7       [739]    	OR	A
+0378: C8       [744|750]	RET	Z
+                        				; check ENC
+0379: 3A3401   [757]    	LD	A,(PCM_ENC)
+037C: 3D       [761]    	DEC	A
+037D: 280A     [768|773]	JR	Z,PCM_START_OK	; PCM1 = 1
+037F: 3D       [772]    	DEC	A
+0380: 2807     [779|784]	JR	Z,PCM_START_OK	; PCM2 = 2
+0382: 3D       [783]    	DEC	A
+0383: 2804     [790|795]	JR	Z,PCM_START_OK	; PCM3 = 3
+                        
+0385: 3EFE     [797]    	LD	A,XPLX_R_ERROR_PARAM
+0387: 18E7     [809]    	JR	PCM_ERROR
+                        
+E0BC:                   PCM_START_OK:
+                        				; A = 0
+0389: 323001   [822]    	LD	(PCM_READY),A
+038C: 323101   [835]    	LD	(PCM_CMD),A
+                        
+                        
+                        				; prepare vector
+038F: F3       [839]    	DI
+                        				; set PRT1 vector
+0390: 2113E1   [849]    	LD	HL,PCM_INTR
+0393: 22E6FF   [865]    	LD	(VEC_PRT1),HL
+                        				; prepare register
+0396: D9       [869]    	EXX
+                        
+0397: CDA802   [886]    	CALL	INIT_PSG
+                        
+                        				; make interrupt handler
+039A: 3A3401   [899]    	LD	A,(PCM_ENC)
+039D: 3D       [903]    	DEC	A
+039E: 280D     [910|915]	JR	Z,PCM_SET_PCM1
+03A0: 3D       [914]    	DEC	A
+03A1: 2805     [921|926]	JR	Z,PCM_SET_PCM2
+E0D6:                   PCM_SET_PCM3:
+03A3: 215FE1   [931]    	LD	HL,PCM3
+03A6: 1808     [943]    	JR	PCM_SET
+E0DB:                   PCM_SET_PCM2:
+03A8: 2150E1   [953]    	LD	HL,PCM2
+03AB: 1803     [965]    	JR	PCM_SET
+E0E0:                   PCM_SET_PCM1:
+03AD: 2148E1   [975]    	LD	HL,PCM1
+E0E3:                   PCM_SET:
+03B0: 221CE1   [991]    	LD	(PCM_INTR_JMP),HL
+                        
+03B3: 210010   [1001]   	LD	HL,PCM_BUF
+03B6: 018308   [1011]   	LD	BC,0800H + PSG_ADR
+03B9: 110907   [1021]   	LD	DE,0709H
+                        
+03BC: D9       [1025]   	EXX
+                        
+                        				; TIE1, TDE1 OFF
+03BD: ED3810   [1033]   	IN0	A,(TCR)
+03C0: E6DD     [1040]   	AND	0DDH		; TIE1[5]=0 TDE1[1]=0
+03C2: ED3910   [1048]   	OUT0	(TCR),A
+                        				; prepare PRT1
+03C5: 2A3601   [1064]   	LD	HL,(PCM_PRT1_TIMER)
+03C8: ED2916   [1072]   	OUT0	(RLDR1L),L
+03CB: ED2117   [1080]   	OUT0	(RLDR1H),H
+03CE: ED2914   [1088]   	OUT0	(TMDR1L),L
+03D1: ED2115   [1096]   	OUT0	(TMDR1H),H
+                        				; TIE1, TID1 ON
+03D4: F622     [1103]   	OR	22H		; TIE1[5]=1 TDE1[5]=1
+03D6: ED3910   [1111]   	OUT0	(TCR),A
+                        
+03D9: FB       [1115]   	EI
+                        
+03DA: 3E01     [1122]   	LD	A,1
+03DC: 323301   [1135]   	LD	(PCM_RUN),A
+                        
+03DF: C9       [1145]   	RET
+                        
+                        
+                        
+                        ; #### PCM interrupt handler
+                        
+E113:                   PCM_INTR:
+                        				; PRT1 interrupt
+03E0: 08       [1149]   	EX	AF,AF
+03E1: D9       [1153]   	EXX
+                        				; interrupt acknowledge
+                        				; reset PRT1 Interrupt
+03E2: ED3010   [1161]   	IN0	F,(TCR)
+03E5: ED3014   [1169]   	IN0	F,(TMDR1L)
+                        
+                        				; ジャンプ先は書き換えられる
+E11C:                   PCM_INTR_JMP:	.EQU	$+1
+03E8: C348E1   [1179]   	JP	PCM1
+                        
+E11E:                   PCM_INTR_NEXT:
+03EB: 07       [1183]   	RLCA
+03EC: 381D     [1190|119	JR	C,PCM_RELOAD
+                        				; inc ptr after reload check
+03EE: 23       [1196]   	INC	HL
+03EF: 07       [1200]   	RLCA
+03F0: 381C     [1207|121	JR	C,PCM_STAT
+03F2: 07       [1211]   	RLCA
+03F3: 301B     [1218|122	JR	NC,PCM_NORMAL
+                        
+                        ; PCM RESET attention
+                        ; in: HL = EXIT address
+E128:                   PCM_RESET:
+                        				; PRT1 intr stop
+03F5: ED3810   [1226]   	IN0	A,(TCR)
+                        				; TIE1,TDE1 OFF
+03F8: E6DD     [1233]   	AND	0DDH		; TIE1[5]=0 TDE1[1]=0
+03FA: ED3910   [1241]   	OUT0	(TCR),A
+                        				; PLAY STOP
+03FD: AF       [1245]   	XOR	A
+03FE: 323301   [1258]   	LD	(PCM_RUN),A
+0401: 3E01     [1265]   	LD	A,XPLX_R_OK
+0403: 323201   [1278]   	LD	(PCM_RESULT),A
+0406: 323001   [1291]   	LD	(PCM_READY),A
+                        
+0409: 1805     [1303]   	JR	PCM_EXIT
+                        
+                        ; PCM common code
+                        
+E13E:                   PCM_RELOAD:
+040B: 210010   [1313]   	LD	HL,PCM_BUF
+E141:                   PCM_STAT:
+                        #if USE_INTR
+040E: D3A0     [1324]   	OUT	(PCM_HOSTINTR),A
+                        #else
+                        	LD	(PCM_STAT_PTR),HL
+                        #endif
+E143:                   PCM_NORMAL:
+E143:                   PCM_EXIT:
+0410: D9       [1328]   	EXX
+0411: 08       [1332]   	EX	AF,AF
+0412: FB       [1336]   	EI
+0413: ED4D     [1350]   	RETI
+                        
+                        ; #### PCM core code
+                        
+E148:                   PCM1:
+                        				; PSG REG=8
+0415: ED41     [1362]   	OUT	(C),B
+                        				; read attention or CH0
+0417: 7E       [1369]   	LD	A,(HL)
+0418: D382     [1380]   	OUT	(PSG_DAT),A
+041A: C31EE1   [1390]   	JP	PCM_INTR_NEXT
+                        
+E150:                   PCM2:
+041D: 56       [1397]   	LD	D,(HL)
+041E: 23       [1403]   	INC	HL
+041F: 7E       [1410]   	LD	A,(HL)
+                        
+0420: ED41     [1422]   	OUT	(C),B
+0422: ED1182   [1430]   	OUT0	(PSG_DAT),D
+0425: ED59     [1442]   	OUT	(C),E
+0427: D382     [1453]   	OUT	(PSG_DAT),A
+0429: C31EE1   [1463]   	JP	PCM_INTR_NEXT
+                        
+E15F:                   PCM3:
+042C: 5E       [1470]   	LD	E,(HL)
+042D: 23       [1476]   	INC	HL
+042E: 56       [1483]   	LD	D,(HL)
+042F: 23       [1489]   	INC	HL
+0430: 7E       [1496]   	LD	A,(HL)
+                        
+0431: E5       [1507]   	PUSH	HL
+0432: 210A09   [1517]   	LD	HL,090AH
+0435: ED41     [1529]   	OUT	(C),B
+0437: ED1982   [1537]   	OUT0	(PSG_DAT),E
+043A: ED61     [1549]   	OUT	(C),H
+043C: ED1182   [1557]   	OUT0	(PSG_DAT),D
+043F: ED69     [1569]   	OUT	(C),L
+0441: D382     [1580]   	OUT	(PSG_DAT),A
+0443: E1       [1590]   	POP	HL
+0444: C31EE1   [1600]   	JP	PCM_INTR_NEXT
+                        
+                        ; #### SPK
+E17A:                   SPK_DISPATCH:
+0447: FE01     [1607]   	CP	SPK_CMD_START
+0449: 280E     [1614|161	JR	Z,SPK_START
+044B: FE02     [1621]   	CP	SPK_CMD_STOP
+044D: 2850     [1628|163	JR	Z,SPK_STOP
+044F: FE03     [1635]   	CP	SPK_CMD_KEEP
+0451: 286E     [1642|164	JR	Z,SPK_KEEP
+                        
+0453: 3EFF     [1649]   	LD	A,XPLX_R_UNKNOWN_CMD
+0455: 325201   [1662]   	LD	(SPK_RESULT),A
+0458: C9       [1672]   	RET
+                        
+E18C:                   SPK_START:
+0459: 3A5001   [1685]   	LD	A,(SPK_READY)
+045C: B7       [1689]   	OR	A
+045D: C8       [1694|170	RET	Z
+                        
+045E: AF       [1698]   	XOR	A
+045F: 325001   [1711]   	LD	(SPK_READY),A
+                        				; next to CMD_KEEP
+0462: 3E03     [1718]   	LD	A,SPK_CMD_KEEP
+0464: 325101   [1731]   	LD	(SPK_CMD),A
+0467: 3E01     [1738]   	LD	A,1
+0469: 325301   [1751]   	LD	(SPK_RUN),A
+                        
+                        				; set REMAIN
+046C: 2A5801   [1767]   	LD	HL,(SPK_TIME)
+046F: 225A01   [1783]   	LD	(SPK_REMAIN),HL
+                        
+0472: F3       [1787]   	DI
+                        				; PSG CH3 FREQ
+0473: 2A5601   [1803]   	LD	HL,(SPK_FREQ)
+0476: 3E04     [1810]   	LD	A,4
+0478: ED3983   [1818]   	OUT0	(PSG_ADR),A
+047B: ED2982   [1826]   	OUT0	(PSG_DAT),L
+047E: 3E05     [1833]   	LD	A,5
+0480: ED3983   [1841]   	OUT0	(PSG_ADR),A
+0483: ED2182   [1849]   	OUT0	(PSG_DAT),H
+                        				; PSG CH3 VOL
+0486: 3E0A     [1856]   	LD	A,10
+0488: D383     [1867]   	OUT	(PSG_ADR),A
+048A: 3A5401   [1880]   	LD	A,(SPK_VOL)
+048D: D382     [1891]   	OUT	(PSG_DAT),A
+                        				; save PSG R7
+048F: 3E07     [1898]   	LD	A,7
+0491: ED3983   [1906]   	OUT0	(PSG_ADR),A
+0494: DB83     [1917]   	IN	A,(PSG_IN)
+0496: 3209E2   [1930]   	LD	(SPK_PSGR7),A
+                        				; PSG CH3 TONE ON
+0499: E6FB     [1937]   	AND	0FBH
+049B: D382     [1948]   	OUT	(PSG_DAT),A
+                        
+049D: 182D     [1960]   	JR	SPK_EXIT
+                        
+E1D2:                   SPK_STOP:
+049F: 3A5001   [1973]   	LD	A,(SPK_READY)
+04A2: B7       [1977]   	OR	A
+04A3: C8       [1982|198	RET	Z
+                        
+E1D7:                   SPK_STOP_CORE:
+04A4: AF       [1986]   	XOR	A
+04A5: 325001   [1999]   	LD	(SPK_READY),A
+04A8: 325101   [2012]   	LD	(SPK_CMD),A
+                        
+04AB: F3       [2016]   	DI
+                        				; restore PSG R7
+04AC: 3E07     [2023]   	LD	A,7
+04AE: D383     [2034]   	OUT	(PSG_ADR),A
+04B0: 3A09E2   [2047]   	LD	A,(SPK_PSGR7)
+04B3: D382     [2058]   	OUT	(PSG_DAT),A
+                        				; PSG CH3 VOL=0
+04B5: 3E0A     [2065]   	LD	A,10
+04B7: D383     [2076]   	OUT	(PSG_ADR),A
+04B9: AF       [2080]   	XOR	A
+04BA: D382     [2091]   	OUT	(PSG_DAT),A
+                        
+04BC: 325301   [2104]   	LD	(SPK_RUN),A
+                        
+04BF: 180B     [2116]   	JR	SPK_EXIT
+                        
+E1F4:                   SPK_KEEP:
+                        				; REMAIN == 0, then stop
+04C1: 2A5A01   [2132]   	LD	HL,(SPK_REMAIN)
+04C4: 7C       [2136]   	LD	A,H
+04C5: B5       [2140]   	OR	L
+04C6: 28DC     [2147|215	JR	Z,SPK_STOP_CORE
+                        
+04C8: 2B       [2153]   	DEC	HL
+04C9: 225A01   [2169]   	LD	(SPK_REMAIN),HL
+                        
+E1FF:                   SPK_EXIT:
+04CC: FB       [2173]   	EI
+04CD: 3E01     [2180]   	LD	A,XPLX_R_OK
+04CF: 325201   [2193]   	LD	(SPK_RESULT),A
+04D2: 325001   [2206]   	LD	(SPK_READY),A
+04D5: C9       [2216]   	RET
+                        
+E209:                   SPK_PSGR7:
+04D6: 00                	.DB	0
+                        
+                        ; ######## PSG
+E20A:                   PSG_DISPATCH:
+                        	; not implemented
+04D7: AF       [2220]   	XOR	A
+04D8: 324101   [2233]   	LD	(PSG_CMD),A
+04DB: 3EFF     [2240]   	LD	A,XPLX_R_UNKNOWN_CMD
+04DD: 324201   [2253]   	LD	(PSG_RESULT),A
+04E0: C9       [2263]   	RET
+                        ; ######## LPR
+E214:                   LPR_DISPATCH:
+                        	; not implemented
+04E1: AF       [2267]   	XOR	A
+04E2: 326101   [2280]   	LD	(LPR_CMD),A
+04E5: 3EFF     [2287]   	LD	A,XPLX_R_UNKNOWN_CMD
+04E7: 326201   [2300]   	LD	(LPR_RESULT),A
+04EA: C9       [2310]   	RET
+                        ; ######## FDC
+E21E:                   FDC_DISPATCH:
+                        	; not implemented
+04EB: AF       [2314]   	XOR	A
+04EC: 327101   [2327]   	LD	(FDC_CMD),A
+04EF: 3EFF     [2334]   	LD	A,XPLX_R_UNKNOWN_CMD
+04F1: 327201   [2347]   	LD	(FDC_RESULT),A
+04F4: C9       [2357]   	RET
+                        
+                        ; ######## SIO
+E228:                   SIO0_DISPATCH:
+                        	; not implemented
+04F5: AF       [2361]   	XOR	A
+04F6: 328101   [2374]   	LD	(SIO0_CMD),A
+04F9: 3EFF     [2381]   	LD	A,XPLX_R_UNKNOWN_CMD
+04FB: 328201   [2394]   	LD	(SIO0_RESULT),A
+04FE: C9       [2404]   	RET
+                        
+E232:                   SIO1_DISPATCH:
+                        	; not implemented
+04FF: AF       [2408]   	XOR	A
+0500: 329101   [2421]   	LD	(SIO1_CMD),A
+0503: 3EFF     [2428]   	LD	A,XPLX_R_UNKNOWN_CMD
+0505: 329201   [2441]   	LD	(SIO1_RESULT),A
+0508: C9       [2451]   	RET
+                        
+E23C:                   INTR_INT0:
+E23C:                   INTR_ASCI0:
+E23C:                   INTR_ASCI1:
+                        				; TBD
+0509: FB       [2455]   	EI
+050A: ED4D     [2469]   	RETI
+                        
+                        ; #### PAM play start
+                        
+E23F:                   PAM_DISPATCH:
+050C: FE01     [2476]   	CP	PAM_CMD_START
+050E: 2856     [2483|248	JR	Z,PAM_START
+0510: FE02     [2490]   	CP	PAM_CMD_QUERY
+0512: 282A     [2497|250	JR	Z,PAM_QUERY
+                        
+0514: AF       [2501]   	XOR	A
+0515: 322101   [2514]   	LD	(PAM_CMD),A
+0518: 3EFF     [2521]   	LD	A,XPLX_R_UNKNOWN_CMD
+051A: 322201   [2534]   	LD	(PAM_RESULT),A
+051D: C9       [2544]   	RET
+                        
+                        ; PAM ENC -> PAM Driver MAP address
+                        ; OUT: HL = MAP address
+                        ; if error, direct return to main routine
+E251:                   PAM_ENC_MAP:
+051E: 3A2401   [2557]   	LD	A,(PAM_ENC)
+0521: B7       [2561]   	OR	A
+0522: 2813     [2568|257	JR	Z,PAM_ERROR_ENC
+0524: 3D       [2572]   	DEC	A
+                        
+0525: FE04     [2579]   	CP	PAM_DRIVER_MAP_LEN / 16		; 16 bytes / entry
+0527: D26AE2   [2589|258	JP	NC,PAM_ERROR_ENC
+                        
+052A: 87       [2593]   	ADD	A,A		; A *= 16
+052B: 87       [2597]   	ADD	A,A
+052C: 87       [2601]   	ADD	A,A
+052D: 87       [2605]   	ADD	A,A
+                        
+052E: 210FE3   [2615]   	LD	HL,PAM_DRIVER_MAP
+                        	ADD_HL_A
+0531: 85       [2619]   	ADD	A,L
+0532: 6F       [2623]   	LD	L,A
+0533: 3001     [2630|263	JR	NC,$ + 3
+0535: 24       [2634]   	INC	H
+0536: C9       [2644]   	RET
+                        
+E26A:                   PAM_ERROR_ENC:
+0537: E1       [2654]   	POP	HL		; discard caller PC
+E26B:                   PAM_ERROR_PARAM:
+0538: 3EFE     [2661]   	LD	A,XPLX_R_ERROR_PARAM
+053A: 322201   [2674]   	LD	(PAM_RESULT),A
+053D: C9       [2684]   	RET			; return to main
+                        
+E271:                   PAM_QUERY:
+053E: CD51E2   [2701]   	CALL	PAM_ENC_MAP	; get ENC to MAP
+                        
+0541: 3A2001   [2714]   	LD	A,(PAM_READY)
+0544: B7       [2718]   	OR	A
+0545: C8       [2723|272	RET	Z
+                        
+0546: AF       [2727]   	XOR	A
+0547: 322001   [2740]   	LD	(PAM_READY),A
+054A: 322101   [2753]   	LD	(PAM_CMD),A
+                        
+054D: C5       [2764]   	PUSH	BC
+054E: D5       [2775]   	PUSH	DE
+                        
+054F: 010C00   [2785]   	LD	BC,12		; MAP offset 12 = CYCLE_CLK
+0552: 09       [2796]   	ADD	HL,BC
+                        
+                        				; CYCLE_CLK, REPT_CLK, REPT_MAX
+0553: 112601   [2806]   	LD	DE,PAM_CYCLE_CLK
+0556: 010400   [2816]   	LD	BC,4
+0559: EDB0     [2832|21]	LDIR
+                        
+055B: D1       [2842]   	POP	DE
+055C: C1       [2852]   	POP	BC
+                        
+055D: 3E01     [2859]   	LD	A,XPLX_R_OK
+055F: 322201   [2872]   	LD	(PAM_RESULT),A
+0562: 322001   [2885]   	LD	(PAM_READY),A
+0565: C9       [2895]   	RET
+                        
+                        
+E299:                   PAM_START:
+0566: CD51E2   [2912]   	CALL	PAM_ENC_MAP	; get ENC to MAP
+                        
+0569: 3E0F     [2919]   	LD	A,15
+                        	ADD_HL_A		; HL points REPT_MAX
+056B: 85       [2923]   	ADD	A,L
+056C: 6F       [2927]   	LD	L,A
+056D: 3001     [2934|293	JR	NC,$ + 3
+056F: 24       [2938]   	INC	H
+                        
+0570: 3A2501   [2951]   	LD	A,(PAM_REPT)
+0573: BE       [2958]   	CP	(HL)
+0574: 2804     [2965|297	JR	Z,PAM_START_OK	; == OK
+0576: 3802     [2972|297	JR	C,PAM_START_OK	; < OK
+0578: 18BE     [2984]   	JR	PAM_ERROR_PARAM
+                        
+E2AD:                   PAM_START_OK:
+057A: 3A2001   [2997]   	LD	A,(PAM_READY)
+057D: B7       [3001]   	OR	A
+057E: C8       [3006|301	RET	Z
+                        
+057F: AF       [3010]   	XOR	A
+0580: 322001   [3023]   	LD	(PAM_READY),A
+0583: 322101   [3036]   	LD	(PAM_CMD),A
+                        
+                        				; never normal return
+                        				; PAM never EI
+0586: F3       [3040]   	DI
+0587: CDA802   [3057]   	CALL	INIT_PSG
+                        
+058A: CD51E2   [3074]   	CALL	PAM_ENC_MAP	; re- get ENC to MAP
+                        
+                        				; copy to internal RAM
+058D: 1100FE   [3084]   	LD	DE,PAM_DRIVER
+                        
+0590: F9       [3090]   	LD	SP,HL		; SP = top of Map entry
+0591: E1       [3100]   	POP	HL		; HEAD
+0592: C1       [3110]   	POP	BC		; HEAD_LEN
+0593: EDB0     [3126|21]	LDIR
+                        
+0595: 3A2501   [3139]   	LD	A,(PAM_REPT)
+0598: 3C       [3143]   	INC	A		; DEC is not change CY
+                        
+                        
+E2CC:                   PAM_REPT_LOOP:
+0599: E1       [3153]   	POP	HL		; REPT
+059A: C1       [3163]   	POP	BC		; REPT_LEN
+                        
+059B: 3D       [3167]   	DEC	A		; DEC is not change CY
+059C: 2808     [3174|317	JR	Z,PAM_REPT_END
+                        
+059E: EDB0     [3190|21]	LDIR
+                        
+05A0: 3B       [3196]   	DEC	SP
+05A1: 3B       [3202]   	DEC	SP
+05A2: 3B       [3208]   	DEC	SP
+05A3: 3B       [3214]   	DEC	SP
+05A4: 18F3     [3226]   	JR	PAM_REPT_LOOP
+E2D9:                   PAM_REPT_END:
+                        
+05A6: E1       [3236]   	POP	HL		; TAIL
+05A7: C1       [3246]   	POP	BC		; TAIL_LEN
+05A8: EDB0     [3262|21]	LDIR
+                        
+                        				; buffer pointer
+05AA: 210010   [3272]   	LD	HL,PAM_BUF
+                        #if USE_INTR
+                        #else
+                        	LD	(PAM_STAT_PTR),HL
+                        #endif
+                        				; prefetch
+05AD: F9       [3278]   	LD	SP,HL			; 4
+05AE: D1       [3288]   	POP	DE
+                        
+                        ; I/O WAIT 3 -> 2
+                        ; PSG の address / write 時間 は 300ns なので、
+                        ; 1.8432 clock あればよいので 1 wait から設定できるはずだが、
+                        ; 2 wait に設定すると out 命令が 12 clock となり、
+                        ; 共有メモリに対する POP の 9+3=12 clock と一致して
+                        ; クロック整合を取りやすくなるため、2 wait に設定する。
+                        ; なお PSG の read は 400ns 必要なため、2 wait だとあやしい。
+                        ; また HOSTINTR 用の I/O への out で wait を満足するかどうかは
+                        ; 未確定だけど、HOSTINTR 機構はデータバスの値ではなく
+                        ; アドレスへの出力で動作するため、ウェイトに関係なく動作すると
+                        ; 期待してみる。
+05AF: 3E10     [3295]   	LD	A,10H		; IWI[54]=1(2wait)
+05B1: ED3932   [3303]   	OUT0	(DCNTL),A
+                        
+05B4: 3E01     [3310]   	LD	A,1
+05B6: 322301   [3323]   	LD	(PAM_RUN),A
+                        
+05B9: 3E08     [3330]   	LD	A,8
+05BB: D383     [3341]   	OUT	(PSG_ADR),A
+05BD: 0E82     [3348]   	LD	C,PSG_DAT
+                        
+05BF: C300FE   [3358]   	JP	PAM_DRIVER
+                        
+E2F5:                   PAM_RESET:
+                        				; XPBUS に制御を戻す
+05C2: 3100F0   [3368]   	LD	SP,PRIVATE_SP
+                        
+                        ; I/O WAIT 2 -> 3
+05C5: 3E20     [3375]   	LD	A,20H		; IWI[54]=2(3wait)
+05C7: ED3932   [3383]   	OUT0	(DCNTL),A
+                        
+05CA: CDA802   [3400]   	CALL	INIT_PSG
+                        
+05CD: AF       [3404]   	XOR	A
+05CE: 322301   [3417]   	LD	(PAM_RUN),A
+                        
+05D1: 3E01     [3424]   	LD	A,XPLX_R_OK
+05D3: 322201   [3437]   	LD	(PAM_RESULT),A
+05D6: 322001   [3450]   	LD	(PAM_READY),A
+                        
+05D9: C300E0   [3460]   	JP	XPBUS
+                        
+E30F:                   PAM_DRIVER_MAP:
+                        				; 16 bytes / entry
+05DC: 1C06              	DW	PAM2A_HEAD_ORG
+05DE: 2100              	DW	PAM2A_HEAD_LEN
+05E0: 3D06              	DW	PAM2A_REPT_ORG
+05E2: 0700              	DW	PAM2A_REPT_LEN
+05E4: 4406              	DW	PAM2A_TAIL_ORG
+05E6: 1D00              	DW	PAM2A_TAIL_LEN
+05E8: CC00              	DW	204		;CYCLE_CLK
+05EA: 24                	DB	36		;REPT_CLK
+05EB: 25                	DB	37		;REPT_MAX
+                        
+05EC: 6106              	DW	PAM2B_HEAD_ORG
+05EE: 1800              	DW	PAM2B_HEAD_LEN
+05F0: 7906              	DW	PAM2B_REPT_ORG
+05F2: 0400              	DW	PAM2B_REPT_LEN
+05F4: 7D06              	DW	PAM2B_TAIL_ORG
+05F6: 1800              	DW	PAM2B_TAIL_LEN
+05F8: 9800              	DW	152		;CYCLE_CLK
+05FA: 18                	DB	24		;REPT_CLK
+05FB: 39                	DB	57		;REPT_MAX
+                        
+05FC: 9506              	DW	PAM3A_HEAD_ORG
+05FE: 3100              	DW	PAM3A_HEAD_LEN
+0600: C606              	DW	PAM3A_REPT_ORG
+0602: 0A00              	DW	PAM3A_REPT_LEN
+0604: D006              	DW	PAM3A_TAIL_ORG
+0606: 2600              	DW	PAM3A_TAIL_LEN
+0608: 2A01              	DW	298		;CYCLE_CLK
+060A: 33                	DB	51		;REPT_CLK
+060B: 18                	DB	24		;REPT_MAX
+                        
+060C: F606              	DW	PAM3B_HEAD_ORG
+060E: 1A00              	DW	PAM3B_HEAD_LEN
+0610: 1007              	DW	PAM3B_REPT_ORG
+0612: 0600              	DW	PAM3B_REPT_LEN
+0614: 1607              	DW	PAM3B_TAIL_ORG
+0616: 1500              	DW	PAM3B_TAIL_LEN
+0618: 8800              	DW	136		;CYCLE_CLK
+061A: 24                	DB	36		;REPT_CLK
+061B: 26                	DB	38		;REPT_MAX
+                        	
+                        
+                        
+0040:                   PAM_DRIVER_MAP_LEN:	.EQU	$-PAM_DRIVER_MAP
+                        
+                        	.DEPHASE
+                        
+                        
+                        
+                        ; ######## PAM drivers
+                        	.PHASE 0FE00H
+                        				; all PAM drivers have same address=0FE00H
+FE00:                   PAM_DRIVER:
+                        	.DEPHASE
+                        
+                        ; #### PAM2A
+                        
+                        	.PHASE 0FE00H
+061C:                   PAM2A_HEAD_ORG:	.EQU	$$
+FE00:                   PAM2A_HEAD:
+FE00:                   PAM2A:
+                        				; PAM2A
+                        				; 12+0:12+12 = 1:2 PAM
+                        				; PAM 36clk 170.667kHz
+                        				; output PAM wave = normal 5 + antinoise 1
+                        
+                        				; 1 PAM cycle = 204 clk
+                        
+                        				; 6.144E6 / (204 + 36*n)
+                        
+                        				; sampling freqs:
+                        				;  0: 30118
+                        				; 37:  4000
+                        
+                        				; no STAT for first time
+061C: C31AFE   [10]     	JP	PAM2A_LOOP
+                        
+FE03:                   PAM2A_RELOAD:
+061F: ED59     [22]     	OUT	(C),E
+0621: ED51     [34]     	OUT	(C),D
+0623: 310010   [44]     	LD	SP,PAM_BUF		;9
+                        	WAIT3
+0626: 00       [48]     	NOP
+                        
+FE0B:                   PAM2A_STAT:
+                        #if USE_INTR
+0627: ED59     [60]     	OUT	(C),E
+0629: ED51     [72]     	OUT	(C),D
+062B: D3A0     [83]     	OUT	(PAM_HOSTINTR),A		;10+2
+                        #else
+                        				; STAT_PTR モードでの遅れはしょうがない
+                        	OUT	(C),E
+                        	OUT	(C),D
+                        	LD	(PAM_STAT_PTR),SP		;19+3
+                        #endif
+                        
+FE11:                   PAM2A_NORMAL:
+062D: ED59     [95]     	OUT	(C),E
+062F: ED51     [107]    	OUT	(C),D
+                        				; prefetch
+0631: D1       [117]    	POP	DE			;9+3
+                        
+0632: ED69     [129]    	OUT	(C),L
+0634: ED61     [141]    	OUT	(C),H
+                        				; うまくいくかはわからない
+                        				; 本来 wait 12 だが PAM 遷移ノイズを
+                        				; 低減するため待たない
+FE1A:                   PAM2A_LOOP:
+                        				; prefetched DE
+0636: ED59     [153]    	OUT	(C),E
+0638: ED51     [165]    	OUT	(C),D
+                        				; HL = DE for save current sample
+063A: 6B       [169]    	LD	L,E			;4
+063B: 62       [173]    	LD	H,D			;4
+                        				; A = attention
+063C: 7B       [177]    	LD	A,E			;4
+                        
+0021:                   PAM2A_HEAD_LEN:	.EQU	$-PAM2A_HEAD
+                        
+063D:                   PAM2A_REPT_ORG:	.EQU	$$
+FE21:                   PAM2A_REPT:
+063D: ED59     [12]     	OUT	(C),E
+063F: ED51     [24]     	OUT	(C),D
+                        	WAIT12
+0641: 7F       [28]     	LD	A,A			; 4*3=12
+0642: 7F       [32]     	LD	A,A
+0643: 7F       [36]     	LD	A,A
+0007:                   PAM2A_REPT_LEN:	.EQU	$-PAM2A_REPT
+                        
+0644:                   PAM2A_TAIL_ORG:	.EQU	$$
+FE28:                   PAM2A_TAIL:
+                        				; このブロックは動的再配置されるので
+                        				; このブロック"への"ジャンプは困難
+                        				; "からの"ジャンプは可能。
+0644: ED59     [12]     	OUT	(C),E
+0646: ED51     [24]     	OUT	(C),D
+0648: 07       [28]     	RLCA
+                        				; attention bit
+                        				; bit7=1, reload
+                        				; must be JP
+0649: DA03FE   [38|38]  	JP	C,PAM2A_RELOAD		; jump=9 no=6
+                        
+                        	WAIT3
+064C: 00       [42]     	NOP
+064D: ED59     [54]     	OUT	(C),E
+064F: ED51     [66]     	OUT	(C),D
+0651: 07       [70]     	RLCA				; 3
+                        				; bit6=1, stat
+                        				; must be JP
+0652: DA0BFE   [80|80]  	JP	C,PAM2A_STAT		; jump=9 no=6
+                        
+                        	WAIT3
+0655: 00       [84]     	NOP
+0656: ED59     [96]     	OUT	(C),E
+0658: ED51     [108]    	OUT	(C),D
+065A: 07       [112]    	RLCA				; 3
+                        				; bit5=0, normal
+                        				; must be JP
+065B: D211FE   [122|122]	JP	NC,PAM2A_NORMAL		; jump=9 no=6
+                        				; attention=001, reset
+065E: C3F5E2   [132]    	JP	PAM_RESET
+001D:                   PAM2A_TAIL_LEN:	.EQU	$-PAM2A_TAIL
+                        
+                        				; cycle
+                        				; 5 * (12*3) + 12*2 = 204
+                        
+                        	.DEPHASE
+                        
+                        ; #### PAM2B
+                        
+                        	.PHASE 0FE00H
+                        				; all PAM drivers have same address=0FE00H
+0661:                   PAM2B_HEAD_ORG:	.EQU	$$
+FE00:                   PAM2B_HEAD:
+FE00:                   PAM2B:
+                        				; PAM2B
+                        				; averaged 1:1 PAM
+                        				; wait (4,7), (3,9), (9,12), (12,0)
+                        				; phase wait 28:28
+                        				; clk  35, 36, 45, 36
+                        				; PAM 176, 171, 137, 171 kHz
+                        				; output PAM wave = 4
+                        
+                        				; 1 PAM cycle = 152 clk
+                        
+                        				; 6.144E6 / (152 + 24*n)
+                        
+                        				; sampling freqs:
+                        				;  0: 40421
+                        				; 57:  4042
+                        
+                        				; no STAT for first time
+0661: C311FE   [10]     	JP	PAM2B_LOOP
+                        
+FE03:                   PAM2B_RELOAD:
+0664: ED59     [22]     	OUT	(C),E
+0666: 310010   [32]     	LD	SP,PAM_BUF		;9
+                        
+FE08:                   PAM2B_STAT:
+                        #if USE_INTR
+0669: ED51     [44]     	OUT	(C),D
+066B: D3A0     [55]     	OUT	(PAM_HOSTINTR),A		;10+2
+                        #else
+                        				; STAT_PTR モードでの遅れはしょうがない
+                        	OUT	(C),D
+                        	LD	(PAM_STAT_PTR),SP		;19+3
+                        #endif
+                        
+FE0C:                   PAM2B_NORMAL:
+066D: ED59     [67]     	OUT	(C),E
+                        				; prefetch
+066F: D1       [77]     	POP	DE			;9+3
+0670: ED41     [89]     	OUT	(C),B
+FE11:                   PAM2B_LOOP:
+                        				; prefetched DE
+0672: ED59     [101]    	OUT	(C),E
+                        				; A = attention
+0674: 7B       [105]    	LD	A,E			;4
+0675: ED51     [117]    	OUT	(C),D
+                        				; B = save D
+0677: 42       [121]    	LD	B,D			;4
+                        	WAIT3
+0678: 00       [125]    	NOP
+                        
+0018:                   PAM2B_HEAD_LEN:	.EQU	$-PAM2B_HEAD
+                        
+0679:                   PAM2B_REPT_ORG:	.EQU	$$
+FE18:                   PAM2B_REPT:
+0679: ED59     [12]     	OUT	(C),E
+067B: ED51     [24]     	OUT	(C),D
+0004:                   PAM2B_REPT_LEN:	.EQU	$-PAM2B_REPT
+                        
+067D:                   PAM2B_TAIL_ORG:	.EQU	$$
+FE1C:                   PAM2B_TAIL:
+                        				; このブロックは動的再配置されるので
+                        				; このブロック"への"ジャンプは困難
+                        				; "からの"ジャンプは可能。
+067D: ED59     [12]     	OUT	(C),E
+067F: 07       [16]     	RLCA				;3
+0680: ED51     [28]     	OUT	(C),D
+                        				; attention bit
+                        				; bit7=1, reload
+                        				; must be JP
+0682: DA03FE   [38|38]  	JP	C,PAM2B_RELOAD		; jump=9 no=6
+                        
+0685: 07       [42]     	RLCA				; 3
+0686: ED59     [54]     	OUT	(C),E
+                        				; bit6=1, stat
+                        				; must be JP
+0688: DA08FE   [64|64]  	JP	C,PAM2B_STAT		; jump=9 no=6
+                        
+068B: 07       [68]     	RLCA				; 3
+068C: ED51     [80]     	OUT	(C),D
+                        	WAIT3
+068E: 00       [84]     	NOP
+                        				; bit5=0, normal
+                        				; must be JP
+068F: D20CFE   [94|94]  	JP	NC,PAM2B_NORMAL		; jump=9 no=6
+                        				; attention=001, reset
+0692: C3F5E2   [104]    	JP	PAM_RESET
+0018:                   PAM2B_TAIL_LEN:	.EQU	$-PAM2B_TAIL
+                        
+                        				; cycle
+                        				; 4 * 12*2 + (4+7 + 3+9 + 9+12 + 12+0) = 152
+                        
+                        	.DEPHASE
+                        
+                        ; #### PAM3A
+                        
+                        	.PHASE 0FE00H
+0695:                   PAM3A_HEAD_ORG:	.EQU	$$
+FE00:                   PAM3A_HEAD:
+FE00:                   PAM3A:
+                        				; PAM3A
+                        				; 12+0:12+3:12+12 = 4:5:6 PAM
+                        				; PAM 51clk 120.471kHz
+                        				; output PAM wave = normal 5 + antinoise 1
+                        
+                        				; 1 PAM cycle = 298 clk
+                        
+                        				; 6.144E6 / (298 + 51*n)
+                        
+                        				; sampling freqs:
+                        				; 0: 20617
+                        				; 24: 4037
+                        
+                        				; prefetch
+0695: F1       [10]     	POP	AF
+0696: 47       [14]     	LD	B,A
+                        				; no STAT for first time
+0697: C331FE   [24]     	JP	PAM3A_LOOP
+                        
+FE05:                   PAM3A_RELOAD:
+069A: ED69     [36]     	OUT	(C),L
+069C: ED61     [48]     	OUT	(C),H
+                        	WAIT3
+069E: 00       [52]     	NOP
+069F: ED41     [64]     	OUT	(C),B
+06A1: 310010   [74]     	LD	SP,PAM_BUF		;9
+                        	WAIT3
+06A4: 00       [78]     	NOP
+                        
+FE10:                   PAM3A_STAT:
+                        #if USE_INTR
+06A5: ED69     [90]     	OUT	(C),L
+06A7: ED61     [102]    	OUT	(C),H
+                        	WAIT3
+06A9: 00       [106]    	NOP
+06AA: ED41     [118]    	OUT	(C),B
+06AC: D3A0     [129]    	OUT	(PAM_HOSTINTR),A		;10+2
+                        #else
+                        				; STAT_PTR モードでの遅れはしょうがない
+                        	OUT	(C),L
+                        	OUT	(C),H
+                        	WAIT3
+                        	OUT	(C),B
+                        	LD	(PAM_STAT_PTR),SP		;19+3
+                        #endif
+                        
+FE19:                   PAM3A_NORMAL:
+06AE: ED69     [141]    	OUT	(C),L
+06B0: ED61     [153]    	OUT	(C),H
+                        	WAIT3
+06B2: 00       [157]    	NOP
+06B3: ED41     [169]    	OUT	(C),B
+                        				; prefetch
+06B5: D1       [179]    	POP	DE			;9+3
+                        
+06B6: ED69     [191]    	OUT	(C),L
+06B8: ED61     [203]    	OUT	(C),H
+                        	WAIT3
+06BA: 00       [207]    	NOP
+06BB: ED41     [219]    	OUT	(C),B
+                        				; prefetch
+06BD: F1       [229]    	POP	AF			;9+3
+                        
+06BE: ED69     [241]    	OUT	(C),L
+06C0: ED61     [253]    	OUT	(C),H
+                        	WAIT3
+06C2: 00       [257]    	NOP
+06C3: ED41     [269]    	OUT	(C),B
+                        				; うまくいくかはわからない
+                        				; 本来 wait 12 だが PAM 遷移ノイズを
+                        				; 低減するのも含めて4clkだけ消費する
+06C5: 47       [273]    	LD	B,A			;4
+FE31:                   PAM3A_LOOP:
+                        				; prefetched DE, A=B
+                        
+0031:                   PAM3A_HEAD_LEN:	.EQU	$-PAM3A_HEAD
+                        
+06C6:                   PAM3A_REPT_ORG:	.EQU	$$
+FE31:                   PAM3A_REPT:
+06C6: ED59     [12]     	OUT	(C),E
+06C8: ED51     [24]     	OUT	(C),D
+                        	WAIT3
+06CA: 00       [28]     	NOP
+06CB: ED41     [40]     	OUT	(C),B
+                        	WAIT12
+06CD: 7F       [44]     	LD	A,A			; 4*3=12
+06CE: 7F       [48]     	LD	A,A
+06CF: 7F       [52]     	LD	A,A
+000A:                   PAM3A_REPT_LEN:	.EQU	$-PAM3A_REPT
+                        
+06D0:                   PAM3A_TAIL_ORG:	.EQU	$$
+FE3B:                   PAM3A_TAIL:
+                        				; このブロックは動的再配置されるので
+                        				; このブロック"への"ジャンプは困難
+                        				; "からの"ジャンプは可能。
+06D0: ED59     [12]     	OUT	(C),E
+06D2: ED51     [24]     	OUT	(C),D
+06D4: EB       [28]     	EX	DE,HL			;3
+06D5: ED41     [40]     	OUT	(C),B
+06D7: 07       [44]     	RLCA
+                        				; attention bit
+                        				; bit7=1, reload
+                        				; must be JP
+06D8: DA05FE   [54|54]  	JP	C,PAM3A_RELOAD		; jump=9 no=6
+                        
+                        	WAIT3
+06DB: 00       [58]     	NOP
+06DC: ED69     [70]     	OUT	(C),L
+06DE: ED61     [82]     	OUT	(C),H
+                        	WAIT3
+06E0: 00       [86]     	NOP
+06E1: ED41     [98]     	OUT	(C),B
+06E3: 07       [102]    	RLCA				; 3
+                        				; bit6=1, stat
+                        				; must be JP
+06E4: DA10FE   [112|112]	JP	C,PAM3A_STAT		; jump=9 no=6
+                        
+                        	WAIT3
+06E7: 00       [116]    	NOP
+06E8: ED69     [128]    	OUT	(C),L
+06EA: ED61     [140]    	OUT	(C),H
+                        	WAIT3
+06EC: 00       [144]    	NOP
+06ED: ED41     [156]    	OUT	(C),B
+06EF: 07       [160]    	RLCA				; 3
+                        				; bit5=0, normal
+                        				; must be JP
+06F0: D219FE   [170|170]	JP	NC,PAM3A_NORMAL		; jump=9 no=6
+                        				; attention=001, reset
+06F3: C3F5E2   [180]    	JP	PAM_RESET
+0026:                   PAM3A_TAIL_LEN:	.EQU	$-PAM3A_TAIL
+                        
+                        				; cycle
+                        				; 5 * (12*3+3+12) + (12*3+3+4) = 298
+                        
+                        	.DEPHASE
+                        
+                        ; #### PAM3B
+                        
+                        	.PHASE 0FE00H
+06F6:                   PAM3B_HEAD_ORG:	.EQU	$$
+FE00:                   PAM3B_HEAD:
+FE00:                   PAM3B:
+                        				; PAM3B
+                        				; approx 1:1:1
+                        				; wait (9,9,12), (12,12,10)
+                        				; phase wait 21:21:22
+                        				; clk 66, 70
+                        				; PAM 93, 88 kHz
+                        				; output PAM wave = 2
+                        
+                        				; 1 PAM cycle = 136 clk
+                        
+                        				; 6.144E6 / (136 + 36*n)
+                        
+                        				; sampling freqs:
+                        				; 0: 45176
+                        				; 38: 4085
+                        
+                        				; prefetch
+06F6: F1       [10]     	POP	AF
+06F7: 47       [14]     	LD	B,A
+06F8: 07       [18]     	RLCA
+                        				; no STAT for first time
+06F9: C31AFE   [28]     	JP	PAM3B_LOOP
+                        
+FE06:                   PAM3B_RELOAD:
+06FC: ED51     [40]     	OUT	(C),D
+06FE: 310010   [50]     	LD	SP,PAM_BUF		;9
+                        
+FE0B:                   PAM3B_STAT:
+                        #if USE_INTR
+0701: ED41     [62]     	OUT	(C),B
+0703: D3A0     [73]     	OUT	(PAM_HOSTINTR),A		;10+2
+                        #else
+                        				; STAT_PTR モードでの遅れはしょうがない
+                        	OUT	(C),B
+                        	LD	(PAM_STAT_PTR),SP		;19+3
+                        #endif
+                        
+FE0F:                   PAM3B_NORMAL:
+0705: ED59     [85]     	OUT	(C),E
+                        				; prefetch
+0707: E1       [95]     	POP	HL			;9+3
+                        
+0708: ED51     [107]    	OUT	(C),D
+                        				; prefetch
+070A: F1       [117]    	POP	AF			;9+3
+                        
+070B: ED41     [129]    	OUT	(C),B
+070D: EB       [133]    	EX	DE,HL			;3
+070E: 47       [137]    	LD	B,A			;4
+070F: 07       [141]    	RLCA				;3
+FE1A:                   PAM3B_LOOP:
+                        				; prefetched DE,B A=RLCA-ed flag
+                        
+001A:                   PAM3B_HEAD_LEN:	.EQU	$-PAM3B_HEAD
+                        
+0710:                   PAM3B_REPT_ORG:	.EQU	$$
+FE1A:                   PAM3B_REPT:
+0710: ED59     [12]     	OUT	(C),E
+0712: ED51     [24]     	OUT	(C),D
+0714: ED41     [36]     	OUT	(C),B
+0006:                   PAM3B_REPT_LEN:	.EQU	$-PAM3B_REPT
+                        
+0716:                   PAM3B_TAIL_ORG:	.EQU	$$
+FE20:                   PAM3B_TAIL:
+                        				; このブロックは動的再配置されるので
+                        				; このブロック"への"ジャンプは困難
+                        				; "からの"ジャンプは可能。
+0716: ED59     [12]     	OUT	(C),E
+                        				; attention bit
+                        				; bit7=1, reload
+                        				; must be JP
+0718: DA06FE   [22|22]  	JP	C,PAM3B_RELOAD		; jump=9 no=6
+                        
+071B: 07       [26]     	RLCA				; 3
+071C: ED51     [38]     	OUT	(C),D
+                        				; bit6=1, stat
+                        				; must be JP
+071E: DA0BFE   [48|48]  	JP	C,PAM3B_STAT		; jump=9 no=6
+                        
+0721: 07       [52]     	RLCA				; 3
+0722: ED41     [64]     	OUT	(C),B
+                        	WAIT3
+0724: 00       [68]     	NOP
+                        				; bit5=0, normal
+                        				; must be JP
+0725: D20FFE   [78|78]  	JP	NC,PAM3B_NORMAL		; jump=9 no=6
+                        				; attention=001, reset
+0728: C3F5E2   [88]     	JP	PAM_RESET
+0015:                   PAM3B_TAIL_LEN:	.EQU	$-PAM3B_TAIL
+                        
+                        
+                        	.DEPHASE
+                        
+                        ; #### PAM1P
+                        
+                        	.PHASE	0FE00H
+072B:                   PAM1P_HEAD_ORG:	.EQU	$$
+FE00:                   PAM1P_HEAD:
+FE00:                   PAM1P:
+                        				; PAM1P
+                        				; PAM1P は正確にはPCMだが
+                        				; 動作方式はPAMに近いためこちら。
+                        				; Polyphase PCM
+                        
+                        				; 1 cycle = 87 clk
+                        				; 6.144E6 / (87 + 3*n)
+                        
+                        				; sampling freqs:
+                        				; 0: 70621
+                        				; 255: 7420
+                        
+072B: 210010   [10]     	LD	HL,PAM_BUF		;9
+                        
+072E: 0E83     [17]     	LD	C,PSG_ADR
+                        				; initial CH0
+0730: 3E08     [24]     	LD	A,8
+0732: D383     [35]     	OUT	(PSG_ADR),A
+                        				; rotated next CH
+0734: 0609     [42]     	LD	B,9
+0736: 110A08   [52]     	LD	DE,080AH
+                        
+                        				; no STAT for first time
+0739: C31CFE   [62]     	JP	PAM1P_LOOP
+                        
+FE11:                   PAM1P_RELOAD:
+073C: 210010   [72]     	LD	HL,PAM_BUF		;9
+                        
+FE14:                   PAM1P_STAT:
+                        #if USE_INTR
+073F: D3A0     [83]     	OUT	(PAM_HOSTINTR),A		;10+2
+                        #else
+                        				; STAT_PTR モードでの遅れはしょうがない
+                        	LD	(PAM_STAT_PTR),HL		;16+3
+                        #endif
+                        
+FE16:                   PAM1P_NORMAL:
+                        				; rotate B,E,D
+0741: 78       [87]     	LD	A,B			;4
+0742: 43       [91]     	LD	B,E			;4
+0743: 5A       [95]     	LD	E,D			;4
+0744: 57       [99]     	LD	D,A			;4
+0745: ED41     [111]    	OUT	(C),B			;10+2
+                        
+FE1C:                   PAM1P_LOOP:
+                        
+0747: 7E       [118]    	LD	A,(HL)			;6+3
+0748: 23       [124]    	INC	HL			;4
+                        
+0749: D382     [135]    	OUT	(PSG_DAT),A			;10+2
+                        
+0020:                   PAM1P_HEAD_LEN:	.EQU	$-PAM1P_HEAD
+                        
+074B:                   PAM1P_REPT_ORG:	.EQU	$$
+FE20:                   PAM1P_REPT:
+                        	WAIT3
+074B: 00       [ 4]     	NOP
+0001:                   PAM1P_REPT_LEN:	.EQU	$-PAM1P_REPT
+                        
+074C:                   PAM1P_TAIL_ORG:	.EQU	$$
+FE21:                   PAM1P_TAIL:
+                        				; このブロックは動的再配置されるので
+                        				; このブロック"への"ジャンプは困難
+                        				; "からの"ジャンプは可能。
+074C: 07       [ 4]     	RLCA				;3
+                        				; attention bit
+                        				; bit7=1, reload
+                        				; must be JP
+074D: DA11FE   [14|14]  	JP	C,PAM1P_RELOAD		; jump=9 no=6
+                        
+0750: 07       [18]     	RLCA				; 3
+                        				; bit6=1, stat
+                        				; must be JP
+0751: DA14FE   [28|28]  	JP	C,PAM1P_STAT		; jump=9 no=6
+                        
+0754: 07       [32]     	RLCA				; 3
+                        	WAIT3
+0755: 00       [36]     	NOP
+                        				; bit5=0, normal
+                        				; must be JP
+0756: D216FE   [46|46]  	JP	NC,PAM1P_NORMAL		; jump=9 no=6
+                        				; attention=001, reset
+0759: C3F5E2   [56]     	JP	PAM_RESET
+0010:                   PAM1P_TAIL_LEN:	.EQU	$-PAM1P_TAIL
+                        
+                        				; cycle
+                        				; 63 + 12 + 12 = 87
+                        
+                        	.DEPHASE
+                        
+048F:                   PROG_ORG_LEN:	.EQU	$$-PROG_ORG
+                        
+                        ; #### interrupt vector
+                        	.PHASE	0FFE0H
+075C:                   VECTOR_ORG:	.EQU	$$
+FFE0:                   VECTOR:
+                        
+FFE0:                   VEC_INT1:
+075C: F8FF              	DW	INTR_IGN
+FFE2:                   VEC_INT2:
+075E: F8FF              	DW	INTR_IGN
+FFE4:                   VEC_PRT0:
+0760: 2CE0              	DW	INTR_PRT0
+FFE6:                   VEC_PRT1:
+0762: F8FF              	DW	INTR_IGN
+FFE8:                   VEC_DMAC0:
+0764: F8FF              	DW	INTR_IGN
+FFEA:                   VEC_DMAC1:
+0766: F8FF              	DW	INTR_IGN
+FFEC:                   VEC_SIO:
+0768: F8FF              	DW	INTR_IGN
+FFEE:                   VEC_ASCI0:
+076A: 3CE2              	DW	INTR_ASCI0
+FFF0:                   VEC_ASCI1:
+076C: 3CE2              	DW	INTR_ASCI1
+FFF2:                   VEC_PT2IN:
+076E: F8FF              	DW	INTR_IGN
+FFF4:                   VEC_PT2OUT:
+0770: F8FF              	DW	INTR_IGN
+FFF6:                   VEC_PT2OVF:
+0772: F8FF              	DW	INTR_IGN
+                        			; 本当はここはベクタテーブルだが
+                        			; 使われることはないので押し込む。
+FFF8:                   INTR_IGN:
+0774: FB       [ 4]     	EI
+0775: ED4D     [18]     	RETI
+                        
+001B:                   VECTOR_ORG_LEN:	.EQU	$$-VECTOR_ORG
+                        
+                        	.DEPHASE
+0777:                   XPLX_FIRMWARE_LEN::	.EQU	$
+
+
+; +++ segments +++
+
+#CODE          = $0000 =     0,  size = $0777 =  1911
+
+; +++ global symbols +++
+
+BBR                = $0039 =    57          xplx.asm:643
+CBAR               = $003A =    58          xplx.asm:644
+CBR                = $0038 =    56          xplx.asm:642
+DCNTL              = $0032 =    50          xplx.asm:630
+DEBUG0             = $0080 =   128          xplx.asm:382
+DEBUG1             = $0081 =   129          xplx.asm:383 (unused)
+DEBUG10            = $008A =   138          xplx.asm:392 (unused)
+DEBUG2             = $0082 =   130          xplx.asm:384 (unused)
+DEBUG3             = $0083 =   131          xplx.asm:385 (unused)
+DEBUG4             = $0084 =   132          xplx.asm:386 (unused)
+DEBUG5             = $0085 =   133          xplx.asm:387 (unused)
+DEBUG6             = $0086 =   134          xplx.asm:388 (unused)
+DEBUG7             = $0087 =   135          xplx.asm:389 (unused)
+DEBUG8             = $0088 =   136          xplx.asm:390 (unused)
+DEBUG9             = $0089 =   137          xplx.asm:391 (unused)
+DEVICES_DISPATCH   = $E041 = 57409          xplx.asm:841 (unused)
+DEVID_FDC          = $0007 =     7          xplx.asm:217 (unused)
+DEVID_LPR          = $0006 =     6          xplx.asm:216 (unused)
+DEVID_PAM          = $0002 =     2          xplx.asm:212 (unused)
+DEVID_PCM          = $0003 =     3          xplx.asm:213 (unused)
+DEVID_PSG          = $0004 =     4          xplx.asm:214 (unused)
+DEVID_SIO0         = $0008 =     8          xplx.asm:218 (unused)
+DEVID_SIO1         = $0009 =     9          xplx.asm:219 (unused)
+DEVID_SPK          = $0005 =     5          xplx.asm:215 (unused)
+DEVID_TIME         = $0001 =     1          xplx.asm:211 (unused)
+DEVID_XPBUS        = $0000 =     0          xplx.asm:210 (unused)
+ENTRY              = $0200 =   512          xplx.asm:595
+FDC_BUF            = $A000 = 40960          xplx.asm:776
+FDC_BUF_LEN        = $4000 = 16384          xplx.asm:781 (unused)
+FDC_CMD            = $0171 =   369          xplx.asm:532
+FDC_CMD_START      = $0001 =     1          xplx.asm:540 (unused)
+FDC_DISPATCH       = $E21E = 57886          xplx.asm:1217
+FDC_READY          = $0170 =   368          xplx.asm:530
+FDC_RESULT         = $0172 =   370          xplx.asm:534
+FDC_RUN            = $0173 =   371          xplx.asm:536 (unused)
+HOSTINTR1          = $00B0 =   176          xplx.asm:255 (unused)
+HOSTINTR5          = $00A0 =   160          xplx.asm:257
+ICR                = $003F =    63          xplx.asm:623
+IL                 = $0033 =    51          xplx.asm:676
+INITIAL_SP         = $1000 =  4096          xplx.asm:279
+INIT_PSG           = $02A8 =   680          xplx.asm:728
+INT0               = $0038 =    56          xplx.asm:374 (unused)
+INTR_ASCI0         = $E23C = 57916          xplx.asm:1243
+INTR_ASCI1         = $E23C = 57916          xplx.asm:1244
+INTR_IGN           = $FFF8 = 65528          xplx.asm:2048
+INTR_INT0          = $E23C = 57916          xplx.asm:1242
+INTR_PRT0          = $E02C = 57388          xplx.asm:811
+ITC                = $0034 =    52          xplx.asm:670
+LPR_BUF            = $9000 = 36864          xplx.asm:772
+LPR_BUF_LEN        = $1000 =  4096          xplx.asm:775 (unused)
+LPR_CMD            = $0161 =   353          xplx.asm:518
+LPR_CMD_START      = $0001 =     1          xplx.asm:526 (unused)
+LPR_DISPATCH       = $E214 = 57876          xplx.asm:1209
+LPR_READY          = $0160 =   352          xplx.asm:516
+LPR_RESULT         = $0162 =   354          xplx.asm:520
+LPR_RUN            = $0163 =   355          xplx.asm:522 (unused)
+NMI                = $0066 =   102          xplx.asm:378 (unused)
+PAM1P              = $FE00 = 65024          xplx.asm:1926 (unused)
+PAM1P_HEAD         = $FE00 = 65024          xplx.asm:1925
+PAM1P_HEAD_LEN     = $0020 =    32          xplx.asm:1978 (unused)
+PAM1P_HEAD_ORG     = $072B =  1835          xplx.asm:1924 (unused)
+PAM1P_LOOP         = $FE1C = 65052          xplx.asm:1971
+PAM1P_NORMAL       = $FE16 = 65046          xplx.asm:1963
+PAM1P_RELOAD       = $FE11 = 65041          xplx.asm:1952
+PAM1P_REPT         = $FE20 = 65056          xplx.asm:1981
+PAM1P_REPT_LEN     = $0001 =     1          xplx.asm:1983 (unused)
+PAM1P_REPT_ORG     = $074B =  1867          xplx.asm:1980 (unused)
+PAM1P_STAT         = $FE14 = 65044          xplx.asm:1955
+PAM1P_TAIL         = $FE21 = 65057          xplx.asm:1986
+PAM1P_TAIL_LEN     = $0010 =    16          xplx.asm:2008 (unused)
+PAM1P_TAIL_ORG     = $074C =  1868          xplx.asm:1985 (unused)
+PAM2A              = $FE00 = 65024          xplx.asm:1495 (unused)
+PAM2A_HEAD         = $FE00 = 65024          xplx.asm:1494
+PAM2A_HEAD_LEN     = $0021 =    33          xplx.asm:1551
+PAM2A_HEAD_ORG     = $061C =  1564          xplx.asm:1493
+PAM2A_LOOP         = $FE1A = 65050          xplx.asm:1541
+PAM2A_NORMAL       = $FE11 = 65041          xplx.asm:1530
+PAM2A_RELOAD       = $FE03 = 65027          xplx.asm:1512
+PAM2A_REPT         = $FE21 = 65057          xplx.asm:1554
+PAM2A_REPT_LEN     = $0007 =     7          xplx.asm:1558
+PAM2A_REPT_ORG     = $063D =  1597          xplx.asm:1553
+PAM2A_STAT         = $FE0B = 65035          xplx.asm:1518
+PAM2A_TAIL         = $FE28 = 65064          xplx.asm:1561
+PAM2A_TAIL_LEN     = $001D =    29          xplx.asm:1590
+PAM2A_TAIL_ORG     = $0644 =  1604          xplx.asm:1560
+PAM2B              = $FE00 = 65024          xplx.asm:1603 (unused)
+PAM2B_HEAD         = $FE00 = 65024          xplx.asm:1602
+PAM2B_HEAD_LEN     = $0018 =    24          xplx.asm:1652
+PAM2B_HEAD_ORG     = $0661 =  1633          xplx.asm:1601
+PAM2B_LOOP         = $FE11 = 65041          xplx.asm:1642
+PAM2B_NORMAL       = $FE0C = 65036          xplx.asm:1637
+PAM2B_RELOAD       = $FE03 = 65027          xplx.asm:1623
+PAM2B_REPT         = $FE18 = 65048          xplx.asm:1655
+PAM2B_REPT_LEN     = $0004 =     4          xplx.asm:1658
+PAM2B_REPT_ORG     = $0679 =  1657          xplx.asm:1654
+PAM2B_STAT         = $FE08 = 65032          xplx.asm:1627
+PAM2B_TAIL         = $FE1C = 65052          xplx.asm:1661
+PAM2B_TAIL_LEN     = $0018 =    24          xplx.asm:1687
+PAM2B_TAIL_ORG     = $067D =  1661          xplx.asm:1660
+PAM3A              = $FE00 = 65024          xplx.asm:1699 (unused)
+PAM3A_HEAD         = $FE00 = 65024          xplx.asm:1698
+PAM3A_HEAD_LEN     = $0031 =    49          xplx.asm:1769
+PAM3A_HEAD_ORG     = $0695 =  1685          xplx.asm:1697
+PAM3A_LOOP         = $FE31 = 65073          xplx.asm:1766
+PAM3A_NORMAL       = $FE19 = 65049          xplx.asm:1743
+PAM3A_RELOAD       = $FE05 = 65029          xplx.asm:1719
+PAM3A_REPT         = $FE31 = 65073          xplx.asm:1772
+PAM3A_REPT_LEN     = $000A =    10          xplx.asm:1778
+PAM3A_REPT_ORG     = $06C6 =  1734          xplx.asm:1771
+PAM3A_STAT         = $FE10 = 65040          xplx.asm:1727
+PAM3A_TAIL         = $FE3B = 65083          xplx.asm:1781
+PAM3A_TAIL_LEN     = $0026 =    38          xplx.asm:1816
+PAM3A_TAIL_ORG     = $06D0 =  1744          xplx.asm:1780
+PAM3B              = $FE00 = 65024          xplx.asm:1828 (unused)
+PAM3B_HEAD         = $FE00 = 65024          xplx.asm:1827
+PAM3B_HEAD_LEN     = $001A =    26          xplx.asm:1882
+PAM3B_HEAD_ORG     = $06F6 =  1782          xplx.asm:1826
+PAM3B_LOOP         = $FE1A = 65050          xplx.asm:1879
+PAM3B_NORMAL       = $FE0F = 65039          xplx.asm:1866
+PAM3B_RELOAD       = $FE06 = 65030          xplx.asm:1852
+PAM3B_REPT         = $FE1A = 65050          xplx.asm:1885
+PAM3B_REPT_LEN     = $0006 =     6          xplx.asm:1889
+PAM3B_REPT_ORG     = $0710 =  1808          xplx.asm:1884
+PAM3B_STAT         = $FE0B = 65035          xplx.asm:1856
+PAM3B_TAIL         = $FE20 = 65056          xplx.asm:1892
+PAM3B_TAIL_LEN     = $0015 =    21          xplx.asm:1916
+PAM3B_TAIL_ORG     = $0716 =  1814          xplx.asm:1891
+PAM_BUF            = $1000 =  4096          xplx.asm:762
+PAM_BUF_LEN        = $7000 = 28672          xplx.asm:766 (unused)
+PAM_CMD            = $0121 =   289          xplx.asm:439
+PAM_CMD_QUERY      = $0002 =     2          xplx.asm:223
+PAM_CMD_START      = $0001 =     1          xplx.asm:222
+PAM_CYCLE_CLK      = $0126 =   294          xplx.asm:450
+PAM_DISPATCH       = $E23F = 57919          xplx.asm:1251
+PAM_DRIVER         = $FE00 = 65024          xplx.asm:1487
+PAM_DRIVER_MAP     = $E30F = 58127          xplx.asm:1434
+PAM_DRIVER_MAP_LEN = $0040 =    64          xplx.asm:1478
+PAM_ENC            = $0124 =   292          xplx.asm:446
+PAM_ENC_MAP        = $E251 = 57937          xplx.asm:1266
+PAM_ENC_PAM1P      = $0005 =     5          xplx.asm:229 (unused)
+PAM_ENC_PAM2A      = $0001 =     1          xplx.asm:225 (unused)
+PAM_ENC_PAM2B      = $0002 =     2          xplx.asm:226 (unused)
+PAM_ENC_PAM3A      = $0003 =     3          xplx.asm:227 (unused)
+PAM_ENC_PAM3B      = $0004 =     4          xplx.asm:228 (unused)
+PAM_ERROR_ENC      = $E26A = 57962          xplx.asm:1284
+PAM_ERROR_PARAM    = $E26B = 57963          xplx.asm:1286
+PAM_HOSTINTR       = $00A0 =   160          xplx.asm:260
+PAM_QUERY          = $E271 = 57969          xplx.asm:1291
+PAM_READY          = $0120 =   288          xplx.asm:437
+PAM_REPT           = $0125 =   293          xplx.asm:448
+PAM_REPT_CLK       = $0128 =   296          xplx.asm:452 (unused)
+PAM_REPT_END       = $E2D9 = 58073          xplx.asm:1376
+PAM_REPT_LOOP      = $E2CC = 58060          xplx.asm:1362
+PAM_REPT_MAX       = $0129 =   297          xplx.asm:454 (unused)
+PAM_RESET          = $E2F5 = 58101          xplx.asm:1415
+PAM_RESULT         = $0122 =   290          xplx.asm:441
+PAM_RUN            = $0123 =   291          xplx.asm:443
+PAM_START          = $E299 = 58009          xplx.asm:1322
+PAM_START_OK       = $E2AD = 58029          xplx.asm:1334
+PAM_STAT_PTR       = $012E =   302          xplx.asm:458 (unused)
+PCM1               = $E148 = 57672          xplx.asm:1062
+PCM2               = $E150 = 57680          xplx.asm:1070
+PCM3               = $E15F = 57695          xplx.asm:1081
+PCM_BUF            = $1000 =  4096          xplx.asm:763
+PCM_BUF_LEN        = $7000 = 28672          xplx.asm:767 (unused)
+PCM_CMD            = $0131 =   305          xplx.asm:465
+PCM_CMD_START      = $0001 =     1          xplx.asm:231
+PCM_DISPATCH       = $E09D = 57501          xplx.asm:913
+PCM_ENC            = $0134 =   308          xplx.asm:472
+PCM_ENC_PCM1       = $0001 =     1          xplx.asm:233 (unused)
+PCM_ENC_PCM2       = $0002 =     2          xplx.asm:234 (unused)
+PCM_ENC_PCM3       = $0003 =     3          xplx.asm:235 (unused)
+PCM_ERROR          = $E0A3 = 57507          xplx.asm:918
+PCM_EXIT           = $E143 = 57667          xplx.asm:1054
+PCM_HOSTINTR       = $00A0 =   160          xplx.asm:262
+PCM_INTR           = $E113 = 57619          xplx.asm:1003
+PCM_INTR_JMP       = $E11C = 57628          xplx.asm:1013
+PCM_INTR_NEXT      = $E11E = 57630          xplx.asm:1016
+PCM_NORMAL         = $E143 = 57667          xplx.asm:1053
+PCM_PRT1_TIMER     = $0136 =   310          xplx.asm:475
+PCM_READY          = $0130 =   304          xplx.asm:463
+PCM_RELOAD         = $E13E = 57662          xplx.asm:1045
+PCM_RESET          = $E128 = 57640          xplx.asm:1028 (unused)
+PCM_RESULT         = $0132 =   306          xplx.asm:467
+PCM_RUN            = $0133 =   307          xplx.asm:469
+PCM_SET            = $E0E3 = 57571          xplx.asm:969
+PCM_SET_PCM1       = $E0E0 = 57568          xplx.asm:967
+PCM_SET_PCM2       = $E0DB = 57563          xplx.asm:964
+PCM_SET_PCM3       = $E0D6 = 57558          xplx.asm:961 (unused)
+PCM_START          = $E0A7 = 57511          xplx.asm:922
+PCM_START_OK       = $E0BC = 57532          xplx.asm:939
+PCM_STAT           = $E141 = 57665          xplx.asm:1047
+PCM_STAT_PTR       = $013E =   318          xplx.asm:479 (unused)
+PRIVATE_RAM        = $E000 = 57344          xplx.asm:784
+PRIVATE_SP         = $F000 = 61440          xplx.asm:280
+PROG_ORG           = $02CD =   717          xplx.asm:783
+PROG_ORG_LEN       = $048F =  1167          xplx.asm:2015
+PSG_ADR            = $0083 =   131          xplx.asm:275
+PSG_BUF            = $8000 = 32768          xplx.asm:768
+PSG_BUF_LEN        = $1000 =  4096          xplx.asm:771 (unused)
+PSG_CLEAR_06       = $02B0 =   688          xplx.asm:735
+PSG_CLEAR_8F       = $02C5 =   709          xplx.asm:752
+PSG_CMD            = $0141 =   321          xplx.asm:486
+PSG_DAT            = $0082 =   130          xplx.asm:276
+PSG_DISPATCH       = $E20A = 57866          xplx.asm:1201
+PSG_IN             = $0083 =   131          xplx.asm:277
+PSG_READY          = $0140 =   320          xplx.asm:484
+PSG_RESULT         = $0142 =   322          xplx.asm:488
+PSG_RUN            = $0143 =   323          xplx.asm:490 (unused)
+RCR                = $0036 =    54          xplx.asm:634
+RESET              = $0000 =     0          xplx.asm:370 (unused)
+RLDR0H             = $000F =    15          xplx.asm:268
+RLDR0L             = $000E =    14          xplx.asm:267
+RLDR1H             = $0017 =    23          xplx.asm:273
+RLDR1L             = $0016 =    22          xplx.asm:272
+RMCR               = $0051 =    81          xplx.asm:665
+SIO0_CMD           = $0181 =   385          xplx.asm:546
+SIO0_DISPATCH      = $E228 = 57896          xplx.asm:1226
+SIO0_READY         = $0180 =   384          xplx.asm:544
+SIO0_RESULT        = $0182 =   386          xplx.asm:548
+SIO0_RUN           = $0183 =   387          xplx.asm:550 (unused)
+SIO0_RX            = $018C =   396          xplx.asm:564 (unused)
+SIO0_RXCMD         = $018A =   394          xplx.asm:560 (unused)
+SIO0_RXSTAT        = $018B =   395          xplx.asm:562 (unused)
+SIO0_TX            = $0186 =   390          xplx.asm:557 (unused)
+SIO0_TXCMD         = $0184 =   388          xplx.asm:553 (unused)
+SIO0_TXSTAT        = $0185 =   389          xplx.asm:555 (unused)
+SIO1_CMD           = $0191 =   401          xplx.asm:571
+SIO1_DISPATCH      = $E232 = 57906          xplx.asm:1234
+SIO1_READY         = $0190 =   400          xplx.asm:569
+SIO1_RESULT        = $0192 =   402          xplx.asm:573
+SIO1_RUN           = $0193 =   403          xplx.asm:575 (unused)
+SIO1_RX            = $019C =   412          xplx.asm:589 (unused)
+SIO1_RXCMD         = $019A =   410          xplx.asm:585 (unused)
+SIO1_RXSTAT        = $019B =   411          xplx.asm:587 (unused)
+SIO1_TX            = $0196 =   406          xplx.asm:582 (unused)
+SIO1_TXCMD         = $0194 =   404          xplx.asm:578 (unused)
+SIO1_TXSTAT        = $0195 =   405          xplx.asm:580 (unused)
+SPK_CMD            = $0151 =   337          xplx.asm:497
+SPK_CMD_KEEP       = $0003 =     3          xplx.asm:239
+SPK_CMD_START      = $0001 =     1          xplx.asm:237
+SPK_CMD_STOP       = $0002 =     2          xplx.asm:238
+SPK_DISPATCH       = $E17A = 57722          xplx.asm:1100
+SPK_EXIT           = $E1FF = 57855          xplx.asm:1190
+SPK_FREQ           = $0156 =   342          xplx.asm:507
+SPK_KEEP           = $E1F4 = 57844          xplx.asm:1180
+SPK_PSGR7          = $E209 = 57865          xplx.asm:1197
+SPK_READY          = $0150 =   336          xplx.asm:495
+SPK_REMAIN         = $015A =   346          xplx.asm:511
+SPK_RESULT         = $0152 =   338          xplx.asm:499
+SPK_RUN            = $0153 =   339          xplx.asm:501
+SPK_START          = $E18C = 57740          xplx.asm:1112
+SPK_STOP           = $E1D2 = 57810          xplx.asm:1154
+SPK_STOP_CORE      = $E1D7 = 57815          xplx.asm:1159
+SPK_TIME           = $0158 =   344          xplx.asm:509
+SPK_VOL            = $0154 =   340          xplx.asm:504
+TCR                = $0010 =    16          xplx.asm:269
+TIMECOUNTER_INCR   = $E03A = 57402          xplx.asm:833 (unused)
+TIME_CMD           = $0111 =   273          xplx.asm:426
+TIME_DISPATCH      = $E093 = 57491          xplx.asm:897 (unused)
+TIME_READY         = $0110 =   272          xplx.asm:424
+TIME_RESULT        = $0112 =   274          xplx.asm:428
+TIME_RUN           = $0113 =   275          xplx.asm:430 (unused)
+TIME_TIMECOUNTER   = $0114 =   276          xplx.asm:432
+TMDR0H             = $000D =    13          xplx.asm:266
+TMDR0L             = $000C =    12          xplx.asm:265
+TMDR1H             = $0015 =    21          xplx.asm:271
+TMDR1L             = $0014 =    20          xplx.asm:270
+USE_INTR           = $0001 =     1          xplx.asm:251
+VECTOR             = $FFE0 = 65504          xplx.asm:2020
+VECTOR_ORG         = $075C =  1884          xplx.asm:2019
+VECTOR_ORG_LEN     = $001B =    27          xplx.asm:2052
+VEC_ASCI0          = $FFEE = 65518          xplx.asm:2036 (unused)
+VEC_ASCI1          = $FFF0 = 65520          xplx.asm:2038 (unused)
+VEC_DMAC0          = $FFE8 = 65512          xplx.asm:2030 (unused)
+VEC_DMAC1          = $FFEA = 65514          xplx.asm:2032 (unused)
+VEC_INT1           = $FFE0 = 65504          xplx.asm:2022 (unused)
+VEC_INT2           = $FFE2 = 65506          xplx.asm:2024 (unused)
+VEC_PRT0           = $FFE4 = 65508          xplx.asm:2026 (unused)
+VEC_PRT1           = $FFE6 = 65510          xplx.asm:2028
+VEC_PT2IN          = $FFF2 = 65522          xplx.asm:2040 (unused)
+VEC_PT2OUT         = $FFF4 = 65524          xplx.asm:2042 (unused)
+VEC_PT2OVF         = $FFF6 = 65526          xplx.asm:2044 (unused)
+VEC_SIO            = $FFEC = 65516          xplx.asm:2034 (unused)
+XPBUS              = $E000 = 57344          xplx.asm:786
+XPBUS_CMD          = $0101 =   257          xplx.asm:404
+XPBUS_DISPATCH     = $E089 = 57481          xplx.asm:887
+XPBUS_INTR1_DEV    = $010A =   266          xplx.asm:417 (unused)
+XPBUS_INTR5_DEV    = $010C =   268          xplx.asm:419 (unused)
+XPBUS_LOOP         = $E029 = 57385          xplx.asm:807
+XPBUS_PRT0_TIMER   = $0108 =   264          xplx.asm:415
+XPBUS_READY        = $0100 =   256          xplx.asm:402
+XPBUS_RESULT       = $0102 =   258          xplx.asm:406
+XPBUS_RUN          = $0103 =   259          xplx.asm:408 (unused)
+XPBUS_STAT_RESET   = $0104 =   260          xplx.asm:411
+XPLX_FIRMWARE_LEN  = $0777 =  1911          xplx.asm:2055 (unused)
+XPLX_MAGIC         = $00FC =   252          xplx.asm:395 (unused)
+XPLX_R_ERROR_PARAM = $00FE =   254          xplx.asm:244
+XPLX_R_OK          = $0001 =     1          xplx.asm:243
+XPLX_R_UNKNOWN_CMD = $00FF =   255          xplx.asm:245
+XPLX_VAR_BASE      = $0100 =   256          xplx.asm:401 (unused)
+_end               = $0777 =  1911          xplx.asm:368 (unused)
+_size              = $0777 =  1911          xplx.asm:368 (unused)
+_z180_             = $0001 =     1          xplx.asm:206 (unused)
+
+
+total time: 0.0116 sec.
+no errors
