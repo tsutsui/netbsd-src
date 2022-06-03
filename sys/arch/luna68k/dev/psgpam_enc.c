@@ -1,4 +1,10 @@
-/* vi: set ts=8: */
+/* 
+ * XXX TODO:
+ * - add copyright notice (moveccr?)
+ * - translate comments
+ * - consider how psgpam_table.c should be built
+ * - KNF
+ */
 /*
  * PSGPAM, PSGPCM encoders
  * 名前は PSGPAM だけど PSGPCM でも共用する。

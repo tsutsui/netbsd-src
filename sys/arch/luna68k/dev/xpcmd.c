@@ -1,3 +1,8 @@
+/* 
+ * XXX TODO:
+ * - add copyright notice (moveccr?)
+ * - KNF (make READY/CMD/RESULT static?)
+ */
 
 #include <sys/types.h>
 

@@ -1,3 +1,7 @@
+/* 
+ * XXX TODO:
+ * - add copyright notice (moveccr?)
+ */
 #include <err.h>
 #include <fcntl.h>
 #include <stdint.h>

@@ -1,3 +1,9 @@
+/* 
+ * XXX TODO:
+ * - add copyright notice (moveccr?)
+ * - consider about #pragma
+ * - KNF
+ */
 #pragma once
 
 #define XP_ATN_RELOAD	0x80808080

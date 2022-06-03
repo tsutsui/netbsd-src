@@ -1,3 +1,9 @@
+/* 
+ * XXX TODO:
+ * - add copyright notice (moveccr?)
+ * - consider put this files.luna68k rather than including from psgpam_enc.c
+ * - KNF
+ */
 /*
 All PT_count=16
 Limited (0,134217728) PT_count=14

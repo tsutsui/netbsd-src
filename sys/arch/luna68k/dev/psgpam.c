@@ -1,4 +1,11 @@
-// vi:set ts=8:
+/*
+ * XXX TODO:
+ * - add copyright notice (moveccr?)
+ * - cleanup audio_mlog stuff including sysctl(9) knob
+ * - translate comments
+ * - KNF
+ */
+
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD$");
 

@@ -1,3 +1,8 @@
+/* 
+ * XXX TODO:
+ * - add copyright notice (moveccr?)
+ * - KNF
+ */
 #define XPENC_PCM1	0
 #define XPENC_PCM2	1
 #define XPENC_PCM3	2
