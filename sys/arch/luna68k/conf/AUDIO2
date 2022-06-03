@@ -1,4 +1,4 @@
-# $NetBSD: GENERIC,v 1.127 2019/04/26 22:46:03 sevan Exp $
+# $NetBSD: GENERIC,v 1.132 2022/05/27 16:59:19 tsutsui Exp $
 #
 # GENERIC machine description file
 # 
@@ -22,9 +22,11 @@ include 	"arch/luna68k/conf/std.luna68k"
 
 options 	INCLUDE_CONFIG_FILE	# embed config file in kernel binary
 
-#ident 		"GENERIC-$Revision: 1.127 $"
+#ident 		"GENERIC-$Revision: 1.132 $"
 
-makeoptions	COPTS="-O2 -fno-reorder-blocks"	# see share/mk/sys.mk
+makeoptions	COPTS="-O2 -fno-reorder-blocks -fno-unwind-tables -fno-omit-frame-pointer"
+	# See share/mk/sys.mk. -fno-omit-frame-pointer is necessary for
+	# backtraces in DDB.
 
 maxusers	8
 
@@ -128,6 +130,9 @@ options 	NFS_BOOT_DHCP	# superset of BOOTP
 options 	WSEMUL_VT100
 options 	WSDISPLAY_COMPAT_USL		# wsconscfg VT handling
 options 	WSDISPLAY_COMPAT_RAWKBD
+options 	WS_KERNEL_FG=WSCOL_GREEN
+#options 	WS_KERNEL_BG=WSCOL_BLACK
+
 options 	FONT_OMRON12x20
 
 config		netbsd root on ? type ?
@@ -200,17 +205,15 @@ pseudo-device	fss			# file system snapshot device
 #pseudo-device	tap			# virtual Ethernet
 pseudo-device	vlan			# IEEE 802.1q encapsulation
 pseudo-device	bridge			# simple inter-network bridging
-#options	BRIDGE_IPF		# bridge uses IP/IPv6 pfil hooks too
+#pseudo-device	vether			# Virtual Ethernet for bridge
 pseudo-device	agr			# IEEE 802.3ad link aggregation
 #pseudo-device	vnd			# disk-like interface to files
 #options 	VND_COMPRESSION		# compressed vnd(4)
 pseudo-device	clockctl		# user control of clock subsystem
+pseudo-device	drvctl			# user control of drive subsystem
 pseudo-device	ksyms			# /dev/ksyms
 
 pseudo-device	wsmux			# mouse & keyboard multiplexsor
-
-# userland interface to drivers, including autoconf and properties retrieval
-pseudo-device	drvctl
 
 # Veriexec
 # include "dev/veriexec.config"

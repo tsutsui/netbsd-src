@@ -119,15 +119,15 @@ static void
 xpbus_attach(device_t parent, device_t self, void *aux)
 {
 	struct xpbus_softc *sc = device_private(self);
-	const struct xpbus_attach_args *xa;
+	struct xpbus_attach_args xa;
 	int i;
 
 	sc->sc_dev = self;
 	aprint_normal("\n");
 
 	for (i = 0; i < __arraycount(xpdevs); i++) {
-		xa = &xpdevs[i];
-		config_found(self, __UNCONST(xa), NULL);
+		xa = xpdevs[i];
+		config_found(self, &xa, NULL, CFARGS_NONE);
 	}
 }
 

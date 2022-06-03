@@ -35,6 +35,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #define AUDIO_DEBUG	0
 
 #ifdef AUDIO_DEBUG
+#if 0
 #define DPRINTF(n, fmt...)	do {	\
 	if (audiodebug >= (n)) {	\
 		if (cpu_intr_p()) {	\
@@ -49,6 +50,13 @@ __KERNEL_RCSID(0, "$NetBSD$");
 /* XXX Parasitic to audio.c... */
 extern void audio_mlog_flush(void);
 extern void audio_mlog_printf(const char *, ...);
+#else
+#define DPRINTF(n, fmt...)	do {	\
+	if (audiodebug >= (n)) {	\
+		printf(fmt);		\
+	}				\
+} while (0)
+#endif
 
 static int	audiodebug = AUDIO_DEBUG;
 #else
