@@ -1,7 +1,7 @@
                         ; --------------------------------------
                         ; zasm: assemble "xplx.asm"
                         ; opts: --z180
-                        ; date: 2018-07-31 04:42:22
+                        ; date: 2022-06-05 01:50:41
                         ; --------------------------------------
 
 
@@ -1731,7 +1731,7 @@ FE1C:                   PAM2B_TAIL:
 FE00:                   PAM3A_HEAD:
 FE00:                   PAM3A:
                         				; PAM3A
-                        				; 12+0:12+3:12+12 = 4:5:6 PAM
+                        				; 12+0:12+3:12+12 = 4:5:8 PAM
                         				; PAM 51clk 120.471kHz
                         				; output PAM wave = normal 5 + antinoise 1
                         
@@ -2417,5 +2417,5 @@ _size              = $0777 =  1911          xplx.asm:368 (unused)
 _z180_             = $0001 =     1          xplx.asm:206 (unused)
 
 
-total time: 0.0116 sec.
+total time: 0.0379 sec.
 no errors
