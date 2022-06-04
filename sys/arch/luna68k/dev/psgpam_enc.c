@@ -1,16 +1,15 @@
 /* 
  * XXX TODO:
  * - add copyright notice (moveccr?)
- * - translate comments
  * - consider how psgpam_table.c should be built
  * - KNF
  */
 /*
  * PSGPAM, PSGPCM encoders
- * 名前は PSGPAM だけど PSGPCM でも共用する。
+ * Function names are PSGPAM, but also used by PSGPCM.
  *
- * PSGPAM とPSGPCM は非線形変換のために、内部での中間計算を
- * unsigned な auint_t で行う。
+ * PSGPAM and PSGPCM internally use the unsigned type auint_t for
+ * intermediate calculations to manage non-linear conversions.
  */
 
 #include <sys/types.h>
@@ -42,13 +41,13 @@ static inline
 auint_t
 dynamic_offset(struct psgpam_codecvar *ctx, auint_t v)
 {
-/*
- * if (今回の値が現在のオフセットで表現範囲から出る) {
- *   今回の値が入るようにオフセット更新
- * } else {
- *   オフセット増やす
- * }
- */ 
+	/*
+	 * if (the passed value cannot be handled by current offset) {
+	 *   update offset to handle the passed value
+	 * } else {
+	 *   increment offset
+	 * }
+	 */ 
 	if (v <= ctx->offset) {
 		ctx->offset = v;
 	} else {
