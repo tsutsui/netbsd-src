@@ -1,7 +1,6 @@
 /* 
  * XXX TODO:
  * - add copyright notice (moveccr?)
- * - KNF
  */
 #define XPENC_PCM1	0
 #define XPENC_PCM2	1
@@ -26,14 +25,14 @@
 #define XP_TIMER        (XP_VAR_BASE + 9)
 #define XP_ENC          (XP_VAR_BASE + 10)
 
-// word
+/* word */
 #define XP_BUFTOP       (XP_VAR_BASE + 12)
 
 #define XP_STAT_READY   (XP_VAR_BASE + 14)
 #define XP_STAT_ERROR   (XP_VAR_BASE + 15)
 #define XP_STAT_PLAY    (XP_VAR_BASE + 16)
 #define XP_STAT_RESET   (XP_VAR_BASE + 17)
-// word
+/* word */
 #define XP_STAT_PTR     (XP_VAR_BASE + 18)
 
 #define XP_CPU_FREQ	6144000
