@@ -2,7 +2,6 @@
  * XXX TODO:
  * - add copyright notice (moveccr?)
  * - cleanup audio_mlog stuff including sysctl(9) knob
- * - translate comments
  * - KNF
  */
 
@@ -34,11 +33,13 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #define PSGPAM_USE_TRIGGER
 
-// デバッグレベルは
-// 1: open/close/set_param等
-// 2: read/write/ioctlシステムコールくらいまでは含む
-// 3: 割り込み以外のTRACEも含む
-// 4: 割り込み内のTRACEも含む
+/*
+ * Debug level:
+ * 1: open/close/set_param etc.
+ * 2:  + read/write/ioctl system calls
+ * 3:  + TRACE except interrupts
+ * 4:  + TRACE in interrupts
+ */
 #define AUDIO_DEBUG	0
 
 #ifdef AUDIO_DEBUG
@@ -85,8 +86,8 @@ struct psgpam_softc {
 
 	int      sc_started;
 	int      sc_outcount;
-	int      sc_xp_state;	//
-	uint16_t sc_xp_addr;	// XP buffer addr
+	int      sc_xp_state;
+	uint16_t sc_xp_addr;	/* XP buffer addr */
 
 	int      sc_xp_enc;
 	int      sc_xp_rept;
@@ -344,7 +345,7 @@ psgpam_open(void *hdl, int flags)
 	if (a == 0)
 		return EBUSY;
 
-	// firmware transfer
+	/* firmware transfer */
 	xp_ensure_firmware();
 
 	sc->sc_xp_state = 0;
@@ -404,11 +405,11 @@ psgpam_query_format(void *hdl, audio_format_query_t *afp)
 		break;
 	}
 
-	// convert xp's max to AUFMT's max
+	/* convert xp's max to AUFMT's max */
 	rept_max = sc->sc_xp_rept_max + 1;
 
 	if (rept_max <= AUFMT_MAX_FREQUENCIES) {
-		// all choice
+		/* all choice */
 		for (i = 0; i < rept_max; i++) {
 			clk = sc->sc_xp_cycle_clk + i * sc->sc_xp_rept_clk;
 			freq = XP_CPU_FREQ / clk;
@@ -428,8 +429,10 @@ psgpam_query_format(void *hdl, audio_format_query_t *afp)
 		for (; i < XP_FREQ_MAXCOUNT; i++)
 			f[i] = 0;
 
-		// keep: first, last
-		// remove: any unusable freq
+		/*
+		 * keep: first, last
+		 * remove: any unusable freq
+		 */
 		for (i = 1; i < rept_max - 1; i++) {
 			if ((4000 <= f[i] && f[i] < 6000
 			 && f[i - 1] < 6000 && f[i + 1] > 4000)
@@ -464,7 +467,7 @@ psgpam_set_format(void *hdl, int setmode,
 	const audio_params_t *play, const audio_params_t *rec,
 	audio_filter_reg_t *pfil, audio_filter_reg_t *rfil)
 {
-	// open 前に呼ばれる。
+	/* called before open */
 
 	struct psgpam_softc *sc;
 
@@ -475,7 +478,7 @@ psgpam_set_format(void *hdl, int setmode,
 
 	sc->sc_sample_rate = play->sample_rate;
 
-	// set filter
+	/* set filter */
 	switch (sc->sc_xp_enc) {
 	case PAM_ENC_PAM2A:
 		if (sc->sc_dynamic) {
@@ -543,24 +546,24 @@ psgpam_start_output(void *hdl, void *block, int blksize,
 		sc->sc_xp_addr = PAM_BUF;
 
 		if (sc->sc_started == 0) {
-			// if first transfer, interrupt at middle of buffer.
+			/* if first transfer, interrupt at middle of buffer. */
 			markoffset = blksize >> 1;
 		}
 	} else {
 		marker = XP_ATN_RELOAD;
 	}
 
-	// marking
+	/* marking */
 	if (sc->sc_stride == 2) {
 		uint16_t *markptr = (uint16_t*)((uint8_t*)block + markoffset);
 		*markptr |= marker;
 	} else {
-		// stride == 4
+		/* stride == 4 */
 		uint32_t *markptr = (uint32_t*)((uint8_t*)block + markoffset);
 		*markptr |= marker;
 	}
 
-	// transfer
+	/* transfer */
 	dp = xp_shmptr(sc->sc_xp_addr);
 	memcpy(dp, block, blksize);
 
@@ -570,12 +573,12 @@ psgpam_start_output(void *hdl, void *block, int blksize,
 
 	sc->sc_xp_addr += blksize;
 
-	// invert state
+	/* invert state */
 	sc->sc_xp_state = ~sc->sc_xp_state;
 
-	// play start
+	/* play start */
 	if (sc->sc_started == 0) {
-		// 先にフラグを立てておく
+		/* set flag first */
 		sc->sc_started = 1;
 		psgpam_xp_start(sc);
 	}
@@ -600,14 +603,14 @@ psgpam_mark_blk(struct psgpam_softc *sc, int blk_id)
 		marker = XP_ATN_STAT;
 	}
 
-	// marking
+	/* marking */
 	uint8_t *start = sc->sc_start_ptr;
 	if (sc->sc_stride == 2) {
 		uint16_t *markptr = (uint16_t*)(start + markoffset);
 		markptr -= 1;
 		*markptr |= marker;
 	} else {
-		// stride == 4
+		/* stride == 4 */
 		uint32_t *markptr = (uint32_t*)(start + markoffset);
 		markptr -= 1;
 		*markptr |= marker;
@@ -642,17 +645,17 @@ psgpam_trigger_output(void *hdl, void *start, void *end, int blksize,
 	psgpam_mark_blk(sc, 0);
 	psgpam_mark_blk(sc, 1);
 
-	// transfer
+	/* transfer */
 	dp = xp_shmptr(sc->sc_xp_addr);
 	memcpy(dp, start, blksize * 2);
 
-	// (preincrement variable in intr)
+	/* (preincrement variable in intr) */
 	sc->sc_cur_blk_id = 1;
 	sc->sc_xp_addr += blksize;
 
-	// play start
+	/* play start */
 	if (sc->sc_started == 0) {
-		// 先にフラグを立てておく
+		/* set flag first */
 		sc->sc_started = 1;
 		psgpam_xp_start(sc);
 	}
