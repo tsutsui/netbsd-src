@@ -1,10 +1,9 @@
 /* 
  * XXX TODO:
  * - add copyright notice (moveccr?)
- * - consider about #pragma
- * - KNF
  */
-#pragma once
+#ifndef _PSGPAM_ENC_H_
+#define _PSGPAM_ENC_H_
 
 #define XP_ATN_RELOAD	0x80808080
 #define XP_ATN_STAT	0x40404040
@@ -18,8 +17,7 @@ struct psgpam_codecvar {
 	u_int sample_rate;
 };
 
-void psgpam_init_context(struct psgpam_codecvar *ctx,
- u_int sample_rate);
+void psgpam_init_context(struct psgpam_codecvar *ctx, u_int sample_rate);
 
 void psgpam_aint_to_pam2a(audio_filter_arg_t *arg);
 void psgpam_aint_to_pam2b(audio_filter_arg_t *arg);
@@ -37,3 +35,4 @@ void psgpam_aint_to_pcm1_d(audio_filter_arg_t *arg);
 void psgpam_aint_to_pcm2_d(audio_filter_arg_t *arg);
 void psgpam_aint_to_pcm3_d(audio_filter_arg_t *arg);
 
+#endif /* !_PSGPAM_ENC_H_ */
