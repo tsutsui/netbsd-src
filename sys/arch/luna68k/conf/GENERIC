@@ -163,8 +163,8 @@ xp0	at xpbus0
 # HD647180X I/O processor as PSG PAM audio
 psgpam0	at xpbus0
 audio*	at psgpam?
-spkr*	at audio?
-wsbell*	at spkr?
+#spkr*	at audio?
+#wsbell*	at spkr?
 
 # Workstation Console attachments
 wsdisplay*	at fb?
