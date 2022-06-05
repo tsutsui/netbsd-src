@@ -44,9 +44,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <machine/board.h>
 
 #include <luna68k/dev/xpbusvar.h>
-
-/* load default xplx firmware */
-#include "xplxfirm.c"
+#include <luna68k/dev/xplxfirm.h>
 
 /*
  * PIO 0 port C is connected to XP's reset line

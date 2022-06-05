@@ -52,6 +52,7 @@ device xpbus {}
 attach xpbus at mainbus
 file arch/luna68k/dev/xpbus.c		xpbus
 file arch/luna68k/dev/xpcmd.c		xpbus
+file arch/luna68k/dev/xplxfirm.c	xpbus
 
 device xp
 attach xp at xpbus
