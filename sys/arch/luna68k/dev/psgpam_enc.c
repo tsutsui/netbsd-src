@@ -1,7 +1,6 @@
 /* 
  * XXX TODO:
  * - add copyright notice (moveccr?)
- * - consider how psgpam_table.c should be built
  */
 /*
  * PSGPAM, PSGPCM encoders
@@ -18,14 +17,15 @@
 #include <sys/audioio.h>
 #include <dev/audio/audio_if.h>
 #include <luna68k/dev/psgpam_enc.h>
+#include <luna68k/dev/psgpam_table.h>
 #else
 #include <stdint.h>
 #include <stdlib.h>
 #include "audio/userland.h"
 #include "psgpam_enc.h"
-#endif
-
 #include "psgpam_table.c"
+#include "psgpam_table.h"
+#endif
 
 void
 psgpam_init_context(struct psgpam_codecvar *ctx, u_int sample_rate)

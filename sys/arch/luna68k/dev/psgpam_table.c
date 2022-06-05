@@ -1,8 +1,12 @@
 /* 
  * XXX TODO:
  * - add copyright notice (moveccr?)
- * - consider put this files.luna68k rather than including from psgpam_enc.c
  */
+
+#if defined(_KERNEL)
+#include <sys/types.h>
+#endif
+
 /*
  * All PT_count=16
  * Limited (0,134217728) PT_count=14
@@ -10,7 +14,6 @@
  * min=0 step=434334
  * Used 13
  */
-#define PCM1_TABLE_BITS 8
 const uint8_t PCM1_TABLE[] = {
 	      /* u  v : out v */
 	0x00, /* [0]0 : [0]0 */
@@ -277,7 +280,6 @@ const uint8_t PCM1_TABLE[] = {
  * min=0 step=434334
  * Used 71
  */
-#define PCM2_TABLE_BITS 8
 const uint8_t PCM2_TABLE[] = {
 	        /* u  v : out v */
 	0x11, /* [0]0 : [0]4194304 */
@@ -544,7 +546,6 @@ const uint8_t PCM2_TABLE[] = {
  * min=0 step=217167
  * Used 229
  */
-#define PCM3_TABLE_BITS 9
 const uint16_t PCM3_TABLE[] = {
 	            /* u  v : out v */
 	0x1111, /* [0]0 : [0]6291456 */
@@ -1067,7 +1068,6 @@ const uint16_t PCM3_TABLE[] = {
  * min=0 step=434334
  * Used 100
  */
-#define PAM2A_TABLE_BITS 8
 const uint8_t PAM2A_TABLE[] = {
 	        /* u  v : out v */
 	0x11, /* [0]0 : [0]2097152 */
@@ -1334,7 +1334,6 @@ const uint8_t PAM2A_TABLE[] = {
  * min=0 step=434334
  * Used 84
  */
-#define PAM2B_TABLE_BITS 8
 const uint8_t PAM2B_TABLE[] = {
 	        /* u  v : out v */
 	0x11, /* [0]0 : [0]2097152 */
@@ -1601,7 +1600,6 @@ const uint8_t PAM2B_TABLE[] = {
  * min=0 step=54291
  * Used 1091
  */
-#define PAM3A_TABLE_BITS 11
 const uint16_t PAM3A_TABLE[] = {
 	            /* u  v : out v */
 	0x1111, /* [0]0 : [0]2097152 */
@@ -3660,7 +3658,6 @@ const uint16_t PAM3A_TABLE[] = {
  * min=0 step=217167
  * Used 307
  */
-#define PAM3B_TABLE_BITS 9
 const uint16_t PAM3B_TABLE[] = {
 	            /* u  v : out v */
 	0x1111, /* [0]0 : [0]2097152 */

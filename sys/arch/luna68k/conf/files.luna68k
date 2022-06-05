@@ -61,6 +61,7 @@ device psgpam: audiobus
 attach psgpam at xpbus
 file arch/luna68k/dev/psgpam.c		psgpam
 file arch/luna68k/dev/psgpam_enc.c	psgpam
+file arch/luna68k/dev/psgpam_table.c	psgpam
 
 device ws: wskbddev,wsmousedev
 attach ws at sio
