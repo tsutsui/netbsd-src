@@ -1,7 +1,6 @@
 /*
  * XXX TODO:
  * - add copyright notice (moveccr?)
- * - cleanup audio_mlog stuff including sysctl(9) knob
  */
 
 #include <sys/cdefs.h>
@@ -34,17 +33,18 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 /*
  * Debug level:
- * 1: open/close/set_param etc.
- * 2:  + read/write/ioctl system calls
- * 3:  + TRACE except interrupts
- * 4:  + TRACE in interrupts
+ * 0: No debug logs
+ * 1: action changes like open/close/set_format...
+ * 2: + normal operations like read/write/ioctl...
+ * 3: + TRACEs except interrupt
+ * 4: + TRACEs including interrupt
  */
-#define AUDIO_DEBUG	0
+/* Note AUDIO_DEBUG should be sync'ed with src/sys/dev/audio/audio.c */
+/* #define AUDIO_DEBUG	1 */
 
-#ifdef AUDIO_DEBUG
-#if 0
+#if defined(AUDIO_DEBUG)
 #define DPRINTF(n, fmt...)	do {					\
-	if (audiodebug >= (n)) {					\
+	if (psgpamdebug >= (n)) {					\
 		if (cpu_intr_p()) {					\
 			audio_mlog_printf(fmt);				\
 		} else {						\
@@ -57,15 +57,8 @@ __KERNEL_RCSID(0, "$NetBSD$");
 /* XXX Parasitic to audio.c... */
 extern void audio_mlog_flush(void);
 extern void audio_mlog_printf(const char *, ...);
-#else
-#define DPRINTF(n, fmt...)	do {					\
-	if (audiodebug >= (n)) {					\
-		printf(fmt);						\
-	}								\
-} while (0)
-#endif
 
-static int	audiodebug = AUDIO_DEBUG;
+static int	psgpamdebug = AUDIO_DEBUG;
 #else
 #define DPRINTF(n, fmt...)	__nothing
 #endif
@@ -138,7 +131,9 @@ static size_t psgpam_round_buffersize(void *, int, size_t);
 
 static int  psgpam_intr(void *);
 
+#if defined(AUDIO_DEBUG)
 static int  psgpam_sysctl_debug(SYSCTLFN_PROTO);
+#endif
 static int  psgpam_sysctl_enc(SYSCTLFN_PROTO);
 static int  psgpam_sysctl_dynamic(SYSCTLFN_PROTO);
 
@@ -306,6 +301,7 @@ psgpam_attach(device_t parent, device_t self, void *aux)
 		CTL_HW,
 		CTL_CREATE, CTL_EOL);
 	if (node != NULL) {
+#if defined(AUDIO_DEBUG)
 		sysctl_createv(NULL, 0, NULL, NULL,
 			CTLFLAG_READWRITE,
 			CTLTYPE_INT, "debug",
@@ -313,6 +309,7 @@ psgpam_attach(device_t parent, device_t self, void *aux)
 			psgpam_sysctl_debug, 0, (void *)sc, 0,
 			CTL_HW, node->sysctl_num,
 			CTL_CREATE, CTL_EOL);
+#endif
 		sysctl_createv(NULL, 0, NULL, NULL,
 			CTLFLAG_READWRITE,
 			CTLTYPE_INT, "enc",
@@ -799,6 +796,7 @@ psgpam_intr(void *hdl)
 	return 1;
 }
 
+#if defined(AUDIO_DEBUG)
 /* sysctl */
 static int
 psgpam_sysctl_debug(SYSCTLFN_ARGS)
@@ -808,7 +806,7 @@ psgpam_sysctl_debug(SYSCTLFN_ARGS)
 
 	node = *rnode;
 
-	t = audiodebug;
+	t = psgpamdebug;
 	node.sysctl_data = &t;
 
 	error = sysctl_lookup(SYSCTLFN_CALL(&node));
@@ -820,9 +818,10 @@ psgpam_sysctl_debug(SYSCTLFN_ARGS)
 		return EINVAL;
 	if (t > 4)
 		return EINVAL;
-	audiodebug = t;
+	psgpamdebug = t;
 	return 0;
 }
+#endif
 
 /* sysctl */
 static int
