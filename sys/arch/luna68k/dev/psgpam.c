@@ -147,8 +147,7 @@ static int  psgpam_get_port(void *, mixer_ctrl_t *);
 static int  psgpam_query_devinfo(void *, mixer_devinfo_t *);
 static int  psgpam_get_props(void *);
 static void psgpam_get_locks(void *, kmutex_t **, kmutex_t **);
-static int  psgpam_round_blocksize(void *, int, int,
-  const audio_params_t *);
+static int  psgpam_round_blocksize(void *, int, int, const audio_params_t *);
 static size_t psgpam_round_buffersize(void *, int, size_t);
 
 static int  psgpam_intr(void *);
@@ -605,7 +604,7 @@ psgpam_start_output(void *hdl, void *block, int blksize,
 }
 #endif /* !PSGPAM_USE_TRIGGER */
 
-/* XXX: currentry trigger only but call from start in future. */
+/* XXX: currently trigger only but call from start in future. */
 /* marking block */
 static void
 psgpam_mark_blk(struct psgpam_softc *sc, int blk_id)
@@ -752,7 +751,7 @@ psgpam_get_locks(void *hdl, kmutex_t **intr, kmutex_t **thread)
 
 static int
 psgpam_round_blocksize(void *hdl, int bs, int mode,
-  const audio_params_t *param)
+    const audio_params_t *param)
 {
 
 #if 0
