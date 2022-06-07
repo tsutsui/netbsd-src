@@ -43,4 +43,5 @@ extern const uint8_t  PAM2A_TABLE[];
 extern const uint8_t  PAM2B_TABLE[];
 extern const uint16_t PAM3A_TABLE[];
 extern const uint16_t PAM3B_TABLE[];
+
 #endif /* !_PSGPAM_TABLE_H_ */
