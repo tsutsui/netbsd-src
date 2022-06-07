@@ -204,75 +204,6 @@ static struct audio_format psgpam_format = {
 	.frequency	= { 0 },	/* filled by query_format */
 };
 
-/* private functions */
-
-static void
-psgpam_xp_query(struct psgpam_softc *sc)
-{
-	u_int a;
-	int r;
-
-	if (!sc->sc_isopen) {
-		a = xp_acquire(DEVID_PAM, 0);
-		if (a == 0) {
-			sc->sc_xp_cycle_clk = 65535;
-			sc->sc_xp_rept_clk = 255;
-			sc->sc_xp_rept_max = 0;
-			DPRINTF(1, "XPLX BUSY!\n");
-			return;
-		}
-		xp_ensure_firmware();
-	}
-
-	xp_writemem8(PAM_ENC, sc->sc_xp_enc);
-	r = xp_cmd(DEVID_PAM, PAM_CMD_QUERY);
-	if (r != XPLX_R_OK) {
-		sc->sc_xp_cycle_clk = 65535;
-		sc->sc_xp_rept_clk = 255;
-		sc->sc_xp_rept_max = 0;
-		DPRINTF(1, "XPLX QUERY FAIL: %d\n", r);
-	} else {
-		sc->sc_xp_cycle_clk = xp_readmem16le(PAM_CYCLE_CLK);
-		sc->sc_xp_rept_clk = xp_readmem8(PAM_REPT_CLK);
-		sc->sc_xp_rept_max = xp_readmem8(PAM_REPT_MAX);
-		DPRINTF(1, "xp cycle_clk=%d rept_clk=%d rept_max=%d\n",
-		    sc->sc_xp_cycle_clk,
-		    sc->sc_xp_rept_clk,
-		    sc->sc_xp_rept_max);
-	}
-	if (!sc->sc_isopen) {
-		xp_release(DEVID_PAM);
-	}
-}
-
-static void
-psgpam_xp_start(struct psgpam_softc *sc)
-{
-
-	DPRINTF(3, "XP PAM starting..");
-	if (xp_readmem8(PAM_RUN) != 0) {
-		DPRINTF(1, "XP PAM already started???\n");
-	}
-
-	psgpam_xp_query(sc);
-
-	sc->sc_xp_rept = (XP_CPU_FREQ / sc->sc_sample_rate
-	    - sc->sc_xp_cycle_clk) / sc->sc_xp_rept_clk;
-	if (sc->sc_xp_rept < 0)
-		sc->sc_xp_rept = 0;
-	if (sc->sc_xp_rept > sc->sc_xp_rept_max)
-		sc->sc_xp_rept = sc->sc_xp_rept_max;
-	xp_writemem8(PAM_REPT, sc->sc_xp_rept);
-	DPRINTF(3, "ENC=%d REPT=%d\n", sc->sc_xp_enc, sc->sc_xp_rept);
-
-	xp_intr5_enable();
-	xp_cmd_nowait(DEVID_PAM, PAM_CMD_START);
-
-	DPRINTF(3, "XP PAM started\n");
-}
-
-/* MI MD API */
-
 static int
 psgpam_match(device_t parent, cfdata_t cf, void *aux)
 {
@@ -348,6 +279,75 @@ psgpam_attach(device_t parent, device_t self, void *aux)
 
 	audio_attach_mi(&psgpam_hw_if, sc, sc->sc_dev);
 }
+
+/* private functions */
+
+static void
+psgpam_xp_query(struct psgpam_softc *sc)
+{
+	u_int a;
+	int r;
+
+	if (!sc->sc_isopen) {
+		a = xp_acquire(DEVID_PAM, 0);
+		if (a == 0) {
+			sc->sc_xp_cycle_clk = 65535;
+			sc->sc_xp_rept_clk = 255;
+			sc->sc_xp_rept_max = 0;
+			DPRINTF(1, "XPLX BUSY!\n");
+			return;
+		}
+		xp_ensure_firmware();
+	}
+
+	xp_writemem8(PAM_ENC, sc->sc_xp_enc);
+	r = xp_cmd(DEVID_PAM, PAM_CMD_QUERY);
+	if (r != XPLX_R_OK) {
+		sc->sc_xp_cycle_clk = 65535;
+		sc->sc_xp_rept_clk = 255;
+		sc->sc_xp_rept_max = 0;
+		DPRINTF(1, "XPLX QUERY FAIL: %d\n", r);
+	} else {
+		sc->sc_xp_cycle_clk = xp_readmem16le(PAM_CYCLE_CLK);
+		sc->sc_xp_rept_clk = xp_readmem8(PAM_REPT_CLK);
+		sc->sc_xp_rept_max = xp_readmem8(PAM_REPT_MAX);
+		DPRINTF(1, "xp cycle_clk=%d rept_clk=%d rept_max=%d\n",
+		    sc->sc_xp_cycle_clk,
+		    sc->sc_xp_rept_clk,
+		    sc->sc_xp_rept_max);
+	}
+	if (!sc->sc_isopen) {
+		xp_release(DEVID_PAM);
+	}
+}
+
+static void
+psgpam_xp_start(struct psgpam_softc *sc)
+{
+
+	DPRINTF(3, "XP PAM starting..");
+	if (xp_readmem8(PAM_RUN) != 0) {
+		DPRINTF(1, "XP PAM already started???\n");
+	}
+
+	psgpam_xp_query(sc);
+
+	sc->sc_xp_rept = (XP_CPU_FREQ / sc->sc_sample_rate
+	    - sc->sc_xp_cycle_clk) / sc->sc_xp_rept_clk;
+	if (sc->sc_xp_rept < 0)
+		sc->sc_xp_rept = 0;
+	if (sc->sc_xp_rept > sc->sc_xp_rept_max)
+		sc->sc_xp_rept = sc->sc_xp_rept_max;
+	xp_writemem8(PAM_REPT, sc->sc_xp_rept);
+	DPRINTF(3, "ENC=%d REPT=%d\n", sc->sc_xp_enc, sc->sc_xp_rept);
+
+	xp_intr5_enable();
+	xp_cmd_nowait(DEVID_PAM, PAM_CMD_START);
+
+	DPRINTF(3, "XP PAM started\n");
+}
+
+/* MI MD API */
 
 static int
 psgpam_open(void *hdl, int flags)
