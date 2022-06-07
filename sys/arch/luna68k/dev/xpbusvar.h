@@ -35,6 +35,7 @@
 #define XP_SHM_SIZE	0x00010000	/* 64KB for XP; rest 64KB for lance */
 #define XP_TAS_ADDR	OBIO_TAS
 
+#define XP_CPU_FREQ	6144000
 
 struct xpbus_attach_args {
 	const char *xa_name;
