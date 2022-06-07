@@ -50,8 +50,6 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #include "ioconf.h"
 
-#define PSGPAM_USE_TRIGGER
-
 /*
  * Debug level:
  * 0: No debug logs
@@ -131,14 +129,8 @@ static int  psgpam_query_format(void *, audio_format_query_t *);
 static int  psgpam_set_format(void *, int,
     const audio_params_t *, const audio_params_t *,
     audio_filter_reg_t *, audio_filter_reg_t *);
-
-#if defined(PSGPAM_USE_TRIGGER)
 static int  psgpam_trigger_output(void *, void *, void *, int,
     void (*)(void *), void *, const audio_params_t *);
-#else
-static int  psgpam_start_output(void *, void *, int, void (*)(void *), void *);
-#endif
-
 static int  psgpam_halt_output(void *);
 static int  psgpam_getdev(void *, struct audio_device *);
 static int  psgpam_set_port(void *, mixer_ctrl_t *);
@@ -167,11 +159,7 @@ static const struct audio_hw_if psgpam_hw_if = {
 	.close			= psgpam_close,
 	.query_format		= psgpam_query_format,
 	.set_format		= psgpam_set_format,
-#if defined(PSGPAM_USE_TRIGGER)
 	.trigger_output		= psgpam_trigger_output,
-#else
-	.start_output		= psgpam_start_output,
-#endif
 	.halt_output		= psgpam_halt_output,
 	.getdev			= psgpam_getdev,
 	.set_port		= psgpam_set_port,
@@ -536,73 +524,6 @@ psgpam_set_format(void *hdl, int setmode,
 	return 0;
 }
 
-#if !defined(PSGPAM_USE_TRIGGER)
-static int
-psgpam_start_output(void *hdl, void *block, int blksize,
-    void (*intr)(void *), void *intrarg)
-{
-	int markoffset;
-	uint32_t marker;
-	void *dp;
-	struct psgpam_softc *sc;
-
-	sc = hdl;
-
-	DPRINTF(2, "%s block=%p blksize=%d\n", __func__, block, blksize);
-
-	sc->sc_outcount++;
-
-	sc->sc_intr = intr;
-	sc->sc_arg = intrarg;
-
-	markoffset = blksize - sc->sc_stride;
-
-	if (sc->sc_xp_state == 0) {
-		marker = XP_ATN_STAT;
-		sc->sc_xp_addr = PAM_BUF;
-
-		if (sc->sc_started == 0) {
-			/* if first transfer, interrupt at middle of buffer. */
-			markoffset = blksize >> 1;
-		}
-	} else {
-		marker = XP_ATN_RELOAD;
-	}
-
-	/* marking */
-	if (sc->sc_stride == 2) {
-		uint16_t *markptr = (uint16_t*)((uint8_t*)block + markoffset);
-		*markptr |= marker;
-	} else {
-		/* stride == 4 */
-		uint32_t *markptr = (uint32_t*)((uint8_t*)block + markoffset);
-		*markptr |= marker;
-	}
-
-	/* transfer */
-	dp = xp_shmptr(sc->sc_xp_addr);
-	memcpy(dp, block, blksize);
-
-	DPRINTF(2, "check: %04X %02X\n",
-	    sc->sc_xp_addr + markoffset,
-	    xp_readmem16le(sc->sc_xp_addr + markoffset));
-
-	sc->sc_xp_addr += blksize;
-
-	/* invert state */
-	sc->sc_xp_state = ~sc->sc_xp_state;
-
-	/* play start */
-	if (sc->sc_started == 0) {
-		/* set flag first */
-		sc->sc_started = 1;
-		psgpam_xp_start(sc);
-	}
-
-	return 0;
-}
-#endif /* !PSGPAM_USE_TRIGGER */
-
 /* XXX: currently trigger only but call from start in future. */
 /* marking block */
 static void
@@ -633,7 +554,6 @@ psgpam_mark_blk(struct psgpam_softc *sc, int blk_id)
 	}
 }
 
-#if defined(PSGPAM_USE_TRIGGER)
 static int
 psgpam_trigger_output(void *hdl, void *start, void *end, int blksize,
     void (*intr)(void *), void *intrarg, const audio_params_t *param)
@@ -677,7 +597,6 @@ psgpam_trigger_output(void *hdl, void *start, void *end, int blksize,
 
 	return 0;
 }
-#endif
 
 static int
 psgpam_halt_output(void *hdl)
@@ -782,7 +701,6 @@ psgpam_intr(void *hdl)
 	xp_intr5_acknowledge();
 	DPRINTF(4, "psgpam intr\n");
 
-#if defined(PSGPAM_USE_TRIGGER)
 	sc->sc_cur_blk_id++;
 	sc->sc_xp_addr += sc->sc_blksize;
 	if (sc->sc_cur_blk_id == sc->sc_blkcount) {
@@ -793,14 +711,6 @@ psgpam_intr(void *hdl)
 	memcpy(xp_shmptr(sc->sc_xp_addr),
 	    sc->sc_start_ptr + sc->sc_cur_blk_id * sc->sc_blksize,
 	    sc->sc_blksize);
-#else
-	if (sc->sc_outcount <= 0) {
-		DPRINTF(4, "loop detected");
-		psgpam_halt_output(sc);
-		return 1;
-	}
-	sc->sc_outcount--;
-#endif
 
 	mutex_spin_enter(&sc->sc_intr_lock);
 
