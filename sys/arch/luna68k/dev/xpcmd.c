@@ -43,9 +43,11 @@
 
 #endif
 
-static const int READY = 0;
-static const int CMD = 1;
-static const int RESULT = 2;
+enum {
+	READY = 0,
+	CMD = 1,
+	RESULT = 2,
+};
 
 static int
 xp_waitfor_ready(int xplx_devid, int timeout)
