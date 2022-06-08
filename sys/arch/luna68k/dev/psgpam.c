@@ -1,6 +1,28 @@
+/*	$NetBSD$	*/
+
 /*
- * XXX TODO:
- * - add copyright notice (moveccr?)
+ * Copyright (c) 2018 Yosuke Sugahara. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include <sys/cdefs.h>
@@ -19,7 +41,6 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #include <machine/autoconf.h>
 
-#include <luna68k/dev/psgpamvar.h>
 #include <luna68k/dev/xpbusvar.h>
 #include <luna68k/dev/psgpam_enc.h>
 #include <luna68k/dev/xpcmd.h>
@@ -28,8 +49,6 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <luna68k/luna68k/isr.h>
 
 #include "ioconf.h"
-
-#define PSGPAM_USE_TRIGGER
 
 /*
  * Debug level:
@@ -110,14 +129,8 @@ static int  psgpam_query_format(void *, audio_format_query_t *);
 static int  psgpam_set_format(void *, int,
     const audio_params_t *, const audio_params_t *,
     audio_filter_reg_t *, audio_filter_reg_t *);
-
-#if defined(PSGPAM_USE_TRIGGER)
 static int  psgpam_trigger_output(void *, void *, void *, int,
     void (*)(void *), void *, const audio_params_t *);
-#else
-static int  psgpam_start_output(void *, void *, int, void (*)(void *), void *);
-#endif
-
 static int  psgpam_halt_output(void *);
 static int  psgpam_getdev(void *, struct audio_device *);
 static int  psgpam_set_port(void *, mixer_ctrl_t *);
@@ -125,8 +138,7 @@ static int  psgpam_get_port(void *, mixer_ctrl_t *);
 static int  psgpam_query_devinfo(void *, mixer_devinfo_t *);
 static int  psgpam_get_props(void *);
 static void psgpam_get_locks(void *, kmutex_t **, kmutex_t **);
-static int  psgpam_round_blocksize(void *, int, int,
-  const audio_params_t *);
+static int  psgpam_round_blocksize(void *, int, int, const audio_params_t *);
 static size_t psgpam_round_buffersize(void *, int, size_t);
 
 static int  psgpam_intr(void *);
@@ -147,11 +159,7 @@ static const struct audio_hw_if psgpam_hw_if = {
 	.close			= psgpam_close,
 	.query_format		= psgpam_query_format,
 	.set_format		= psgpam_set_format,
-#if defined(PSGPAM_USE_TRIGGER)
 	.trigger_output		= psgpam_trigger_output,
-#else
-	.start_output		= psgpam_start_output,
-#endif
 	.halt_output		= psgpam_halt_output,
 	.getdev			= psgpam_getdev,
 	.set_port		= psgpam_set_port,
@@ -161,10 +169,6 @@ static const struct audio_hw_if psgpam_hw_if = {
 	.get_locks		= psgpam_get_locks,
 	.round_blocksize        = psgpam_round_blocksize,
 	.round_buffersize	= psgpam_round_buffersize,
-#if 0
-	.allocm			= psgpam_allocm,
-	.freem			= psgpam_freem,
-#endif
 };
 
 static struct audio_device psgpam_device = {
@@ -183,75 +187,6 @@ static struct audio_format psgpam_format = {
 	.frequency_type	= 0,		/* filled by query_format */
 	.frequency	= { 0 },	/* filled by query_format */
 };
-
-/* private functions */
-
-static void
-psgpam_xp_query(struct psgpam_softc *sc)
-{
-	u_int a;
-	int r;
-
-	if (!sc->sc_isopen) {
-		a = xp_acquire(DEVID_PAM, 0);
-		if (a == 0) {
-			sc->sc_xp_cycle_clk = 65535;
-			sc->sc_xp_rept_clk = 255;
-			sc->sc_xp_rept_max = 0;
-			DPRINTF(1, "XPLX BUSY!\n");
-			return;
-		}
-		xp_ensure_firmware();
-	}
-
-	xp_writemem8(PAM_ENC, sc->sc_xp_enc);
-	r = xp_cmd(DEVID_PAM, PAM_CMD_QUERY);
-	if (r != XPLX_R_OK) {
-		sc->sc_xp_cycle_clk = 65535;
-		sc->sc_xp_rept_clk = 255;
-		sc->sc_xp_rept_max = 0;
-		DPRINTF(1, "XPLX QUERY FAIL: %d\n", r);
-	} else {
-		sc->sc_xp_cycle_clk = xp_readmem16le(PAM_CYCLE_CLK);
-		sc->sc_xp_rept_clk = xp_readmem8(PAM_REPT_CLK);
-		sc->sc_xp_rept_max = xp_readmem8(PAM_REPT_MAX);
-		DPRINTF(1, "xp cycle_clk=%d rept_clk=%d rept_max=%d\n",
-		    sc->sc_xp_cycle_clk,
-		    sc->sc_xp_rept_clk,
-		    sc->sc_xp_rept_max);
-	}
-	if (!sc->sc_isopen) {
-		xp_release(DEVID_PAM);
-	}
-}
-
-static void
-psgpam_xp_start(struct psgpam_softc *sc)
-{
-
-	DPRINTF(3, "XP PAM starting..");
-	if (xp_readmem8(PAM_RUN) != 0) {
-		DPRINTF(1, "XP PAM already started???\n");
-	}
-
-	psgpam_xp_query(sc);
-
-	sc->sc_xp_rept = (XP_CPU_FREQ / sc->sc_sample_rate
-	    - sc->sc_xp_cycle_clk) / sc->sc_xp_rept_clk;
-	if (sc->sc_xp_rept < 0)
-		sc->sc_xp_rept = 0;
-	if (sc->sc_xp_rept > sc->sc_xp_rept_max)
-		sc->sc_xp_rept = sc->sc_xp_rept_max;
-	xp_writemem8(PAM_REPT, sc->sc_xp_rept);
-	DPRINTF(3, "ENC=%d REPT=%d\n", sc->sc_xp_enc, sc->sc_xp_rept);
-
-	xp_intr5_enable();
-	xp_cmd_nowait(DEVID_PAM, PAM_CMD_START);
-
-	DPRINTF(3, "XP PAM started\n");
-}
-
-/* MI MD API */
 
 static int
 psgpam_match(device_t parent, cfdata_t cf, void *aux)
@@ -328,6 +263,75 @@ psgpam_attach(device_t parent, device_t self, void *aux)
 
 	audio_attach_mi(&psgpam_hw_if, sc, sc->sc_dev);
 }
+
+/* private functions */
+
+static void
+psgpam_xp_query(struct psgpam_softc *sc)
+{
+	u_int a;
+	int r;
+
+	if (!sc->sc_isopen) {
+		a = xp_acquire(DEVID_PAM, 0);
+		if (a == 0) {
+			sc->sc_xp_cycle_clk = 65535;
+			sc->sc_xp_rept_clk = 255;
+			sc->sc_xp_rept_max = 0;
+			DPRINTF(1, "XPLX BUSY!\n");
+			return;
+		}
+		xp_ensure_firmware();
+	}
+
+	xp_writemem8(PAM_ENC, sc->sc_xp_enc);
+	r = xp_cmd(DEVID_PAM, PAM_CMD_QUERY);
+	if (r != XPLX_R_OK) {
+		sc->sc_xp_cycle_clk = 65535;
+		sc->sc_xp_rept_clk = 255;
+		sc->sc_xp_rept_max = 0;
+		DPRINTF(1, "XPLX QUERY FAIL: %d\n", r);
+	} else {
+		sc->sc_xp_cycle_clk = xp_readmem16le(PAM_CYCLE_CLK);
+		sc->sc_xp_rept_clk = xp_readmem8(PAM_REPT_CLK);
+		sc->sc_xp_rept_max = xp_readmem8(PAM_REPT_MAX);
+		DPRINTF(1, "xp cycle_clk=%d rept_clk=%d rept_max=%d\n",
+		    sc->sc_xp_cycle_clk,
+		    sc->sc_xp_rept_clk,
+		    sc->sc_xp_rept_max);
+	}
+	if (!sc->sc_isopen) {
+		xp_release(DEVID_PAM);
+	}
+}
+
+static void
+psgpam_xp_start(struct psgpam_softc *sc)
+{
+
+	DPRINTF(3, "XP PAM starting..");
+	if (xp_readmem8(PAM_RUN) != 0) {
+		DPRINTF(1, "XP PAM already started???\n");
+	}
+
+	psgpam_xp_query(sc);
+
+	sc->sc_xp_rept = (XP_CPU_FREQ / sc->sc_sample_rate
+	    - sc->sc_xp_cycle_clk) / sc->sc_xp_rept_clk;
+	if (sc->sc_xp_rept < 0)
+		sc->sc_xp_rept = 0;
+	if (sc->sc_xp_rept > sc->sc_xp_rept_max)
+		sc->sc_xp_rept = sc->sc_xp_rept_max;
+	xp_writemem8(PAM_REPT, sc->sc_xp_rept);
+	DPRINTF(3, "ENC=%d REPT=%d\n", sc->sc_xp_enc, sc->sc_xp_rept);
+
+	xp_intr5_enable();
+	xp_cmd_nowait(DEVID_PAM, PAM_CMD_START);
+
+	DPRINTF(3, "XP PAM started\n");
+}
+
+/* MI MD API */
 
 static int
 psgpam_open(void *hdl, int flags)
@@ -516,74 +520,7 @@ psgpam_set_format(void *hdl, int setmode,
 	return 0;
 }
 
-#if !defined(PSGPAM_USE_TRIGGER)
-static int
-psgpam_start_output(void *hdl, void *block, int blksize,
-    void (*intr)(void *), void *intrarg)
-{
-	int markoffset;
-	uint32_t marker;
-	void *dp;
-	struct psgpam_softc *sc;
-
-	sc = hdl;
-
-	DPRINTF(2, "%s block=%p blksize=%d\n", __func__, block, blksize);
-
-	sc->sc_outcount++;
-
-	sc->sc_intr = intr;
-	sc->sc_arg = intrarg;
-
-	markoffset = blksize - sc->sc_stride;
-
-	if (sc->sc_xp_state == 0) {
-		marker = XP_ATN_STAT;
-		sc->sc_xp_addr = PAM_BUF;
-
-		if (sc->sc_started == 0) {
-			/* if first transfer, interrupt at middle of buffer. */
-			markoffset = blksize >> 1;
-		}
-	} else {
-		marker = XP_ATN_RELOAD;
-	}
-
-	/* marking */
-	if (sc->sc_stride == 2) {
-		uint16_t *markptr = (uint16_t*)((uint8_t*)block + markoffset);
-		*markptr |= marker;
-	} else {
-		/* stride == 4 */
-		uint32_t *markptr = (uint32_t*)((uint8_t*)block + markoffset);
-		*markptr |= marker;
-	}
-
-	/* transfer */
-	dp = xp_shmptr(sc->sc_xp_addr);
-	memcpy(dp, block, blksize);
-
-	DPRINTF(2, "check: %04X %02X\n",
-	    sc->sc_xp_addr + markoffset,
-	    xp_readmem16le(sc->sc_xp_addr + markoffset));
-
-	sc->sc_xp_addr += blksize;
-
-	/* invert state */
-	sc->sc_xp_state = ~sc->sc_xp_state;
-
-	/* play start */
-	if (sc->sc_started == 0) {
-		/* set flag first */
-		sc->sc_started = 1;
-		psgpam_xp_start(sc);
-	}
-
-	return 0;
-}
-#endif /* !PSGPAM_USE_TRIGGER */
-
-/* XXX: currentry trigger only but call from start in future. */
+/* XXX: currently trigger only but call from start in future. */
 /* marking block */
 static void
 psgpam_mark_blk(struct psgpam_softc *sc, int blk_id)
@@ -613,7 +550,6 @@ psgpam_mark_blk(struct psgpam_softc *sc, int blk_id)
 	}
 }
 
-#if defined(PSGPAM_USE_TRIGGER)
 static int
 psgpam_trigger_output(void *hdl, void *start, void *end, int blksize,
     void (*intr)(void *), void *intrarg, const audio_params_t *param)
@@ -657,7 +593,6 @@ psgpam_trigger_output(void *hdl, void *start, void *end, int blksize,
 
 	return 0;
 }
-#endif
 
 static int
 psgpam_halt_output(void *hdl)
@@ -730,7 +665,7 @@ psgpam_get_locks(void *hdl, kmutex_t **intr, kmutex_t **thread)
 
 static int
 psgpam_round_blocksize(void *hdl, int bs, int mode,
-  const audio_params_t *param)
+    const audio_params_t *param)
 {
 
 #if 0
@@ -762,7 +697,6 @@ psgpam_intr(void *hdl)
 	xp_intr5_acknowledge();
 	DPRINTF(4, "psgpam intr\n");
 
-#if defined(PSGPAM_USE_TRIGGER)
 	sc->sc_cur_blk_id++;
 	sc->sc_xp_addr += sc->sc_blksize;
 	if (sc->sc_cur_blk_id == sc->sc_blkcount) {
@@ -773,14 +707,6 @@ psgpam_intr(void *hdl)
 	memcpy(xp_shmptr(sc->sc_xp_addr),
 	    sc->sc_start_ptr + sc->sc_cur_blk_id * sc->sc_blksize,
 	    sc->sc_blksize);
-#else
-	if (sc->sc_outcount <= 0) {
-		DPRINTF(4, "loop detected");
-		psgpam_halt_output(sc);
-		return 1;
-	}
-	sc->sc_outcount--;
-#endif
 
 	mutex_spin_enter(&sc->sc_intr_lock);
 

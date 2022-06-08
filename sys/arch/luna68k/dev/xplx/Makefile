@@ -3,7 +3,6 @@
 
 TOOL_AWK?=	awk
 TOOL_HEXDUMP?=	hexdump
-HEXDUMP_OPT=	-v -e '"" 1/1 "0x%02x,\n"'
 
 ZASM?=	zasm	# see "used language" comments in xplx.asm
 
@@ -14,7 +13,7 @@ xplx.rom xplx.lst: xplx.asm
 	${ZASM} -uwy xplx.asm || rm -f xplx.rom xplx.lst
 
 xplx.inc: xplx.rom
-	${TOOL_HEXDUMP} ${HEXDUMP_OPT} xplx.rom > ${.TARGET}.tmp
+	${TOOL_HEXDUMP} -Cv xplx.rom | ${TOOL_AWK} -f cdump.awk > ${.TARGET}.tmp
 	mv ${.TARGET}.tmp ${.TARGET}
 
 xplxfirm.o: ../xplxfirm.c xplx.inc
