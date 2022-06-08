@@ -28,6 +28,14 @@
  * LUNA's Hitachi HD647180 "XP" I/O processor
  */
 
+/*
+ * Specification of interrupts from XP to the host is confirmed
+ * by Kenji Aoyama, in xptty(4) driver for OpenBSD/luna88k:
+ *  https://gist.github.com/ao-kenji/790b0822e46a50ea63131cfa8d9110e7
+ * and CP/M BIOS for HD647180 on LUNA:
+ *  https://gist.github.com/ao-kenji/4f1e2b010f3b2b41ab07f3a8a3cc7484
+ */
+
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD$");
 
