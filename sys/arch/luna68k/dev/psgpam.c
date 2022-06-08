@@ -169,10 +169,6 @@ static const struct audio_hw_if psgpam_hw_if = {
 	.get_locks		= psgpam_get_locks,
 	.round_blocksize        = psgpam_round_blocksize,
 	.round_buffersize	= psgpam_round_buffersize,
-#if 0
-	.allocm			= psgpam_allocm,
-	.freem			= psgpam_freem,
-#endif
 };
 
 static struct audio_device psgpam_device = {
