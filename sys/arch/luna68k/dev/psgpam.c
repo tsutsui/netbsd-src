@@ -520,7 +520,6 @@ psgpam_set_format(void *hdl, int setmode,
 	return 0;
 }
 
-/* XXX: currently trigger only but call from start in future. */
 /* marking block */
 static void
 psgpam_mark_blk(struct psgpam_softc *sc, int blk_id)
