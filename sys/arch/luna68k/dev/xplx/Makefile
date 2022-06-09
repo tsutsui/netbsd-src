@@ -10,7 +10,7 @@ ZASM?=	zasm	# see "used language" comments in xplx.asm
 all: xplx.inc xplxdefs.h # xplxfirm.o
 
 xplx.rom xplx.lst: xplx.asm
-	${ZASM} -uwy xplx.asm || rm -f xplx.rom xplx.lst
+	${ZASM} -uwy xplx.asm || (rm -f xplx.rom xplx.lst ; exit 1)
 
 xplx.inc: xplx.rom
 	${TOOL_HEXDUMP} -Cv xplx.rom | ${TOOL_AWK} -f cdump.awk > ${.TARGET}.tmp
