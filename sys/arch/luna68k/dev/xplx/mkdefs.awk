@@ -89,36 +89,4 @@ $2 ~ /#define/ {
 
 END {
 	print "#endif /* !XPLX_DEFINE */"
-	print ""
-
-	print "#ifdef XPLX_EXTERN_TABLE"
-	print "#include \"kv.h\""
-
-	for (k in keys) {
-		print "extern const struct kv " keys[k] "[" counts[k] "];"
-		print "#define KV_" substr(keys[k], 1, length(keys[k]) - 1) " "\
-			keys[k] ", " counts[k]
-	}
-
-	print "#endif /* XPLX_EXTERN_TABLE */"
-	print ""
-
-	print "#ifdef XPLX_TABLE"
-	print "#include \"kv.h\""
-
-	for (k in keys) {
-		print "const struct kv " keys[k] "[] = {"
-		n = counts[k]
-		# order by i
-		for (i = 0; n > 0; i++) {
-			if (values[k, i] == "") continue
-			printf("\t{ %s, \"%s\" },\n",
-				k values[k, i],
-				values[k, i]);
-			n--;
-		}
-		print "};\n"
-	}
-
-	print "#endif /* XPLX_TABLE */"
 }
