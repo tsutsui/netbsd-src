@@ -296,6 +296,8 @@ tv_putc_nm(struct ite_softc *ip, int ch, char *p)
 	/* singlebyte character */
 	if (*ip->GL == CSET_JISKANA)
 		ch |= 0x80;
+	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
+		ch = ite_decgraph2ascii[ch];
 	f = tv_font[ch];
 
 	/* draw plane */
@@ -325,6 +327,8 @@ tv_putc_in(struct ite_softc *ip, int ch, char *p)
 	/* singlebyte character */
 	if (*ip->GL == CSET_JISKANA)
 		ch |= 0x80;
+	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
+		ch = ite_decgraph2ascii[ch];
 	f = tv_font[ch];
 
 	/* draw plane */
@@ -356,6 +360,8 @@ tv_putc_bd(struct ite_softc *ip, int ch, char *p)
 	/* singlebyte character */
 	if (*ip->GL == CSET_JISKANA)
 		ch |= 0x80;
+	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
+		ch = ite_decgraph2ascii[ch];
 	f = tv_font[ch];
 
 	/* draw plane */
@@ -405,6 +411,8 @@ tv_putc_ul(struct ite_softc *ip, int ch, char *p)
 	/* singlebyte character */
 	if (*ip->GL == CSET_JISKANA)
 		ch |= 0x80;
+	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
+		ch = ite_decgraph2ascii[ch];
 	f = tv_font[ch];
 
 	/* draw plane */
@@ -440,6 +448,8 @@ tv_putc_bd_in(struct ite_softc *ip, int ch, char *p)
 	/* singlebyte character */
 	if (*ip->GL == CSET_JISKANA)
 		ch |= 0x80;
+	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
+		ch = ite_decgraph2ascii[ch];
 	f = tv_font[ch];
 
 	/* draw plane */
@@ -475,6 +485,8 @@ tv_putc_ul_in(struct ite_softc *ip, int ch, char *p)
 	/* singlebyte character */
 	if (*ip->GL == CSET_JISKANA)
 		ch |= 0x80;
+	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
+		ch = ite_decgraph2ascii[ch];
 	f = tv_font[ch];
 
 	/* draw plane */
@@ -517,6 +529,8 @@ tv_putc_bd_ul(struct ite_softc *ip, int ch, char *p)
 	/* singlebyte character */
 	if (*ip->GL == CSET_JISKANA)
 		ch |= 0x80;
+	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
+		ch = ite_decgraph2ascii[ch];
 	f = tv_font[ch];
 
 	/* draw plane */
@@ -564,6 +578,8 @@ tv_putc_bd_ul_in(struct ite_softc *ip, int ch, char *p)
 	/* singlebyte character */
 	if (*ip->GL == CSET_JISKANA)
 		ch |= 0x80;
+	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
+		ch = ite_decgraph2ascii[ch];
 	f = tv_font[ch];
 
 	/* draw plane */

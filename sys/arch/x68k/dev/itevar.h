@@ -223,6 +223,7 @@ enum tab_size { TABSIZE = 8 };
 #define CSET_JIS1978	(3|CSET_MULTI) /* iso2022jp old jis kanji */
 #define CSET_JIS1983	(4|CSET_MULTI) /* iso2022jp new jis kanji */
 #define CSET_JIS1990	(5|CSET_MULTI) /* iso2022jp hojo kanji */
+#define CSET_DECGRAPH	6 /* DEC special graphics characters */
 
 struct consdev;
 
@@ -256,4 +257,7 @@ extern unsigned char kern_font[];
 extern unsigned char kbdled;
 void ite_set_glyph(void);
 void kbd_setLED(void);
+
+/* DEC special graphics character to ASCII table for box drawing etc. */
+extern const int ite_decgraph2ascii[];
 #endif
