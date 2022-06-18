@@ -259,5 +259,5 @@ void ite_set_glyph(void);
 void kbd_setLED(void);
 
 /* DEC special graphics character to ASCII table for box drawing etc. */
-extern const int ite_decgraph2ascii[];
+extern const uint8_t ite_decgraph2ascii[];
 #endif
