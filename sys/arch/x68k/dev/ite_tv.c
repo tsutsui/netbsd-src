@@ -297,8 +297,8 @@ static void
 tv_putc_nm(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
-	uint8_t *f;
 	volatile uint16_t *kf;
+	uint8_t *f;
 
 	hi = ip->save_char & 0x7f;
 
@@ -324,8 +324,8 @@ static void
 tv_putc_in(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
-	uint8_t *f;
 	volatile uint16_t *kf;
+	uint8_t *f;
 
 	hi = ip->save_char & 0x7f;
 
@@ -351,8 +351,9 @@ static void
 tv_putc_bd(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
-	uint8_t *f;
+	u_int data;
 	volatile uint16_t *kf;
+	uint8_t *f;
 
 	hi = ip->save_char & 0x7f;
 
@@ -362,8 +363,8 @@ tv_putc_bd(struct ite_softc *ip, int ch, char *p)
 		kf += ch * FONTHEIGHT;
 		/* draw plane */
 		for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
-			ch = *kf++;
-			*(uint16_t *)p = ch | (ch >> 1);
+			data = *kf++;
+			*(uint16_t *)p = data | (data >> 1);
 		}
 		return;
 	}
@@ -373,8 +374,8 @@ tv_putc_bd(struct ite_softc *ip, int ch, char *p)
 
 	/* draw plane */
 	for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
-		ch = *f++;
-		*p = ch | (ch >> 1);
+		data = *f++;
+		*p = data | (data >> 1);
 	}
 }
 
@@ -398,8 +399,8 @@ static void
 tv_putc_ul(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
-	uint8_t *f;
 	volatile uint16_t *kf;
+	uint8_t *f;
 
 	hi = ip->save_char & 0x7f;
 
@@ -433,8 +434,9 @@ static void
 tv_putc_bd_in(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
-	uint8_t *f;
+	u_int data;
 	volatile uint16_t *kf;
+	uint8_t *f;
 
 	hi = ip->save_char & 0x7f;
 
@@ -444,8 +446,8 @@ tv_putc_bd_in(struct ite_softc *ip, int ch, char *p)
 		kf += ch * FONTHEIGHT;
 		/* draw plane */
 		for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
-			ch = *kf++;
-			*(uint16_t *)p = ~(ch | (ch >> 1));
+			data = *kf++;
+			*(uint16_t *)p = ~(data | (data >> 1));
 		}
 		return;
 	}
@@ -455,8 +457,8 @@ tv_putc_bd_in(struct ite_softc *ip, int ch, char *p)
 
 	/* draw plane */
 	for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
-		ch = *f++;
-		*p = ~(ch | (ch >> 1));
+		data = *f++;
+		*p = ~(data | (data >> 1));
 	}
 }
 
@@ -464,8 +466,8 @@ static void
 tv_putc_ul_in(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
-	uint8_t *f;
 	volatile uint16_t *kf;
+	uint8_t *f;
 
 	hi = ip->save_char & 0x7f;
 
@@ -499,8 +501,9 @@ static void
 tv_putc_bd_ul(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
-	uint8_t *f;
+	u_int data;
 	volatile uint16_t *kf;
+	uint8_t *f;
 
 	hi = ip->save_char & 0x7f;
 
@@ -510,15 +513,15 @@ tv_putc_bd_ul(struct ite_softc *ip, int ch, char *p)
 		kf += ch * FONTHEIGHT;
 		/* draw plane */
 		for (fh = 0; fh < UNDERLINE; fh++, p += ROWBYTES) {
-			ch = *kf++;
-			*(uint16_t *)p = ch | (ch >> 1);
+			data = *kf++;
+			*(uint16_t *)p = data | (data >> 1);
 		}
-		ch = *kf++;
-		*(uint16_t *)p = expbits(ch | (ch >> 1));
+		data = *kf++;
+		*(uint16_t *)p = expbits(data | (data >> 1));
 		p += ROWBYTES;
 		for (fh++; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
-			ch = *kf++;
-			*(uint16_t *)p = ch | (ch >> 1);
+			data = *kf++;
+			*(uint16_t *)p = data | (data >> 1);
 		}
 		return;
 	}
@@ -528,15 +531,15 @@ tv_putc_bd_ul(struct ite_softc *ip, int ch, char *p)
 
 	/* draw plane */
 	for (fh = 0; fh < UNDERLINE; fh++, p += ROWBYTES) {
-		ch = *f++;
-		*p = ch | (ch >> 1);
+		data = *f++;
+		*p = data | (data >> 1);
 	}
-	ch = *f++;
-	*p = expbits(ch | (ch >> 1));
+	data = *f++;
+	*p = expbits(data | (data >> 1));
 	p += ROWBYTES;
 	for (fh++; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
-		ch = *f++;
-		*p = ch | (ch >> 1);
+		data = *f++;
+		*p = data | (data >> 1);
 	}
 }
 
@@ -544,8 +547,9 @@ static void
 tv_putc_bd_ul_in(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
-	uint8_t *f;
+	u_int data;
 	volatile uint16_t *kf;
+	uint8_t *f;
 
 	hi = ip->save_char & 0x7f;
 
@@ -555,15 +559,15 @@ tv_putc_bd_ul_in(struct ite_softc *ip, int ch, char *p)
 		kf += ch * FONTHEIGHT;
 		/* draw plane */
 		for (fh = 0; fh < UNDERLINE; fh++, p += ROWBYTES) {
-			ch = *kf++;
-			*(uint16_t *)p = ~(ch | (ch >> 1));
+			data = *kf++;
+			*(uint16_t *)p = ~(data | (data >> 1));
 		}
-		ch = *kf++;
-		*(uint16_t *)p = ~expbits(ch | (ch >> 1));
+		data = *kf++;
+		*(uint16_t *)p = ~expbits(data | (data >> 1));
 		p += ROWBYTES;
 		for (fh++; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
-			ch = *kf++;
-			*(uint16_t *)p = ~(ch | (ch >> 1));
+			data = *kf++;
+			*(uint16_t *)p = ~(data | (data >> 1));
 		}
 		return;
 	}
@@ -573,16 +577,16 @@ tv_putc_bd_ul_in(struct ite_softc *ip, int ch, char *p)
 
 	/* draw plane */
 	for (fh = 0; fh < UNDERLINE; fh++, p += ROWBYTES) {
-		ch = *f++;
-		*p = ~(ch | (ch >> 1));
+		data = *f++;
+		*p = ~(data | (data >> 1));
 	}
-	ch = *f++;
-	*p = ~expbits(ch | (ch >> 1));
+	data = *f++;
+	*p = ~expbits(data | (data >> 1));
 	p += ROWBYTES;
 	for (fh++; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
-		ch = *f++;
-		ch |= ch >> 1;
-		*p = ~(ch | (ch >> 1));
+		data = *f++;
+		data |= data >> 1;
+		*p = ~(data | (data >> 1));
 	}
 }
 
