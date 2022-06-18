@@ -94,30 +94,30 @@ void opm_bell(void);
 
 struct consdev;
 
-inline static void itesendch(int);
-inline static void alignment_display(struct ite_softc *);
-inline static void snap_cury(struct ite_softc *);
-inline static void ite_dnchar(struct ite_softc *, int);
+static inline void itesendch(int);
+static inline void alignment_display(struct ite_softc *);
+static inline void snap_cury(struct ite_softc *);
+static inline void ite_dnchar(struct ite_softc *, int);
 static void ite_inchar(struct ite_softc *,	int);
-inline static void ite_clrtoeol(struct ite_softc *);
-inline static void ite_clrtobol(struct ite_softc *);
-inline static void ite_clrline(struct ite_softc *);
-inline static void ite_clrtoeos(struct ite_softc *);
-inline static void ite_clrtobos(struct ite_softc *);
-inline static void ite_clrscreen(struct ite_softc *);
-inline static void ite_dnline(struct ite_softc *, int);
-inline static void ite_inline(struct ite_softc *, int);
-inline static void ite_index(struct ite_softc *);
-inline static void ite_lf(struct ite_softc *);
-inline static void ite_crlf(struct ite_softc *);
-inline static void ite_cr(struct ite_softc *);
-inline static void ite_rlf(struct ite_softc *);
+static inline void ite_clrtoeol(struct ite_softc *);
+static inline void ite_clrtobol(struct ite_softc *);
+static inline void ite_clrline(struct ite_softc *);
+static inline void ite_clrtoeos(struct ite_softc *);
+static inline void ite_clrtobos(struct ite_softc *);
+static inline void ite_clrscreen(struct ite_softc *);
+static inline void ite_dnline(struct ite_softc *, int);
+static inline void ite_inline(struct ite_softc *, int);
+static inline void ite_index(struct ite_softc *);
+static inline void ite_lf(struct ite_softc *);
+static inline void ite_crlf(struct ite_softc *);
+static inline void ite_cr(struct ite_softc *);
+static inline void ite_rlf(struct ite_softc *);
 static void iteprecheckwrap(struct ite_softc *);
 static void itecheckwrap(struct ite_softc *);
 static int ite_argnum(struct ite_softc *);
 static int ite_zargnum(struct ite_softc *);
 static void ite_sendstr(struct ite_softc *, const char *);
-inline static int atoi(const char *);
+static inline int atoi(const char *);
 struct ite_softc *getitesp(dev_t);
 
 struct itesw itesw[] = {
@@ -709,7 +709,7 @@ ite_cnfilter(u_char c)
 }
 
 /* And now the old stuff. */
-inline static void
+static inline void
 itesendch(int ch)
 {
 	(*kbd_tty->t_linesw->l_rint)(ch, kbd_tty);
@@ -904,14 +904,14 @@ ite_filter(u_char c)
 }
 
 /* helper functions, makes the code below more readable */
-inline static void
+static inline void
 ite_sendstr(struct ite_softc *ip, const char *str)
 {
 	while (*str)
 		itesendch(*str++);
 }
 
-inline static void
+static inline void
 alignment_display(struct ite_softc *ip)
 {
 	int i, j;
@@ -922,7 +922,7 @@ alignment_display(struct ite_softc *ip)
 	attrclr(ip, 0, 0, ip->rows, ip->cols);
 }
 
-inline static void
+static inline void
 snap_cury(struct ite_softc *ip)
 {
 	if (ip->inside_margins) {
@@ -933,7 +933,7 @@ snap_cury(struct ite_softc *ip)
 	}
 }
 
-inline static void
+static inline void
 ite_dnchar(struct ite_softc *ip, int n)
 {
 	n = uimin(n, ip->cols - ip->curx);
@@ -964,7 +964,7 @@ ite_inchar(struct ite_softc *ip, int n)
 	ip->save_char = c;
 }
 
-inline static void
+static inline void
 ite_clrtoeol(struct ite_softc *ip)
 {
 	int y = ip->cury, x = ip->curx;
@@ -974,7 +974,7 @@ ite_clrtoeol(struct ite_softc *ip)
 	}
 }
 
-inline static void
+static inline void
 ite_clrtobol(struct ite_softc *ip)
 {
 	int y = ip->cury, x = uimin(ip->curx + 1, ip->cols);
@@ -982,7 +982,7 @@ ite_clrtobol(struct ite_softc *ip)
 	attrclr(ip, y, 0, 1, x);
 }
 
-inline static void
+static inline void
 ite_clrline(struct ite_softc *ip)
 {
 	int y = ip->cury;
@@ -990,7 +990,7 @@ ite_clrline(struct ite_softc *ip)
 	attrclr(ip, y, 0, 1, ip->cols);
 }
 
-inline static void
+static inline void
 ite_clrtoeos(struct ite_softc *ip)
 {
 	ite_clrtoeol(ip);
@@ -1000,7 +1000,7 @@ ite_clrtoeos(struct ite_softc *ip)
 	}
 }
 
-inline static void
+static inline void
 ite_clrtobos(struct ite_softc *ip)
 {
 	ite_clrtobol(ip);
@@ -1010,7 +1010,7 @@ ite_clrtobos(struct ite_softc *ip)
 	}
 }
 
-inline static void
+static inline void
 ite_clrscreen(struct ite_softc *ip)
 {
 	SUBR_CLEAR(ip, 0, 0, ip->rows, ip->cols);
@@ -1019,7 +1019,7 @@ ite_clrscreen(struct ite_softc *ip)
 
 
 
-inline static void
+static inline void
 ite_dnline(struct ite_softc *ip, int n)
 {
 	/*
@@ -1039,7 +1039,7 @@ ite_dnline(struct ite_softc *ip, int n)
 	attrclr(ip, ip->bottom_margin - n + 1, 0, n, ip->cols);
 }
 
-inline static void
+static inline void
 ite_inline(struct ite_softc *ip, int n)
 {
 	/*
@@ -1062,7 +1062,7 @@ ite_inline(struct ite_softc *ip, int n)
 	ip->curx = 0;
 }
 
-inline static void
+static inline void
 ite_index(struct ite_softc *ip)
 {
 	++ip->cury;
@@ -1074,7 +1074,7 @@ ite_index(struct ite_softc *ip)
 	/*clr_attr(ip, ATTR_INV);*/
 }
 
-inline static void
+static inline void
 ite_lf(struct ite_softc *ip)
 {
 	++ip->cury;
@@ -1096,14 +1096,14 @@ ite_lf(struct ite_softc *ip)
 	ip->save_char = 0;
 }
 
-inline static void
+static inline void
 ite_crlf(struct ite_softc *ip)
 {
 	ip->curx = 0;
 	ite_lf (ip);
 }
 
-inline static void
+static inline void
 ite_cr(struct ite_softc *ip)
 {
 	if (ip->curx) {
@@ -1111,7 +1111,7 @@ ite_cr(struct ite_softc *ip)
 	}
 }
 
-inline static void
+static inline void
 ite_rlf(struct ite_softc *ip)
 {
 	ip->cury--;
@@ -1123,7 +1123,7 @@ ite_rlf(struct ite_softc *ip)
 	clr_attr(ip, ATTR_INV);
 }
 
-inline static int
+static inline int
 atoi(const char *cp)
 {
 	int n;
@@ -1133,7 +1133,7 @@ atoi(const char *cp)
 	return n;
 }
 
-inline static int
+static inline int
 ite_argnum(struct ite_softc *ip)
 {
 	char ch;
@@ -1150,7 +1150,7 @@ ite_argnum(struct ite_softc *ip)
 	return n;
 }
 
-inline static int
+static inline int
 ite_zargnum(struct ite_softc *ip)
 {
 	char ch;
