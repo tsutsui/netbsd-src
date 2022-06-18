@@ -70,17 +70,18 @@ __KERNEL_RCSID(0, "$NetBSD: ite_tv.c,v 1.17 2018/02/08 09:05:18 dholland Exp $")
 #define PLANESIZE   (PLANEHEIGHT * ROWBYTES)
 
 u_int  tv_top;
-u_char *tv_row[PLANELINES];
+uint8_t *tv_row[PLANELINES];
 char   *tv_font[256];
 volatile char *tv_kfont[0x7f];
 
-u_char kern_font[256 * FONTHEIGHT];
+uint8_t kern_font[256 * FONTHEIGHT];
 
 #define PHYSLINE(y)  ((tv_top + (y)) % PLANELINES)
 #define ROWOFFSET(y) ((y) * FONTHEIGHT * ROWBYTES)
 #define CHADDR(y, x) (tv_row[PHYSLINE(y)] + (x))
 
-#define SETGLYPH(to,from) memcpy(&kern_font[(from)*16],&kern_font[(to)*16], 16)
+#define SETGLYPH(to,from)	\
+	memcpy(&kern_font[(from) * 16],&kern_font[(to) * 16], 16)
 #define KFONTBASE(left)   ((left) * 32 * 0x5e - 0x21 * 32)
 
 /* prototype */
@@ -91,15 +92,15 @@ void tv_cursor(struct ite_softc *, int);
 void tv_clear(struct ite_softc *, int, int, int, int);
 void tv_scroll(struct ite_softc *, int, int, int, int);
 
-inline static int expbits(int);
-inline static void txrascpy(u_char, u_char, short, signed short);
+static inline int expbits(int);
+static inline void txrascpy(uint8_t, uint8_t, int16_t, int16_t);
 
 static inline void
-txrascpy(u_char src, u_char dst, short size, short mode)
+txrascpy(uint8_t src, uint8_t dst, int16_t size, int16_t mode)
 {
 	/*int s;*/
-	u_short saved_r21 = CRTC.r21;
-	char d;
+	uint16_t saved_r21 = CRTC.r21;
+	int8_t d;
 
 	d = (mode < 0) ? -1 : 1;
 	src *= FONTHEIGHT / 4;
@@ -117,10 +118,10 @@ txrascpy(u_char src, u_char dst, short size, short mode)
 	/*s = splhigh();*/
 	while (--size >= 0) {
 		/* wait for hsync */
-		mfp_wait_for_hsync ();
+		mfp_wait_for_hsync();
 		CRTC.r22 = (src << 8) | dst;	/* specify raster number */
 		/* start raster copy */
-		CRTC.crtctrl = 8;
+		CRTC.crtctrl = 0x0008;
 
 		src += d;
 		dst += d;
@@ -128,10 +129,10 @@ txrascpy(u_char src, u_char dst, short size, short mode)
 	/*splx(s);*/
 
 	/* wait for hsync */
-	mfp_wait_for_hsync ();
+	mfp_wait_for_hsync();
 
 	/* stop raster copy */
-	CRTC.crtctrl = 0;
+	CRTC.crtctrl = 0x0000;
 
 	CRTC.r21 = saved_r21;
 }
@@ -142,13 +143,13 @@ txrascpy(u_char src, u_char dst, short size, short mode)
 void
 ite_set_glyph(void)
 {
-	u_char glyph = IODEVbase->io_sram[0x59];
+	uint8_t glyph = IODEVbase->io_sram[0x59];
 	
-	if (glyph & 4)
+	if ((glyph & 4) != 0)
 		SETGLYPH(0x82, '|');
-	if (glyph & 2)
+	if ((glyph & 2) != 0)
 		SETGLYPH(0x81, '~');
-	if (glyph & 1)
+	if ((glyph & 1) != 0)
 		SETGLYPH(0x80, '\\');
 }
 
@@ -165,7 +166,8 @@ tv_init(struct ite_softc *ip)
 	 */
 	tv_top = 0;
 	for (i = 0; i < PLANELINES; i++)
-		tv_row[i] = (void *)__UNVOLATILE(&IODEVbase->tvram[ROWOFFSET(i)]);
+		tv_row[i] =
+		    (void *)__UNVOLATILE(&IODEVbase->tvram[ROWOFFSET(i)]);
 	/* shadow ANK font */
 	memcpy(kern_font, (void *)&IODEVbase->cgrom0_8x16, 256 * FONTHEIGHT);
 	ite_set_glyph();
@@ -212,6 +214,7 @@ tv_init(struct ite_softc *ip)
 void
 tv_deinit(struct ite_softc *ip)
 {
+
 	ip->flags &= ~ITE_INITED; /* XXX? */
 }
 
@@ -265,7 +268,7 @@ tv_putc(struct ite_softc *ip, int ch, int y, int x, int mode)
 	CRTC.r21 ^= 0x00f0;
 	if (ip->save_char) {
 		for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES)
-			*(u_short *)p = 0;
+			*(uint16_t *)p = 0;
 	} else {
 		for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES)
 			*p = 0;
@@ -290,7 +293,7 @@ tv_getfont(int cset, int ch)
 	return tv_font[ch];
 }
 
-void
+static void
 tv_putc_nm(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
@@ -305,7 +308,7 @@ tv_putc_nm(struct ite_softc *ip, int ch, char *p)
 		kf += ch * FONTHEIGHT;
 		/* draw plane */
 		for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES)
-			*(u_short *)p = *kf++;
+			*(uint16_t *)p = *kf++;
 		return;
 	}
 
@@ -317,7 +320,7 @@ tv_putc_nm(struct ite_softc *ip, int ch, char *p)
 		*p = *f++;
 }
 
-void
+static void
 tv_putc_in(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
@@ -332,7 +335,7 @@ tv_putc_in(struct ite_softc *ip, int ch, char *p)
 		kf += ch * FONTHEIGHT;
 		/* draw plane */
 		for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES)
-			*(u_short *)p = ~*kf++;
+			*(uint16_t *)p = ~*kf++;
 		return;
 	}
 
@@ -344,7 +347,7 @@ tv_putc_in(struct ite_softc *ip, int ch, char *p)
 		*p = ~*f++;
 }
 
-void
+static void
 tv_putc_bd(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
@@ -360,7 +363,7 @@ tv_putc_bd(struct ite_softc *ip, int ch, char *p)
 		/* draw plane */
 		for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
 			ch = *kf++;
-			*(u_short *)p = ch | (ch >> 1);
+			*(uint16_t *)p = ch | (ch >> 1);
 		}
 		return;
 	}
@@ -375,21 +378,22 @@ tv_putc_bd(struct ite_softc *ip, int ch, char *p)
 	}
 }
 
-inline static int
+static inline int
 expbits(int data)
 {
 	int i, nd = 0;
-	if (data & 1)
+
+	if ((data & 1) != 0)
 		nd |= 0x02;
-	for (i=1; i < 32; i++) {
-		if (data & (1 << i))
-			nd |= 0x5 << (i-1);
+	for (i = 1; i < 32; i++) {
+		if ((data & (1 << i)) != 0)
+			nd |= 0x5 << (i - 1);
 	}
 	nd &= ~data;
-	return (~nd);
+	return ~nd;
 }
 
-void
+static void
 tv_putc_ul(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
@@ -404,11 +408,11 @@ tv_putc_ul(struct ite_softc *ip, int ch, char *p)
 		kf += ch * FONTHEIGHT;
 		/* draw plane */
 		for (fh = 0; fh < UNDERLINE; fh++, p += ROWBYTES)
-			*(u_short *)p = *kf++;
-		*(u_short *)p = expbits(*kf++);
+			*(uint16_t *)p = *kf++;
+		*(uint16_t *)p = expbits(*kf++);
 		p += ROWBYTES;
 		for (fh++; fh < FONTHEIGHT; fh++, p += ROWBYTES)
-			*(u_short *)p = *kf++;
+			*(uint16_t *)p = *kf++;
 		return;
 	}
 
@@ -424,7 +428,7 @@ tv_putc_ul(struct ite_softc *ip, int ch, char *p)
 		*p = *f++;
 }
 
-void
+static void
 tv_putc_bd_in(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
@@ -440,7 +444,7 @@ tv_putc_bd_in(struct ite_softc *ip, int ch, char *p)
 		/* draw plane */
 		for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
 			ch = *kf++;
-			*(u_short *)p = ~(ch | (ch >> 1));
+			*(uint16_t *)p = ~(ch | (ch >> 1));
 		}
 		return;
 	}
@@ -455,7 +459,7 @@ tv_putc_bd_in(struct ite_softc *ip, int ch, char *p)
 	}
 }
 
-void
+static void
 tv_putc_ul_in(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
@@ -470,11 +474,11 @@ tv_putc_ul_in(struct ite_softc *ip, int ch, char *p)
 		kf += ch * FONTHEIGHT;
 		/* draw plane */
 		for (fh = 0; fh < UNDERLINE; fh++, p += ROWBYTES)
-			*(u_short *)p = ~*kf++;
-		*(u_short *)p = ~expbits(*kf++);
+			*(uint16_t *)p = ~*kf++;
+		*(uint16_t *)p = ~expbits(*kf++);
 		p += ROWBYTES;
 		for (fh++; fh < FONTHEIGHT; fh++, p += ROWBYTES)
-			*(u_short *)p = ~*kf++;
+			*(uint16_t *)p = ~*kf++;
 		return;
 	}
 
@@ -490,7 +494,7 @@ tv_putc_ul_in(struct ite_softc *ip, int ch, char *p)
 		*p = ~*f++;
 }
 
-void
+static void
 tv_putc_bd_ul(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
@@ -506,14 +510,14 @@ tv_putc_bd_ul(struct ite_softc *ip, int ch, char *p)
 		/* draw plane */
 		for (fh = 0; fh < UNDERLINE; fh++, p += ROWBYTES) {
 			ch = *kf++;
-			*(u_short *)p = ch | (ch >> 1);
+			*(uint16_t *)p = ch | (ch >> 1);
 		}
 		ch = *kf++;
-		*(u_short *)p = expbits(ch | (ch >> 1));
+		*(uint16_t *)p = expbits(ch | (ch >> 1));
 		p += ROWBYTES;
 		for (fh++; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
 			ch = *kf++;
-			*(u_short *)p = ch | (ch >> 1);
+			*(uint16_t *)p = ch | (ch >> 1);
 		}
 		return;
 	}
@@ -535,7 +539,7 @@ tv_putc_bd_ul(struct ite_softc *ip, int ch, char *p)
 	}
 }
 
-void
+static void
 tv_putc_bd_ul_in(struct ite_softc *ip, int ch, char *p)
 {
 	short fh, hi;
@@ -551,14 +555,14 @@ tv_putc_bd_ul_in(struct ite_softc *ip, int ch, char *p)
 		/* draw plane */
 		for (fh = 0; fh < UNDERLINE; fh++, p += ROWBYTES) {
 			ch = *kf++;
-			*(u_short *)p = ~(ch | (ch >> 1));
+			*(uint16_t *)p = ~(ch | (ch >> 1));
 		}
 		ch = *kf++;
-		*(u_short *)p = ~expbits(ch | (ch >> 1));
+		*(uint16_t *)p = ~expbits(ch | (ch >> 1));
 		p += ROWBYTES;
 		for (fh++; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
 			ch = *kf++;
-			*(u_short *)p = ~(ch | (ch >> 1));
+			*(uint16_t *)p = ~(ch | (ch >> 1));
 		}
 		return;
 	}
@@ -587,7 +591,7 @@ tv_putc_bd_ul_in(struct ite_softc *ip, int ch, char *p)
 void
 tv_cursor(struct ite_softc *ip, int flag)
 {
-	u_char *p;
+	uint8_t *p;
 	short fh;
 
 	/* erase */
