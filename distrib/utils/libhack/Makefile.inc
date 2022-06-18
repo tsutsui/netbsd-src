@@ -48,9 +48,22 @@ TERMINFO_SRC!=	cd ${HACKSRC}/../../../lib/libterminfo && \
 TERMINFO_PATH!=	cd ${HACKSRC}/../../../lib/libterminfo && \
 		${MAKE} -v .OBJDIR
 
+# override compiled terms per HACK_MD_TERM for non-wscons ports
+.if defined(HACK_MD_TERM)
+TERMINFO=	${NETBSDSRCDIR}/share/terminfo/terminfo
+DEFTERMS?=	vt100 vt220 wsvt25 xterm
+
+term.o:	compiled_terms.c
+
+compiled_terms.c:	${TERMINFO}
+	${TOOL_TIC} -Sx ${TERMINFO} ${DEFTERMS} ${HACK_MD_TERM} > ${.TARGET}
+
+CLEANFILES+=	compiled_terms.c
+.endif
+
 .for s in ${TERMINFO_SRC}
 CPPFLAGS.${s}+=	-DDISABLE_WCHAR -DSMALL \
-		-I${HACKSRC}/../../../lib/libterminfo \
+		-I${.OBJDIR} -I${HACKSRC}/../../../lib/libterminfo \
 		-I${TERMINFO_PATH}
 HACKOBJS+=	${s:S/.c/.o/}
 .if ${s:Mhash*} != ""
