@@ -230,23 +230,23 @@ static tv_putcfunc tv_putc_bd_ul;
 static tv_putcfunc tv_putc_bd_ul_in;
 
 static tv_putcfunc *putc_func[ATTR_ALL + 1] = {
-	tv_putc_nm,
-	tv_putc_in,
-	tv_putc_ul,
-	tv_putc_ul_in,
-	tv_putc_bd,
-	tv_putc_bd_in,
-	tv_putc_bd_ul,
-	tv_putc_bd_ul_in,
+	[ATTR_NOR]					= tv_putc_nm,
+	[ATTR_INV]					= tv_putc_in,
+	[ATTR_UL]					= tv_putc_ul,
+	[ATTR_INV | ATTR_UL]				= tv_putc_ul_in,
+	[ATTR_BOLD]					= tv_putc_bd,
+	[ATTR_BOLD | ATTR_INV]				= tv_putc_bd_in,
+	[ATTR_BOLD | ATTR_UL]				= tv_putc_bd_ul,
+	[ATTR_BOLD | ATTR_UL | ATTR_INV]		= tv_putc_bd_ul_in,
 	/* no support for blink */
-	tv_putc_nm,
-	tv_putc_in,
-	tv_putc_ul,
-	tv_putc_ul_in,
-	tv_putc_bd,
-	tv_putc_bd_in,
-	tv_putc_bd_ul,
-	tv_putc_bd_ul_in,
+	[ATTR_BLINK]					= tv_putc_nm,
+	[ATTR_BLINK | ATTR_INV]				= tv_putc_in,
+	[ATTR_BLINK | ATTR_UL]				= tv_putc_ul,
+	[ATTR_BLINK | ATTR_UL | ATTR_INV]		= tv_putc_ul_in,
+	[ATTR_BLINK | ATTR_BOLD]			= tv_putc_bd,
+	[ATTR_BLINK | ATTR_BOLD | ATTR_INV]		= tv_putc_bd_in,
+	[ATTR_BLINK | ATTR_BOLD | ATTR_UL]		= tv_putc_bd_ul,
+	[ATTR_BLINK | ATTR_BOLD | ATTR_UL | ATTR_INV]	= tv_putc_bd_ul_in,
 };
 
 /*
