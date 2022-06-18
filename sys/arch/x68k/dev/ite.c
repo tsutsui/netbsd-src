@@ -118,9 +118,9 @@ static int ite_argnum(struct ite_softc *);
 static int ite_zargnum(struct ite_softc *);
 static void ite_sendstr(struct ite_softc *, const char *);
 static inline int atoi(const char *);
-struct ite_softc *getitesp(dev_t);
+static struct ite_softc *getitesp(dev_t);
 
-struct itesw itesw[] = {
+static struct itesw itesw[] = {
 	{0,	tv_init,	tv_deinit,	0,
 	 0,	0,		0}
 };
@@ -134,35 +134,38 @@ struct itesw itesw[] = {
 #define ITEBURST 64
 
 struct	tty *ite_tty[NITE];
-struct	ite_softc *kbd_ite = NULL;
-struct  ite_softc con_itesoftc;
-struct	device con_itedev;
 
-struct  tty *kbd_tty = NULL;
+static struct ite_softc *kbd_ite = NULL;
+static struct ite_softc con_itesoftc;
+static struct device con_itedev;
 
-int	start_repeat_timeo = 20; /* /100: initial timeout till pressed key repeats */
-int	next_repeat_timeo  = 3;  /* /100: timeout when repeating for next char */
+static struct tty *kbd_tty = NULL;
 
-u_char	cons_tabs[MAX_TABS];
+static int start_repeat_timeo = 20;	/* /100: initial timeout till pressed
+						 key repeats */
+static int next_repeat_timeo  = 3;	/* /100: timeout when repeating for
+						 next char */
 
-void	itestart(struct tty *);
+static u_char cons_tabs[MAX_TABS];
 
-void iteputchar(int, struct ite_softc *);
-void ite_putstr(const u_char *, int, dev_t);
+static void itestart(struct tty *);
 
-int itematch(device_t, cfdata_t, void *);
-void iteattach(device_t, device_t, void *);
+static void iteputchar(int, struct ite_softc *);
+static void ite_putstr(const u_char *, int, dev_t);
+
+static int itematch(device_t, cfdata_t, void *);
+static void iteattach(device_t, device_t, void *);
 
 CFATTACH_DECL_NEW(ite, sizeof(struct ite_softc),
     itematch, iteattach, NULL, NULL);
 
-dev_type_open(iteopen);
-dev_type_close(iteclose);
-dev_type_read(iteread);
-dev_type_write(itewrite);
-dev_type_ioctl(iteioctl);
-dev_type_tty(itetty);
-dev_type_poll(itepoll);
+static dev_type_open(iteopen);
+static dev_type_close(iteclose);
+static dev_type_read(iteread);
+static dev_type_write(itewrite);
+static dev_type_ioctl(iteioctl);
+static dev_type_tty(itetty);
+static dev_type_poll(itepoll);
 
 const struct cdevsw ite_cdevsw = {
 	.d_open = iteopen,
@@ -179,7 +182,7 @@ const struct cdevsw ite_cdevsw = {
 	.d_flag = D_TTY
 };
 
-int
+static int
 itematch(device_t parent, cfdata_t cf, void *aux)
 {
 	struct grf_softc *gp;
@@ -195,7 +198,7 @@ itematch(device_t parent, cfdata_t cf, void *aux)
  * iteinit() is the standard entry point for initialization of
  * an ite device, it is also called from ite_cninit().
  */
-void
+static void
 iteattach(device_t parent, device_t self, void *aux)
 {
 	struct ite_softc *ip;
@@ -223,7 +226,7 @@ iteattach(device_t parent, device_t self, void *aux)
 	aprint_normal("\n");
 }
 
-struct ite_softc *
+static struct ite_softc *
 getitesp(dev_t dev)
 {
 
@@ -352,7 +355,7 @@ iteoff(dev_t dev, int flag)
  */
 
 /* ARGSUSED */
-int
+static int
 iteopen(dev_t dev, int mode, int devtype, struct lwp *l)
 {
 	int unit = UNIT(dev);
@@ -399,7 +402,7 @@ iteopen(dev_t dev, int mode, int devtype, struct lwp *l)
 }
 
 /*ARGSUSED*/
-int
+static int
 iteclose(dev_t dev, int flag, int mode, struct lwp *l)
 {
 	struct tty *tp = ite_tty[UNIT(dev)];
@@ -414,7 +417,7 @@ iteclose(dev_t dev, int flag, int mode, struct lwp *l)
 	return(0);
 }
 
-int
+static int
 iteread(dev_t dev, struct uio *uio, int flag)
 {
 	struct tty *tp = ite_tty[UNIT(dev)];
@@ -422,7 +425,7 @@ iteread(dev_t dev, struct uio *uio, int flag)
 	return ((*tp->t_linesw->l_read)(tp, uio, flag));
 }
 
-int
+static int
 itewrite(dev_t dev, struct uio *uio, int flag)
 {
 	struct tty *tp = ite_tty[UNIT(dev)];
@@ -430,7 +433,7 @@ itewrite(dev_t dev, struct uio *uio, int flag)
 	return ((*tp->t_linesw->l_write)(tp, uio, flag));
 }
 
-int
+static int
 itepoll(dev_t dev, int events, struct lwp *l)
 {
 	struct tty *tp = ite_tty[UNIT(dev)];
@@ -438,14 +441,14 @@ itepoll(dev_t dev, int events, struct lwp *l)
 	return ((*tp->t_linesw->l_poll)(tp, events, l));
 }
 
-struct tty *
+static struct tty *
 itetty(dev_t dev)
 {
 
 	return (ite_tty[UNIT(dev)]);
 }
 
-int
+static int
 iteioctl(dev_t dev, u_long cmd, void *addr, int flag, struct lwp *l)
 {
 	struct iterepeat *irp;
@@ -504,7 +507,7 @@ iteioctl(dev_t dev, u_long cmd, void *addr, int flag, struct lwp *l)
 	return (EPASSTHROUGH);
 }
 
-void
+static void
 itestart(struct tty *tp)
 {
 	struct clist *rbp;
@@ -1167,7 +1170,7 @@ ite_zargnum(struct ite_softc *ip)
 	return n;	/* don't "n ? n : 1" here, <CSI>0m != <CSI>1m ! */
 }
 
-void
+static void
 ite_putstr(const u_char *s, int len, dev_t dev)
 {
 	struct ite_softc *ip;
@@ -1186,7 +1189,7 @@ ite_putstr(const u_char *s, int len, dev_t dev)
 	SUBR_CURSOR(ip, END_CURSOROPT);
 }
 
-void
+static void
 iteputchar(int c, struct ite_softc *ip)
 {
 	int n, x, y;

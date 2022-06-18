@@ -236,7 +236,6 @@ void	itecnfinish(struct ite_softc *);
 
 /* standard ite device entry points. */
 void	iteinit(dev_t);
-void	itestart(struct tty *);
 
 /* ite functions */
 int	iteon(dev_t, int);

@@ -69,10 +69,10 @@ __KERNEL_RCSID(0, "$NetBSD: ite_tv.c,v 1.17 2018/02/08 09:05:18 dholland Exp $")
 #define ROWBYTES    (PLANEWIDTH  / FONTWIDTH)
 #define PLANESIZE   (PLANEHEIGHT * ROWBYTES)
 
-u_int  tv_top;
-uint8_t *tv_row[PLANELINES];
-uint8_t *tv_font[256];
-volatile uint8_t *tv_kfont[0x7f];
+static u_int  tv_top;
+static uint8_t *tv_row[PLANELINES];
+static uint8_t *tv_font[256];
+static volatile uint8_t *tv_kfont[0x7f];
 
 uint8_t kern_font[256 * FONTHEIGHT];
 
@@ -85,12 +85,10 @@ uint8_t kern_font[256 * FONTHEIGHT];
 #define KFONTBASE(left)   ((left) * 32 * 0x5e - 0x21 * 32)
 
 /* prototype */
-void tv_init(struct ite_softc *);
-void tv_deinit(struct ite_softc *);
-void tv_putc(struct ite_softc *, int, int, int, int);
-void tv_cursor(struct ite_softc *, int);
-void tv_clear(struct ite_softc *, int, int, int, int);
-void tv_scroll(struct ite_softc *, int, int, int, int);
+static void tv_putc(struct ite_softc *, int, int, int, int);
+static void tv_cursor(struct ite_softc *, int);
+static void tv_clear(struct ite_softc *, int, int, int, int);
+static void tv_scroll(struct ite_softc *, int, int, int, int);
 
 static inline uint32_t expbits(uint32_t);
 static inline void txrascpy(uint8_t, uint8_t, int16_t, uint16_t);
@@ -252,7 +250,7 @@ static tv_putcfunc *putc_func[ATTR_ALL + 1] = {
 /*
  * simple put character function
  */
-void
+static void
 tv_putc(struct ite_softc *ip, int ch, int y, int x, int mode)
 {
 	uint8_t *p = CHADDR(y, x);
@@ -593,7 +591,7 @@ tv_putc_bd_ul_in(struct ite_softc *ip, int ch, char *p)
 /*
  * draw/erase/move cursor
  */
-void
+static void
 tv_cursor(struct ite_softc *ip, int flag)
 {
 	uint8_t *p;
@@ -635,7 +633,7 @@ tv_cursor(struct ite_softc *ip, int flag)
 /*
  * clear rectangle
  */
-void
+static void
 tv_clear(struct ite_softc *ip, int y, int x, int height, int width)
 {
 	uint8_t *p;
@@ -660,7 +658,7 @@ tv_clear(struct ite_softc *ip, int y, int x, int height, int width)
 /*
  * scroll lines/columns
  */
-void
+static void
 tv_scroll(struct ite_softc *ip, int srcy, int srcx, int count, int dir)
 {
 	int dst, siz, pl;
