@@ -215,6 +215,7 @@ tv_deinit(struct ite_softc *ip)
 	ip->flags &= ~ITE_INITED; /* XXX? */
 }
 
+static inline char *tv_getfont(int, int);
 typedef void tv_putcfunc(struct ite_softc *, int, char *);
 static tv_putcfunc tv_putc_nm;
 static tv_putcfunc tv_putc_in;
@@ -274,6 +275,21 @@ tv_putc(struct ite_softc *ip, int ch, int y, int x, int mode)
 	CRTC.r21 = 0;
 }
 
+static inline char *
+tv_getfont(int cset, int ch)
+{
+
+	if (cset == CSET_JISKANA) {
+		ch |= 0x80;
+	} else if (cset == CSET_DECGRAPH) {
+		if (ch < 0x80) {
+			ch = ite_decgraph2ascii[ch];
+		}
+	}
+
+	return tv_font[ch];
+}
+
 void
 tv_putc_nm(struct ite_softc *ip, int ch, char *p)
 {
@@ -294,11 +310,7 @@ tv_putc_nm(struct ite_softc *ip, int ch, char *p)
 	}
 
 	/* singlebyte character */
-	if (*ip->GL == CSET_JISKANA)
-		ch |= 0x80;
-	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
-		ch = ite_decgraph2ascii[ch];
-	f = tv_font[ch];
+	f = tv_getfont(*ip->GL, ch);
 
 	/* draw plane */
 	for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES)
@@ -325,11 +337,7 @@ tv_putc_in(struct ite_softc *ip, int ch, char *p)
 	}
 
 	/* singlebyte character */
-	if (*ip->GL == CSET_JISKANA)
-		ch |= 0x80;
-	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
-		ch = ite_decgraph2ascii[ch];
-	f = tv_font[ch];
+	f = tv_getfont(*ip->GL, ch);
 
 	/* draw plane */
 	for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES)
@@ -358,11 +366,7 @@ tv_putc_bd(struct ite_softc *ip, int ch, char *p)
 	}
 
 	/* singlebyte character */
-	if (*ip->GL == CSET_JISKANA)
-		ch |= 0x80;
-	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
-		ch = ite_decgraph2ascii[ch];
-	f = tv_font[ch];
+	f = tv_getfont(*ip->GL, ch);
 
 	/* draw plane */
 	for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
@@ -409,11 +413,7 @@ tv_putc_ul(struct ite_softc *ip, int ch, char *p)
 	}
 
 	/* singlebyte character */
-	if (*ip->GL == CSET_JISKANA)
-		ch |= 0x80;
-	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
-		ch = ite_decgraph2ascii[ch];
-	f = tv_font[ch];
+	f = tv_getfont(*ip->GL, ch);
 
 	/* draw plane */
 	for (fh = 0; fh < UNDERLINE; fh++, p += ROWBYTES)
@@ -446,11 +446,7 @@ tv_putc_bd_in(struct ite_softc *ip, int ch, char *p)
 	}
 
 	/* singlebyte character */
-	if (*ip->GL == CSET_JISKANA)
-		ch |= 0x80;
-	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
-		ch = ite_decgraph2ascii[ch];
-	f = tv_font[ch];
+	f = tv_getfont(*ip->GL, ch);
 
 	/* draw plane */
 	for (fh = 0; fh < FONTHEIGHT; fh++, p += ROWBYTES) {
@@ -483,11 +479,7 @@ tv_putc_ul_in(struct ite_softc *ip, int ch, char *p)
 	}
 
 	/* singlebyte character */
-	if (*ip->GL == CSET_JISKANA)
-		ch |= 0x80;
-	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
-		ch = ite_decgraph2ascii[ch];
-	f = tv_font[ch];
+	f = tv_getfont(*ip->GL, ch);
 
 	/* draw plane */
 	for (fh = 0; fh < UNDERLINE; fh++, p += ROWBYTES)
@@ -527,11 +519,7 @@ tv_putc_bd_ul(struct ite_softc *ip, int ch, char *p)
 	}
 
 	/* singlebyte character */
-	if (*ip->GL == CSET_JISKANA)
-		ch |= 0x80;
-	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
-		ch = ite_decgraph2ascii[ch];
-	f = tv_font[ch];
+	f = tv_getfont(*ip->GL, ch);
 
 	/* draw plane */
 	for (fh = 0; fh < UNDERLINE; fh++, p += ROWBYTES) {
@@ -576,11 +564,7 @@ tv_putc_bd_ul_in(struct ite_softc *ip, int ch, char *p)
 	}
 
 	/* singlebyte character */
-	if (*ip->GL == CSET_JISKANA)
-		ch |= 0x80;
-	if (*ip->GL == CSET_DECGRAPH && ch < 0x80)
-		ch = ite_decgraph2ascii[ch];
-	f = tv_font[ch];
+	f = tv_getfont(*ip->GL, ch);
 
 	/* draw plane */
 	for (fh = 0; fh < UNDERLINE; fh++, p += ROWBYTES) {
