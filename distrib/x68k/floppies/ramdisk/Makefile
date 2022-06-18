@@ -32,6 +32,8 @@ LISTS+=		${DISTRIBDIR}/common/list.inet6
 
 # Use stubs to eliminate some large stuff from libc
 HACKSRC=	${DISTRIBDIR}/utils/libhack
+HACK_CURSES=	yes
+HACK_MD_TERM=	x68k
 .include	"${HACKSRC}/Makefile.inc"
 ${CRUNCHBIN}:	libhack.o
 

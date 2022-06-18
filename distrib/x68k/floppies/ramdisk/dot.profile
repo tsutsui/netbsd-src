@@ -35,7 +35,7 @@
 
 PATH=/sbin:/bin:/usr/bin:/usr/sbin:/
 export PATH
-TERM=vt220
+TERM=x68k
 export TERM
 HOME=/
 export HOME
