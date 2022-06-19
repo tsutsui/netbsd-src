@@ -582,6 +582,15 @@ putc8(struct ite_softc *ip, int c, int dy, int dx, int mode)
 	if (c < ip->font.font_lo || c > ip->font.font_hi)
 		return;
 
+	/*
+	 * Handle DEC special graphics character by 'ESC ( B' sequence.
+	 * Note we assume all font data (fontdata_8x8 and fontdata_8x16)
+	 * contain DEC graphics glyph (for 0x5f to 0x7e) at 0x00 to 0x1F.
+	 */
+	if (*ip->GL == CSET_DECGRAPH) {
+		if (ip->font.font_lo == 0 && c >= 0x5f && c <= 0x7e)
+			c -= 0x5f;
+	}
 	ft = cci->font_cell[c];
 
 	if (!mode) {
