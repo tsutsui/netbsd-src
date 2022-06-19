@@ -1286,7 +1286,7 @@ iteputchar(int c, struct ite_softc *ip)
 			case 'B':	/* ASCII */
 			case 'A':	/* ISO latin 1 */
 			case '<':	/* user preferred suplemental */
-			case '0':	/* dec special graphics */
+			case '0':	/* DEC special graphics */
 
 			/* 96-character sets: */
 			case '-':	/* G1 */
@@ -1430,7 +1430,7 @@ iteputchar(int c, struct ite_softc *ip)
 				ip->G0 = CSET_JISROMA;
 				ip->escape = 0;
 				return;
-			case '0': /* dec special graphics */
+			case '0': /* DEC special graphics */
 				ip->G0 = CSET_DECGRAPH;
 				ip->escape = 0;
 				return;
