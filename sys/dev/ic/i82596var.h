@@ -34,7 +34,7 @@
 
 
 /* Supported chip variants */
-extern char *i82596_typenames[];
+extern const char *i82596_typenames[];
 enum i82596_types { I82596_UNKNOWN, I82596_DX, I82596_CA };
 
 

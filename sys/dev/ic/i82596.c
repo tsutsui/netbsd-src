@@ -90,7 +90,7 @@ static void iee_mediastatus(struct ifnet *, struct ifmediareq *);
 
 /* interface routines to upper protocols */
 static void iee_start(struct ifnet *);			/* initiate output */
-static int iee_ioctl(struct ifnet *, u_long, void *);	/* ioctl routine */
+static int iee_ioctl(struct ifnet *, u_long, char *);	/* ioctl routine */
 static int iee_init(struct ifnet *);			/* init routine */
 static void iee_stop(struct ifnet *, int);		/* stop routine */
 static void iee_watchdog(struct ifnet *);		/* timer routine */
@@ -695,7 +695,7 @@ iee_start(struct ifnet *ifp)
 
 /* ioctl routine */
 int
-iee_ioctl(struct ifnet *ifp, u_long cmd, void *data)
+iee_ioctl(struct ifnet *ifp, u_long cmd, char *data)
 {
 	struct iee_softc *sc = ifp->if_softc;
 	int s;
