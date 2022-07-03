@@ -90,6 +90,16 @@ typedef	__uint64_t	uint64_t;
 #define	uint64_t	__uint64_t
 #endif
 
+#ifndef intptr_t
+typedef __intptr_t      intptr_t;
+#define intptr_t        __intptr_t
+#endif
+
+#ifndef uintptr_t
+typedef __uintptr_t     uintptr_t;
+#define uintptr_t       __uintptr_t
+#endif
+
 typedef	uint8_t		u_int8_t;
 typedef	uint16_t	u_int16_t;
 typedef	uint32_t	u_int32_t;

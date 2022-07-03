@@ -115,8 +115,8 @@ pass2(void)
 			exit(EEXIT);
 		}
 		dp = ginode(ROOTINO);
-		DIP(dp, mode) =
-		    iswap16((iswap16(DIP(dp, mode)) & ~IFMT) | IFDIR);
+		DIP_SET(dp, mode,
+		    iswap16((iswap16(DIP(dp, mode)) & ~IFMT) | IFDIR));
 		inodirty();
 		break;
 
@@ -162,7 +162,7 @@ pass2(void)
 			inp->i_isize = roundup(MINDIRSIZE, dirblksiz);
 			if (reply("FIX") == 1) {
 				dp = ginode(inp->i_number);
-				DIP(dp, size) = iswap64(inp->i_isize);
+				DIP_SET(dp, size, iswap64(inp->i_isize));
 				inodirty();
 			} else
 				markclean = 0;
@@ -182,7 +182,7 @@ pass2(void)
 			inp->i_isize = roundup(inp->i_isize, dirblksiz);
 			if (preen || reply("ADJUST") == 1) {
 				dp = ginode(inp->i_number);
-				DIP(dp, size) = iswap64(inp->i_isize);
+				DIP_SET(dp, size, iswap64(inp->i_isize));
 				inodirty();
 			} else
 				markclean = 0;

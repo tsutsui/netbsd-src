@@ -1127,7 +1127,7 @@ __END_DECLS
 
 struct sysctlnode {
 	uint32_t sysctl_flags;		/* flags and type */
-	int32_t sysctl_num;		/* mib number */
+	int sysctl_num;		/* mib number */
 	char sysctl_name[SYSCTL_NAMELEN]; /* node name */
 	uint32_t sysctl_ver;		/* node's version vs. rest of tree */
 	uint32_t __rsvd;

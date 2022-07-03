@@ -128,7 +128,7 @@ lose_credentials(struct portal_cred *pcr)
 }
 
 int
-portal_file(struct portal_cred *pcr, char *key, char **v, int so, int *fdp)
+portal_file(struct portal_cred *pcr, char *key, const char **v, int so, int *fdp)
 {
 	int     fd;
 	char    pbuf[MAXPATHLEN];

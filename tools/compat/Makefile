@@ -2,7 +2,8 @@
 
 HOSTLIB=	nbcompat
 
-SRCS=		atoll.c basename.c dirname.c fgetln.c flock.c fparseln.c \
+SRCS=		atoll.c basename.c bswap16.c bswap32.c bswap64.c \
+		dirname.c fgetln.c flock.c fparseln.c \
 		getmode.c getopt_long.c gettemp.c heapsort.c issetugid.c \
 		lchflags.c lchmod.c lchown.c libyywrap.c \
 		md2c.c md2hl.c md4c.c md4hl.c md5c.c md5hl.c mkdtemp.c \

@@ -259,9 +259,9 @@ checkinode(ino_t inumber, struct inodesc *idesc)
 	}
 	if (!preen && mode == IFMT && reply("HOLD BAD BLOCK") == 1) {
 		dp = ginode(inumber);
-		DIP(dp, size) = iswap64(sblock->fs_fsize);
+		DIP_SET(dp, size, iswap64(sblock->fs_fsize));
 		size = sblock->fs_fsize;
-		DIP(dp, mode) = iswap16(IFREG|0600);
+		DIP_SET(dp, mode, iswap16(IFREG|0600));
 		inodirty();
 	}
 	ndb = howmany(size, sblock->fs_bsize);
@@ -296,7 +296,7 @@ checkinode(ino_t inumber, struct inodesc *idesc)
 			}
 			dp = ginode(inumber);
 			memmove(dp->dp1.di_db, symbuf, (long)size);
-			DIP(dp, blocks) = 0;
+			DIP_SET(dp, blocks, 0);
 			inodirty();
 		}
 		/*

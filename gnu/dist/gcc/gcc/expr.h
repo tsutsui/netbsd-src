@@ -521,6 +521,9 @@ extern rtx expand_expr PARAMS ((tree, rtx, enum machine_mode,
    arguments waiting to be popped.  */
 extern void init_pending_stack_adjust PARAMS ((void));
 
+/* Discard any pending stack adjustment.  */
+extern void discard_pending_stack_adjust PARAMS((void));
+
 /* When exiting from function, if safe, clear out any pending stack adjust
    so the adjustment won't get done.  */
 extern void clear_pending_stack_adjust PARAMS ((void));

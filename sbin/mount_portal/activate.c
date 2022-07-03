@@ -55,7 +55,7 @@ __RCSID("$NetBSD: activate.c,v 1.13 2005/02/09 13:57:57 xtraeme Exp $");
 
 #include "portald.h"
 
-static	int	activate_argv(struct portal_cred *, char *, char **,
+static	int	activate_argv(struct portal_cred *, char *, const char **,
 				    int, int *);
 static	int	get_request(int, struct portal_cred *, char *, int);
 static	void	send_reply(int, int, int);
@@ -65,7 +65,7 @@ static	void	send_reply(int, int, int);
  * appropriate function.
  */
 static int
-activate_argv(struct portal_cred *pcr, char *key, char **v, int so, int *fdp)
+activate_argv(struct portal_cred *pcr, char *key, const char **v, int so, int *fdp)
 {
 	provider *pr;
 
@@ -185,7 +185,7 @@ activate(qelem *q, int so)
 	struct portal_cred pcred;
 	char key[MAXPATHLEN+1];
 	int error;
-	char **v;
+	const char **v;
 	int fd = -1;
 
 	/*

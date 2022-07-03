@@ -170,6 +170,10 @@ getarch()
 		MACHINE_ARCH=m68k
 		;;
 
+        mvme88k)
+                MACHINE_ARCH=m88k
+                ;;
+
 	evbmips-e[bl]|sbmips-e[bl])
 		MACHINE_ARCH=mips${MACHINE##*-}
 		makewrappermachine=${MACHINE}
@@ -249,7 +253,7 @@ validatearch()
 	#
 	case "${MACHINE_ARCH}" in
 
-	alpha|arm|armeb|hppa|i386|m68000|m68k|mipse[bl]|ns32k|powerpc|sh[35]e[bl]|sparc|sparc64|vax|x86_64)
+	alpha|arm|armeb|hppa|i386|m68000|m68k|m88k|mipse[bl]|ns32k|powerpc|sh[35]e[bl]|sparc|sparc64|vax|x86_64)
 		;;
 
 	"")

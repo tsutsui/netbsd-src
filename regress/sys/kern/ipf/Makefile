@@ -6,7 +6,9 @@
 #
 .include <bsd.prog.mk>
 
-regress all: results tests
+all:
+
+regress: results tests
 
 results:
 	mkdir -p results

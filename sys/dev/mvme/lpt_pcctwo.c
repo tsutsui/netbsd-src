@@ -99,13 +99,13 @@ lpt_pcctwo_match(parent, cf, args)
 	if (strcmp(pa->pa_name, lpt_cd.cd_name))
 		return (0);
 
-#ifdef MVME68K
+#ifdef mvme68k
 	if (machineid != MVME_167 && machineid != MVME_177)
 		return (0);
 #endif
 
-#ifdef MVME88K
-	if (machineid != MVME_187)
+#ifdef mvme88k
+	if (machineid != MVME_187 && machineid != MVME_197)
 		return (0);
 #endif
 

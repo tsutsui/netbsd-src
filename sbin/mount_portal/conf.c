@@ -307,7 +307,7 @@ conf_read(qelem *q, char *conf)
 }
 
 
-char **
+const char **
 conf_match(qelem *q0, char *key)
 {
 	qelem *q;
@@ -316,10 +316,10 @@ conf_match(qelem *q0, char *key)
 		path *p = (path *) q;
 		if (p->p_use_re) {
 			if (regexec(&p->p_re, key, 0, NULL, 0) == 0)
-				return (p->p_argv+1);
+				return (const char **)(p->p_argv+1);
 		} else {
 			if (strncmp(p->p_key, key, strlen(p->p_key)) == 0)
-				return (p->p_argv+1);
+				return (const char **)(p->p_argv+1);
 		}
 	}
 

@@ -120,7 +120,7 @@ ffs_alloc(struct inode *ip, daddr_t lbn, daddr_t bpref, int size,
 		cg = dtog(fs, bpref);
 	bno = ffs_hashalloc(ip, cg, bpref, size, ffs_alloccg);
 	if (bno > 0) {
-		DIP(ip, blocks) += size / DEV_BSIZE;
+		DIP_ASSIGN(ip, blocks, (DIP(ip, blocks) + size / DEV_BSIZE));
 		*bnp = bno;
 		return (0);
 	}

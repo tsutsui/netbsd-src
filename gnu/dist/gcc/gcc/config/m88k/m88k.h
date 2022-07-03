@@ -185,7 +185,7 @@ extern int flag_pic;				/* -fpic */
 #define MASK_EITHER_LARGE_SHIFT	(MASK_TRAP_LARGE_SHIFT | \
 				 MASK_HANDLE_LARGE_SHIFT)
 #define MASK_OMIT_LEAF_FRAME_POINTER 0x00020000 /* omit leaf frame pointers */
-
+#define MASK_NO_POUND_SIGN      0x00040000 /* Don't emit a leading '#' */
 
 #define TARGET_88100   		 ((target_flags & MASK_88000) == MASK_88100)
 #define TARGET_88110		 ((target_flags & MASK_88000) == MASK_88110)
@@ -208,6 +208,7 @@ extern int flag_pic;				/* -fpic */
 
 #define TARGET_EITHER_LARGE_SHIFT (target_flags & MASK_EITHER_LARGE_SHIFT)
 #define TARGET_OMIT_LEAF_FRAME_POINTER (target_flags & MASK_OMIT_LEAF_FRAME_POINTER)
+#define TARGET_NO_POUND_SIGN      (target_flags & MASK_NO_POUND_SIGN)
 
 /*  Redefined in sysv3.h, sysv4.h, and dgux.h.  */
 #define TARGET_DEFAULT	(MASK_CHECK_ZERO_DIV)
@@ -239,6 +240,7 @@ extern int flag_pic;				/* -fpic */
     { "serialize-volatile",		-MASK_NO_SERIALIZE_VOLATILE }, \
     { "omit-leaf-frame-pointer",	 MASK_OMIT_LEAF_FRAME_POINTER }, \
     { "no-omit-leaf-frame-pointer",     -MASK_OMIT_LEAF_FRAME_POINTER }, \
+    { "no-pound-sign",                   MASK_NO_POUND_SIGN }, \
     SUBTARGET_SWITCHES \
     /* Default switches */ \
     { "",				 TARGET_DEFAULT }, \
@@ -252,63 +254,16 @@ extern int flag_pic;				/* -fpic */
 #define TARGET_OPTIONS { { "short-data-", &m88k_short_data }, \
 			 { "version-", &m88k_version } }
 
-/* Do any checking or such that is needed after processing the -m switches.  */
+/* Sometimes certain combinations of command options do not make sense
+   on a particular target machine.  You can define a macro
+   `OVERRIDE_OPTIONS' to take account of this.  This macro, if
+   defined, is executed once just after all the command options have
+   been parsed.
 
-#define OVERRIDE_OPTIONS						     \
-  do {									     \
-    register int i;							     \
-									     \
-    if ((target_flags & MASK_88000) == 0)				     \
-      target_flags |= CPU_DEFAULT;					     \
-									     \
-    if (TARGET_88110)							     \
-      {									     \
-        target_flags |= MASK_USE_DIV;					     \
-        target_flags &= ~MASK_CHECK_ZERO_DIV;				     \
-      }									     \
-      									     \
-    m88k_cpu = (TARGET_88000 ? PROCESSOR_M88000				     \
-		: (TARGET_88100 ? PROCESSOR_M88100 : PROCESSOR_M88110));		     \
-									     \
-    if (TARGET_BIG_PIC)							     \
-      flag_pic = 2;							     \
-									     \
-    if ((target_flags & MASK_EITHER_LARGE_SHIFT) == MASK_EITHER_LARGE_SHIFT) \
-      error ("-mtrap-large-shift and -mhandle-large-shift are incompatible");\
-									     \
-    if (TARGET_SVR4)						     	     \
-      {									     \
-	for (i = 0; i < FIRST_PSEUDO_REGISTER; i++)			     \
-	  reg_names[i]--;						     \
-	m88k_pound_sign = "#";						     \
-      }									     \
-    else								     \
-      {									     \
-	target_flags |= MASK_SVR3;					     \
-	target_flags &= ~MASK_SVR4;					     \
-      }									     \
-									     \
-    if (m88k_short_data)						     \
-      {									     \
-	const char *p = m88k_short_data;				     \
-	while (*p)							     \
-	  if (ISDIGIT (*p))						     \
-	    p++;							     \
-	  else								     \
-	    {								     \
-	      error ("invalid option `-mshort-data-%s'", m88k_short_data);   \
-	      break;							     \
-	    }								     \
-	m88k_gp_threshold = atoi (m88k_short_data);			     \
-	if (m88k_gp_threshold > 0x7fffffff)				     \
-	  error ("-mshort-data-%s is too large ", m88k_short_data);          \
-	if (flag_pic)							     \
-	  error ("-mshort-data-%s and PIC are incompatible", m88k_short_data); \
-      }									     \
-    if (TARGET_OMIT_LEAF_FRAME_POINTER)       /* keep nonleaf frame pointers */    \
-      flag_omit_frame_pointer = 1;                                         \
-  } while (0)
-
+   Don't use this macro to turn on various extra optimizations for
+   `-O'.  That is what `OPTIMIZATION_OPTIONS' is for. */
+#define OVERRIDE_OPTIONS m88k_override_options()
+
 /*** Storage Layout ***/
 
 /* Sizes in bits of the various types.  */
@@ -725,7 +680,7 @@ enum reg_class { NO_REGS, AP_REG, XRF_REGS, GENERAL_REGS, AGRF_REGS,
    reg number REGNO.  This could be a conditional expression
    or could index an array.  */
 #define REGNO_REG_CLASS(REGNO) \
-  ((REGNO) ? ((REGNO < 32) ? GENERAL_REGS : XRF_REGS) : AP_REG)
+  ((REGNO) ? (((REGNO) < 32) ? GENERAL_REGS : XRF_REGS) : AP_REG)
 
 /* The class value for index registers, and the one for base regs.  */
 #define BASE_REG_CLASS AGRF_REGS
@@ -975,11 +930,11 @@ enum reg_class { NO_REGS, AP_REG, XRF_REGS, GENERAL_REGS, AGRF_REGS,
 #define FUNCTION_ARG_ADVANCE(CUM, MODE, TYPE, NAMED)			\
   do {									\
     enum machine_mode __mode = (TYPE) ? TYPE_MODE (TYPE) : (MODE);	\
-    if ((CUM & 1)							\
+    if (((CUM) & 1)							\
 	&& (__mode == DImode || __mode == DFmode			\
 	    || ((TYPE) && TYPE_ALIGN (TYPE) > BITS_PER_WORD)))		\
-      CUM++;								\
-    CUM += (((__mode != BLKmode)					\
+      (CUM)++;								\
+    (CUM) += (((__mode != BLKmode)					\
 	     ? GET_MODE_SIZE (MODE) : int_size_in_bytes (TYPE))		\
 	    + 3) / 4;							\
   } while (0)
@@ -1038,6 +993,9 @@ enum reg_class { NO_REGS, AP_REG, XRF_REGS, GENERAL_REGS, AGRF_REGS,
    functions that have frame pointers.
    No definition is equivalent to always zero.  */
 #define EXIT_IGNORE_STACK (1)
+
+/* Registers r1 (return address) & r30 (frame pointer) are used in epilogue code */
+#define EPILOGUE_USES(REGNO) (reload_completed && ((REGNO) == 1 || (REGNO) == 30) )
 
 /* Value should be nonzero if functions must have frame pointers.
    Zero means the frame pointer need not be set up (and parms
@@ -1497,12 +1455,12 @@ enum reg_class { NO_REGS, AP_REG, XRF_REGS, GENERAL_REGS, AGRF_REGS,
 	  && GET_CODE (PATTERN (RTX)) == SET				\
 	  && ((GET_CODE (SET_SRC (PATTERN (RTX))) == MEM		\
 	       && MEM_VOLATILE_P (SET_SRC (PATTERN (RTX)))))))		\
-    LENGTH += 1;							\
+    (LENGTH) += 1;							\
   else if (GET_CODE (RTX) == NOTE					\
 	   && NOTE_LINE_NUMBER (RTX) == NOTE_INSN_PROLOGUE_END)		\
     {									\
       if (current_function_profile)					\
-	LENGTH += (FUNCTION_PROFILER_LENGTH + REG_PUSH_LENGTH		\
+	(LENGTH) += (FUNCTION_PROFILER_LENGTH + REG_PUSH_LENGTH		\
 		   + REG_POP_LENGTH);					\
     }									\
 
@@ -1592,7 +1550,6 @@ enum reg_class { NO_REGS, AP_REG, XRF_REGS, GENERAL_REGS, AGRF_REGS,
 #undef	READONLY_DATA_SECTION_ASM_OP
 #undef	CTORS_SECTION_ASM_OP
 #undef	DTORS_SECTION_ASM_OP
-#undef  TARGET_ASM_NAMED_SECTION
 #undef	INIT_SECTION_ASM_OP
 #undef	FINI_SECTION_ASM_OP
 #undef	TYPE_ASM_OP
@@ -1630,8 +1587,6 @@ enum reg_class { NO_REGS, AP_REG, XRF_REGS, GENERAL_REGS, AGRF_REGS,
 #define SKIP_ASM_OP		"\tzero\t"
 #define COMMON_ASM_OP		"\tcomm\t"
 #define BSS_ASM_OP		"\tbss\t"
-#define FLOAT_ASM_OP		"\tfloat\t"
-#define DOUBLE_ASM_OP		"\tdouble\t"
 #define ASCII_DATA_ASM_OP	"\tstring\t"
 
 /* These are particular to the global pool optimization.  */
@@ -1686,7 +1641,7 @@ enum reg_class { NO_REGS, AP_REG, XRF_REGS, GENERAL_REGS, AGRF_REGS,
 	2	Global names have been converted to lower case
 	3	Global names have been converted to upper case.  */
 
-#ifdef SDB_DEBUGGING_INFO
+#if !defined(OBJECT_FORMAT_ELF) && defined(SDB_DEBUGGING_INFO)
 #define ASM_COFFSEM(FILE)						\
     if (write_symbols == SDB_DEBUG)					\
       {									\
@@ -1740,12 +1695,14 @@ enum reg_class { NO_REGS, AP_REG, XRF_REGS, GENERAL_REGS, AGRF_REGS,
 #endif
 
 /* Code to handle #ident directives.  Override svr[34].h definition.  */
+#ifndef OBJECT_FORMAT_ELF
 #undef	ASM_OUTPUT_IDENT
 #ifdef DBX_DEBUGGING_INFO
 #define ASM_OUTPUT_IDENT(FILE, NAME)
 #else
 #define ASM_OUTPUT_IDENT(FILE, NAME) \
   output_ascii (FILE, IDENT_ASM_OP, 4000, NAME, strlen (NAME));
+#endif
 #endif
 
 /* Output to assembler file text saying following lines
@@ -1864,8 +1821,10 @@ do {									 \
 
 /* The prefix to add to user-visible assembler symbols.
    Override svr[34].h.  */
+#ifndef OBJECT_FORMAT_ELF
 #undef USER_LABEL_PREFIX
 #define USER_LABEL_PREFIX "_"
+#endif
 
 /* This is how to output a reference to a user-level label named NAME.
    Override svr[34].h.  */
@@ -2282,6 +2241,7 @@ sdata_section ()							\
   INIT_SECTION_FUNCTION							\
   FINI_SECTION_FUNCTION
 
+#undef TARGET_ASM_SELECT_SECTION
 #define TARGET_ASM_SELECT_SECTION  m88k_select_section
 
 /* Jump tables consist of branch instructions and should be output in

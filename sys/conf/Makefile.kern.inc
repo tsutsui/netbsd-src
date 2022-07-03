@@ -77,7 +77,7 @@ AFLAGS+=	${CPUFLAGS} -D_LOCORE
 
 # Disable unitialized warnings with 2.95 - it gets it wrong way too often
 _ISGCC295!=		${CC} --version 2>/dev/null | grep 2.95 2>/dev/null || echo 0
-.if ${_ISGCC295}
+.if ${_ISGCC295} || ${MACHINE_ARCH} == m88k
 CWARNFLAGS+=	-Wno-uninitialized
 .else
 CFLAGS+=	-fno-zero-initialized-in-bss

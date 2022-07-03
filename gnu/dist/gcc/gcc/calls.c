@@ -1172,7 +1172,6 @@ initialize_argument_information (num_actuals, args, args_size, n_named_args,
   /* In this loop, we consider args in the order they are written.
      We fill up ARGS from the front or from the back if necessary
      so that in any case the first arg to be pushed ends up at the front.  */
-
   if (PUSH_ARGS_REVERSED)
     {
       i = num_actuals - 1, inc = -1;
@@ -1323,6 +1322,7 @@ initialize_argument_information (num_actuals, args, args_size, n_named_args,
 
       args[i].reg = FUNCTION_ARG (*args_so_far, mode, type,
 				  argpos < n_named_args);
+
 #ifdef FUNCTION_INCOMING_ARG
       /* If this is a sibling call and the machine has register windows, the
 	 register window has to be unwinded before calling the routine, so
@@ -2220,7 +2220,7 @@ expand_call (exp, target, ignore)
 #ifdef REG_PARM_STACK_SPACE
   /* Define the boundary of the register parm stack space that needs to be
      save, if any.  */
-  int low_to_save = -1, high_to_save;
+  int low_to_save = -1, high_to_save = 0;
   rtx save_area = 0;		/* Place that it is saved */
 #endif
 
@@ -3422,7 +3422,7 @@ expand_call (exp, target, ignore)
 	 zero out the sequence.  */
       if (sibcall_failure)
 	tail_call_insns = NULL_RTX;
-    }
+  }
 
   /* The function optimize_sibling_and_tail_recursive_calls doesn't
      handle CALL_PLACEHOLDERs inside other CALL_PLACEHOLDERs.  This

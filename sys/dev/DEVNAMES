@@ -195,6 +195,7 @@ clock			atari
 clock			cats
 clock			luna68k
 clock			mvme68k
+clock			mvme88k
 clock			netwinder
 clock			pc532
 clock			sparc
@@ -649,6 +650,7 @@ lpt			MI
 lpt			amiga
 lpt			amigappc
 lpt			mvme68k
+lpt			mvme88k
 lpt			pc532
 lpt			sgimips
 lpt			sparc64
@@ -687,6 +689,7 @@ mainbus			mac68k
 mainbus			macppc
 mainbus			macppc		Attribute
 mainbus			mvme68k
+mainbus			mvme88k
 mainbus			netwinder
 mainbus			news68k
 mainbus			news68k
@@ -888,6 +891,7 @@ pccard			amiga
 pcconskbd		bebox
 pcconskbd		i386
 pcctwo			mvme68k
+pcctwo			mvme88k
 pcdisplay		MI
 pcdisplayops		MI		Attribute
 pceb			alpha
@@ -1272,6 +1276,7 @@ vmebus			MI		Attribute
 vmegeneric		MI
 vmepcc			mvme68k
 vmetwo			mvme68k
+vmetwo			mvme88k
 vp			vax
 vr			MI
 vrbcu			hpcmips

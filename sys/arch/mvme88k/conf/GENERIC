@@ -1,0 +1,308 @@
+# $NetBSD: GENERIC,v 1.54.2.3 2005/11/05 00:39:47 tron Exp $
+# $OpenBSD: GENERIC,v 1.52 2006/05/28 11:09:56 miod Exp $
+#
+# GENERIC machine description file
+# 
+# This machine description file is used to generate the default NetBSD
+# kernel.  The generic kernel does not include all options, subsystems
+# and device drivers, but should be useful for most applications.
+#
+# The machine description file can be customised for your specific
+# machine to reduce the kernel size and improve its performance.
+#
+# For further information on compiling NetBSD kernels, see the config(8)
+# man page.
+#
+# For further information on hardware support for this architecture, see
+# the intro(4) man page.  For further information about kernel options
+# for this architecture, see the options(4) man page.  For an explanation
+# of each device driver in this file see the section 4 man page for the
+# device.
+
+include		"arch/mvme88k/conf/std.mvme88k"
+
+options 	INCLUDE_CONFIG_FILE	# embed config file in kernel binary
+
+#ident 		"GENERIC-$Revision: 1.54.2.3 $"
+
+
+maxusers	32			# estimated number of users
+
+
+# CPU support.  At least one is REQUIRED.
+
+options		M88100
+options		M88110
+
+
+# CPU-related options.
+
+options		ERRATA__XXX_USR		# workaround xxx.usr bug (mask C82N)
+
+
+# Boards this kernel supports
+
+options 	MVME187			# support for 187 (requires M88100)
+#options 	MVME188			# support for 188 (requires M88100)
+options 	MVME197			# support for 197 (requires M88110)
+
+
+# Board-specific options
+
+options 	NO_PROPOLICE		# No stack protector
+#options 	CLMPCC_CONSOLE_CHAN=1	# Console on port 1
+#options 	CLMPCC_CONSOLE_RATE=19200	# Console port at 19200 baud
+
+#options 	PMAP_CON_DEBUG="CD_ALL"	# PMAP debug output
+#options 	TRAPDEBUG		# trap handler debugging output
+#options 	I82586_DEBUG=IED_ALL	# ie(4) i82586 module debugging output
+
+
+# Standard system options
+
+#options 	INSECURE		# disable kernel security levels - X needs this
+
+options 	SYSVMSG			# System V-like message queues
+
+options 	SYSVSEM			# System V-like semaphores
+#options 	SEMMNI=10		# number of semaphore identifiers
+#options 	SEMMNS=60		# number of semaphores in system
+#options 	SEMUME=10		# max number of undo entries per process
+#options 	SEMMNU=30		# number of undo structures in system
+
+options 	SYSVSHM			# System V-like shared memory
+#options 	SHMMAXPGS=1024		# 1024 pages is the default
+
+options 	P1003_1B_SEMAPHORE	# p1003.1b semaphore support
+
+options 	LKM			# loadable kernel modules
+
+options 	USERCONF		# userconf(4) support
+options 	PIPE_SOCKETPAIR		# smaller, but slower pipe(2)
+#options 	SYSCTL_INCLUDE_DESCR	# Include sysctl descriptions in kernel
+
+# Enable experimental buffer queue strategy for better responsiveness under
+# high disk I/O load. Likely stable but not yet the default.
+#options 	NEW_BUFQ_STRATEGY
+
+
+# Diagnostic/debugging support options
+
+#options 	DIAGNOSTIC		# cheap kernel consistency checks
+#options 	DEBUG			# expensive debugging checks/support
+#options 	SYSCALL_DEBUG		# system call debugging output
+#options	KMEMSTATS		# kernel memory statistics (vmstat -m)
+#makeoptions	DEBUG="-g"		# compile full symbol table
+#makeoptions	DEBUGLIST="pattern1 pattern2 ..."
+
+options		DDB			# in-kernel debugger
+options		DDB_HISTORY_SIZE=512	# enable history editing in DDB
+
+#options 	KGDB			# remote debugger
+#options 	KGDB_DEV=0xc01		# kgdb device number (dev_t)
+#options 	KGDB_DEVRATE=38400	# baud rate
+
+
+# Compatibility options
+
+#options 	COMPAT_SVR4	# binary compatibility with SVR4 (not implemented)
+
+
+# File systems
+file-system	FFS		# Fast file system
+#file-system 	EXT2FS		# second extended file system (linux)
+#file-system 	LFS		# log-structured file system
+file-system	MFS		# Memory-based file system
+file-system	NFS		# Sun NFS-compatible file system client
+#file-system	NTFS		# Windows/NT file system (experimental)
+file-system	CD9660		# ISO-9660 CD-ROM FS (w/RockRidge extensions)
+#file-system	MSDOSFS		# MS-DOS-compatible file system
+file-system 	FDESC		# /dev/fd
+file-system	KERNFS		# Kernel variable file system (/kern)
+#file-system 	NULLFS		# loopback file system
+#file-system 	OVERLAY		# overlay file system
+file-system	PROCFS		# Process file system (/proc)
+#file-system 	UMAPFS		# NULLFS + uid and gid remapping
+file-system 	UNION		# union file system
+
+
+# File system options
+
+options 	QUOTA		# UFS quotas
+options 	NFSSERVER	# Network File System server
+#options 	FFS_EI		# FFS Endian Independant support
+options 	SOFTDEP		# FFS soft updates support.
+options 	FFS_NO_SNAPSHOT	# ffs snapshots
+#options	UFS_DIRHASH	# UFS Large Directory Hashing - Experimental
+
+
+# Networking options
+
+#options 	GATEWAY		# packet forwarding
+options 	INET		# IP + ICMP + TCP + UDP
+options 	INET6		# IPV6
+#options 	IPSEC		# IP security
+#options 	IPSEC_ESP	# IP security (encryption part; define w/IPSEC)
+#options 	IPSEC_NAT_T	# IPsec NAT traversal (NAT-T)
+#options 	IPSEC_DEBUG	# debug for IP security
+#options 	MROUTING	# IP multicast routing
+#options 	PIM		# Protocol Independent Multicast
+#options 	NS		# XNS
+#options 	NSIP		# XNS tunneling over IP
+#options 	ISO,TPIP	# OSI
+#options 	EON		# OSI tunneling over IP
+#options 	CCITT,LLC,HDLC	# X.25
+#options 	NETATALK	# AppleTalk networking protocols
+#options 	PPP_BSDCOMP	# BSD-Compress compression support for PPP
+#options 	PPP_DEFLATE	# Deflate compression support for PPP
+#options 	PPP_FILTER	# Active filter support for PPP (requires bpf)
+#options 	PFIL_HOOKS	# pfil(9) packet filter hooks
+options 	IPFILTER_LOG	# ipmon(8) log support
+#options 	IPFILTER_DEFAULT_BLOCK	# block all packets by default
+#options 	TCP_DEBUG	# Record last TCP_NDEBUG packets with SO_DEBUG
+
+#options 	ALTQ		# Manipulate network interfaces' output queues
+#options 	ALTQ_BLUE	# Stochastic Fair Blue
+#options 	ALTQ_CBQ	# Class-Based Queueing
+#options 	ALTQ_CDNR	# Diffserv Traffic Conditioner
+#options 	ALTQ_FIFOQ	# First-In First-Out Queue
+#options 	ALTQ_FLOWVALVE	# RED/flow-valve (red-penalty-box)
+#options 	ALTQ_HFSC	# Hierarchical Fair Service Curve
+#options 	ALTQ_LOCALQ	# Local queueing discipline
+#options 	ALTQ_PRIQ	# Priority Queueing
+#options 	ALTQ_RED	# Random Early Detection
+#options 	ALTQ_RIO	# RED with IN/OUT
+#options 	ALTQ_WFQ	# Weighted Fair Queueing
+
+
+# These options enable verbose messages for several subsystems.
+# Warning, these may compile large string tables into the kernel!
+
+options 	SCSIVERBOSE	# human readable SCSI error messages
+
+
+# Which protocol to use when booting over NFS
+
+options 	NFS_BOOT_DHCP		# Diskless client w/ dhcp
+options 	NFS_BOOT_BOOTP		# Diskless client w/ bootp
+options 	NFS_BOOT_BOOTPARAM	# Diskless client w/ bootparamd
+
+
+config		netbsd		root on ? type ?
+
+#
+# devices
+#
+
+mainbus0 at root
+
+# Processor bus devices
+pcctwo0 	at mainbus0 addr 0xfff42000		# MVME187
+bussw0 		at mainbus0 addr 0xfff00000		# MVME197
+#syscon0 	at mainbus0 addr 0xfff00000		# MVME188
+#sram0 		at mainbus0 addr 0xffe00000		# MVME187
+
+# Local peripheral bus devices
+#vme0 		at bussw0 offset 0x40000		# MVME197
+pcctwo0 	at bussw0 offset 0x42000		# MVME197
+
+# PCC2 devices
+clock0		at pcctwo0 offset 0x0000 ipl 5
+lpt0		at pcctwo0 offset 0x0000 ipl 3
+clmpcc0 	at pcctwo0 offset 0x3000 ipl 3
+#clmpcc1 	at pcctwo0 offset 0x3200 ipl 3		# M8120 only
+#ie0		at pcctwo0 offset 0x4000 ipl 3
+iee0		at pcctwo0 offset 0x4000 ipl 3
+osiop0		at pcctwo0 offset 0x5000 ipl 2
+timekeeper0	at pcctwo0 offset 0x7e000
+#memc0 		at pcctwo0 offset 0x43000		# MVME187?
+#memc1 		at pcctwo0 offset 0x43100		# MVME187?
+
+# MVME188 syscon devices
+#timekeeper0	at syscon0 offset 0x80000
+#dart0 		at syscon0 offset 0x82000 ipl 3
+#vme0 		at syscon0 offset 0x85000
+
+# VME short & long I/O spaces
+#vmes0		at vme0
+#vmel0		at vme0
+
+# VME bus devices (short I/O space)
+#vx0		at vmes0 addr 0xff780000 ipl 3
+#vx1		at vmes0 addr 0xff790000 ipl 3
+#vx2		at vmes0 addr 0xff7a0000 ipl 3
+#vx3		at vmes0 addr 0xff7b0000 ipl 3
+#le0		at vmes0 addr 0xffff1200 ipl 3
+#le1		at vmes0 addr 0xffff1400 ipl 3
+#le2		at vmes0 addr 0xffff1600 ipl 3
+#vs0		at vmes0 addr 0xffff9000 ipl 2
+#vs1		at vmes0 addr 0xffff9800 ipl 2
+#vs2		at vmes0 addr 0xffff4800 ipl 2
+#vs3		at vmes0 addr 0xffff5800 ipl 2
+#vs4		at vmes0 addr 0xffff7000 ipl 2
+#vs5		at vmes0 addr 0xffff7800 ipl 2
+
+# SCSI bus
+#scsibus* at vs?
+scsibus* at osiop?
+
+# SCSI devices
+cd*	at	scsibus? target ? lun ?		# SCSI CD-ROM drives
+sd*	at	scsibus? target ? lun ?		# SCSI disk drives
+st*	at	scsibus? target ? lun ?		# SCSI tape drives
+
+
+# Pseudo-Devices
+
+#pseudo-device 	crypto			# opencrypto framework (XXX not supported)
+
+# disk/mass storage pseudo-devices
+pseudo-device	ccd		4	# concatenated/striped disk devices
+#pseudo-device	cgd		4	# cryptographic disk devices
+pseudo-device	raid		8	# RAIDframe disk driver
+options 	RAID_AUTOCONFIG		# auto-configuration of RAID components
+# Options to enable various other RAIDframe RAID types.
+#options 	RF_INCLUDE_EVENODD=1
+#options 	RF_INCLUDE_RAID5_RS=1
+#options 	RF_INCLUDE_PARITYLOGGING=1
+#options 	RF_INCLUDE_CHAINDECLUSTER=1
+#options 	RF_INCLUDE_INTERDECLUSTER=1
+#options 	RF_INCLUDE_PARITY_DECLUSTERING=1
+#options 	RF_INCLUDE_PARITY_DECLUSTERING_DS=1
+pseudo-device	fss		4	# file system snapshot device
+
+# Vinum
+# pseudo-device	vinum		8	# Vinum
+# options 	VINUMDEBUG
+
+pseudo-device	md		1	# memory disk device (ramdisk)
+pseudo-device	vnd		4	# disk-like interface to files
+options 	VND_COMPRESSION		# compressed vnd(4)
+
+# network pseudo-devices
+pseudo-device	bpfilter	8	# Berkeley packet filter
+pseudo-device	ipfilter		# IP filter (firewall) and NAT
+pseudo-device	loop			# network loopback
+pseudo-device	ppp		2	# Point-to-Point Protocol
+pseudo-device	pppoe			# PPP over Ethernet (RFC 2516)
+pseudo-device	sl		2	# Serial Line IP
+pseudo-device	tap			# virtual Ethernet
+pseudo-device	tun		2	# network tunneling over tty
+pseudo-device	gre		2	# generic L3 over IP tunnel
+pseudo-device	gif		4	# IPv[46] over IPv[46] tunnel (RFC1933)
+#pseudo-device	faith		1	# IPv[46] tcp relay translation i/f
+#pseudo-device	stf		1	# 6to4 IPv6 over IPv4 encapsulation
+pseudo-device	vlan			# IEEE 802.1q encapsulation
+pseudo-device	bridge			# simple inter-network bridging
+#options 	BRIDGE_IPF		# bridge uses IP/IPv6 pfil hooks too
+#pseudo-device	pf			# PF packet filter
+#pseudo-device	pflog			# PF log if
+
+# miscellaneous pseudo-devices
+pseudo-device	ksyms			# /dev/ksyms
+pseudo-device	pty			# pseudo-terminals
+pseudo-device	tb		1	# tablet line discipline
+pseudo-device	sequencer	1	# MIDI sequencer
+#pseudo-device	rnd			# /dev/random and in-kernel generator
+#options 	RND_COM			# use "com" randomness as well (BROKEN)
+pseudo-device	clockctl		# user control of clock subsystem

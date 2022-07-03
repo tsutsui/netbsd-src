@@ -173,26 +173,41 @@ bootp(sock)
 #ifdef SUPPORT_DHCP
 	if (dhcp_ok) {
 		u_int32_t leasetime;
-		bp->bp_vend[6] = DHCPREQUEST;
-		bp->bp_vend[7] = TAG_REQ_ADDR;
-		bp->bp_vend[8] = 4;
-		bcopy(&rbuf.rbootp.bp_yiaddr, &bp->bp_vend[9], 4);
-		bp->bp_vend[13] = TAG_SERVERID;
-		bp->bp_vend[14] = 4;
-		bcopy(&dhcp_serverip.s_addr, &bp->bp_vend[15], 4);
-		bp->bp_vend[19] = TAG_LEASETIME;
-		bp->bp_vend[20] = 4;
+		unsigned int index = 6;
+
+		bp->bp_vend[index++] = DHCPREQUEST;
+
+		bp->bp_vend[index++] = TAG_REQ_ADDR;
+		bp->bp_vend[index++] = 4;
+		bcopy(&rbuf.rbootp.bp_yiaddr, &bp->bp_vend[index], 4);
+		index += 4;
+
+		bp->bp_vend[index++] = TAG_SERVERID;
+		bp->bp_vend[index++] = 4;
+		bcopy(&dhcp_serverip.s_addr, &bp->bp_vend[index], 4);
+		index += 4;
+
+		bp->bp_vend[index++] = TAG_LEASETIME;
+		bp->bp_vend[index++] = 4;
 		leasetime = htonl(300);
-		bcopy(&leasetime, &bp->bp_vend[21], 4);
-		/*
-		 * Insert a NetBSD Vendor Class Identifier option.
-		 */
-		sprintf(vci, "NetBSD:%s:libsa", MACHINE);
-		vcilen = strlen(vci);
-		bp->bp_vend[25] = TAG_CLASSID;
-		bp->bp_vend[26] = vcilen;
-		bcopy(vci, &bp->bp_vend[27], vcilen);
-		bp->bp_vend[27 + vcilen] = TAG_END;
+		bcopy(&leasetime, &bp->bp_vend[index], 4);
+		index += 4;
+
+		bp->bp_vend[index++] = TAG_PARAM_REQ;
+		bp->bp_vend[index++] = 6;
+		bp->bp_vend[index++] = TAG_SUBNET_MASK;
+		bp->bp_vend[index++] = TAG_GATEWAY;
+		bp->bp_vend[index++] = TAG_HOSTNAME;
+		bp->bp_vend[index++] = TAG_DOMAINNAME;
+		bp->bp_vend[index++] = TAG_ROOTPATH;
+		bp->bp_vend[index++] = TAG_SWAPSERVER;
+
+		bp->bp_vend[index++] = TAG_CLASSID;
+		bp->bp_vend[index++] = vcilen;
+		bcopy(vci, &bp->bp_vend[index], vcilen);
+		index += vcilen;
+
+		bp->bp_vend[index] = TAG_END;
 
 		expected_dhcpmsgtype = DHCPACK;
 

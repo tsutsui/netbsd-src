@@ -47,6 +47,9 @@ __KERNEL_RCSID(0, "$NetBSD: clmpcc_pcctwo.c,v 1.9 2005/02/04 02:10:43 perry Exp 
 #include <sys/systm.h>
 #include <sys/proc.h>
 #include <sys/device.h>
+#ifndef __HAVE_GENERIC_SOFT_INTERRUPTS
+#include <sys/callout.h>
+#endif
 #include <sys/conf.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
@@ -66,21 +69,55 @@ __KERNEL_RCSID(0, "$NetBSD: clmpcc_pcctwo.c,v 1.9 2005/02/04 02:10:43 perry Exp 
 #include <dev/mvme/pcctwovar.h>
 #include <dev/mvme/pcctworeg.h>
 
-/* XXXXSCW: Fixme */
-#ifdef MVME68K
+#if defined(mvme68k)
 #include <mvme68k/dev/mainbus.h>
-#else
-#error Need consiack hook
+#elif defined(mvme88k)
+#include <mvme88k/dev/mainbus.h>
 #endif
 
+#include "opt_clmpcc_console.h"
+
+#ifndef CLMPCC_CONSOLE_CHAN
+  #define CLMPCC_CONSOLE_CHAN 0
+#endif
+
+#ifndef CLMPCC_CONSOLE_RATE
+  #define CLMPCC_CONSOLE_RATE 9600
+#endif
+
+#define CLMPCC_REG_SIZE 0x100
 
 /* Definition of the driver for autoconfig. */
 int clmpcc_pcctwo_match(struct device *, struct cfdata *, void *);
 void clmpcc_pcctwo_attach(struct device *, struct device *, void *);
+#ifndef __HAVE_GENERIC_SOFT_INTERRUPTS
+void clmpcc_pcctwo_softhook(struct clmpcc_softc *);
+#endif
 void clmpcc_pcctwo_iackhook(struct clmpcc_softc *, int);
-void clmpcc_pcctwo_consiackhook(struct clmpcc_softc *, int);
 
-CFATTACH_DECL(clmpcc_pcctwo, sizeof(struct clmpcc_softc),
+struct clmpcc_pcctwo_softc
+{
+	struct clmpcc_softc	sc_super;
+#define sc_dev sc_super.sc_dev
+#define sc_iot sc_super.sc_iot
+#define sc_ioh sc_super.sc_ioh
+#define sc_clk sc_super.sc_clk
+#define sc_byteswap sc_super.sc_byteswap
+#define sc_swaprtsdtr sc_super.sc_swaprtsdtr
+#define sc_iackhook sc_super.sc_iackhook
+#define sc_softhook sc_super.sc_softhook
+#define sc_vector_base sc_super.sc_vector_base
+#define sc_rpilr sc_super.sc_rpilr
+#define sc_tpilr sc_super.sc_tpilr
+#define sc_mpilr sc_super.sc_mpilr
+#define sc_evcnt sc_super.sc_evcnt
+
+#ifndef __HAVE_GENERIC_SOFT_INTERRUPTS
+	struct callout		sc_callout;
+#endif
+};
+
+CFATTACH_DECL(clmpcc_pcctwo, sizeof(struct clmpcc_pcctwo_softc),
     clmpcc_pcctwo_match, clmpcc_pcctwo_attach, NULL, NULL);
 
 extern struct cfdriver clmpcc_cd;
@@ -91,6 +128,11 @@ extern const struct cdevsw clmpcc_cdevsw;
  * For clmpcccn*()
  */
 cons_decl(clmpcc);
+
+static struct clmpcc_pcctwo_softc cons_sc;
+
+/* Used by clmpcc_pcctwo_iackhook() prior to clmpcc_attach() being called */
+static bus_space_handle_t cons_pcctwo_bus_handle;
 
 
 /*
@@ -123,15 +165,15 @@ clmpcc_pcctwo_attach(parent, self, aux)
 	struct device *self;
 	void *aux;
 {
-	struct clmpcc_softc *sc;
+	struct clmpcc_pcctwo_softc *sc;
 	struct pcctwo_attach_args *pa;
 	int level = pa->pa_ipl;
 
-	sc = (struct clmpcc_softc *)self;
+	sc = (struct clmpcc_pcctwo_softc *)self;
 	pa = aux;
 	level = pa->pa_ipl;
 	sc->sc_iot = pa->pa_bust;
-	bus_space_map(pa->pa_bust, pa->pa_offset, 0x100, 0, &sc->sc_ioh);
+	bus_space_map(pa->pa_bust, pa->pa_offset, CLMPCC_REG_SIZE, 0, &sc->sc_ioh);
 
 	sc->sc_clk = 20000000;
 	sc->sc_byteswap = CLMPCC_BYTESWAP_LOW;
@@ -143,8 +185,12 @@ clmpcc_pcctwo_attach(parent, self, aux)
 	sc->sc_mpilr = 0x01;
 	sc->sc_evcnt = pcctwointr_evcnt(level);
 
+#ifndef __HAVE_GENERIC_SOFT_INTERRUPTS
+	callout_init(&sc->sc_callout);
+	sc->sc_softhook = clmpcc_pcctwo_softhook;
+#endif
 	/* Do common parts of CD2401 configuration. */
-	clmpcc_attach(sc);
+	clmpcc_attach(&sc->sc_super);
 
 	/* Hook the interrupts */
 	pcctwointr_establish(PCCTWOV_SCC_RX, clmpcc_rxintr, level, sc, NULL);
@@ -154,46 +200,22 @@ clmpcc_pcctwo_attach(parent, self, aux)
 	pcctwointr_establish(PCCTWOV_SCC_MODEM, clmpcc_mdintr, level, sc, NULL);
 }
 
-void
-clmpcc_pcctwo_iackhook(sc, which)
-	struct clmpcc_softc *sc;
-	int which;
+#ifndef __HAVE_GENERIC_SOFT_INTERRUPTS
+void clmpcc_pcctwo_softhook(ssc)
+	struct clmpcc_softc *ssc;
 {
-	bus_size_t offset;
-	volatile u_char foo;
+	struct clmpcc_pcctwo_softc *sc = (struct clmpcc_pcctwo_softc *)ssc;
 
-	switch (which) {
-	case CLMPCC_IACK_MODEM:
-		offset = PCC2REG_SCC_MODEM_PIACK;
-		break;
-
-	case CLMPCC_IACK_RX:
-		offset = PCC2REG_SCC_RX_PIACK;
-		break;
-
-	case CLMPCC_IACK_TX:
-		offset = PCC2REG_SCC_TX_PIACK;
-		break;
-	default:
-#ifdef DEBUG
-		printf("%s: Invalid IACK number '%d'\n",
-		    sc->sc_dev.dv_xname, which);
-#endif
-		panic("clmpcc_pcctwo_iackhook %d", which);
-	}
-
-	foo = pcc2_reg_read(sys_pcctwo, offset);
+	callout_reset(&sc->sc_callout, 1, clmpcc_softintr, sc);
 }
+#endif
 
-/*
- * This routine is only used prior to clmpcc_attach() being called
- */
 void
-clmpcc_pcctwo_consiackhook(sc, which)
-	struct clmpcc_softc *sc;
+clmpcc_pcctwo_iackhook(ssc, which)
+	struct clmpcc_softc *ssc;
 	int which;
 {
-	bus_space_handle_t bush;
+	struct clmpcc_pcctwo_softc *sc = (struct clmpcc_pcctwo_softc *)ssc;
 	bus_size_t offset;
 	volatile u_char foo;
 
@@ -213,23 +235,22 @@ clmpcc_pcctwo_consiackhook(sc, which)
 #ifdef DEBUG
 		printf("%s: Invalid IACK number '%d'\n",
 		    sc->sc_dev.dv_xname, which);
-		panic("clmpcc_pcctwo_consiackhook");
 #endif
 		panic("clmpcc_pcctwo_iackhook %d", which);
 	}
 
-#ifdef MVME68K
-	/*
-	 * We need to fake the tag and handle since 'sys_pcctwo' will
-	 * be NULL during early system startup...
-	 */
-	bush = (bus_space_handle_t) & (intiobase[MAINBUS_PCCTWO_OFFSET +
-		PCCTWO_REG_OFF]);
-
-	foo = bus_space_read_1(&_mainbus_space_tag, bush, offset);
-#else
-#error Need consiack hook
-#endif
+	if (sc == &cons_sc)
+	{
+		/*
+		 * We need to fake the tag and handle since 'sys_pcctwo' will
+		 * be NULL during early system startup...
+		 */
+		foo = bus_space_read_1(sc->sc_iot, cons_pcctwo_bus_handle, offset);
+	}
+	else
+	{
+		foo = pcc2_reg_read(sys_pcctwo, offset);
+	}
 }
 
 
@@ -246,10 +267,10 @@ clmpcccnprobe(cp)
 {
 	int maj;
 
-#if defined(MVME68K)
+#if defined(mvme68k)
 	if (machineid != MVME_167 && machineid != MVME_177)
-#elif defined(MVME88K)
-	if (machineid != MVME_187)
+#elif defined(mvme88k)
+	if (machineid != MVME_187 && machineid != MVME_197)
 #endif
 	{
 		cp->cn_pri = CN_DEAD;
@@ -262,7 +283,7 @@ clmpcccnprobe(cp)
 	maj = cdevsw_lookup_major(&clmpcc_cdevsw);
 
 	/* Initialize required fields. */
-	cp->cn_dev = makedev(maj, 0);
+	cp->cn_dev = makedev(maj, CLMPCC_CONSOLE_CHAN);
 	cp->cn_pri = CN_NORMAL;
 }
 
@@ -270,20 +291,34 @@ void
 clmpcccninit(cp)
 	struct consdev *cp;
 {
-	static struct clmpcc_softc cons_sc;
-
 	cons_sc.sc_iot = &_mainbus_space_tag;
-	bus_space_map(&_mainbus_space_tag,
+
+#if defined(mvme88k)
+	bus_space_map(cons_sc.sc_iot,
+	    (vaddr_t)PCCTWO_PADDR(PCCTWO_SCC_OFF),
+	    CLMPCC_REG_SIZE, 0, &cons_sc.sc_ioh);
+
+	bus_space_map(cons_sc.sc_iot,
+	    (vaddr_t)PCCTWO_PADDR(PCCTWO_REG_OFF),
+	    PCC2REG_SIZE, 0, &cons_pcctwo_bus_handle);
+#elif defined(mvme68k)
+	bus_space_map(cons_sc.sc_iot,
 	    intiobase_phys + MAINBUS_PCCTWO_OFFSET + PCCTWO_SCC_OFF,
-	    PCC2REG_SIZE, 0, &cons_sc.sc_ioh);
+	    CLMPCC_REG_SIZE, 0, &cons_sc.sc_ioh);
+
+	cons_pcctwo_bus_handle = (bus_space_handle_t)
+	    & (intiobase[MAINBUS_PCCTWO_OFFSET + PCCTWO_REG_OFF]);
+#else
+#error "Need PCC2 & SCC mappings for console I/O"
+#endif
 	cons_sc.sc_clk = 20000000;
 	cons_sc.sc_byteswap = CLMPCC_BYTESWAP_LOW;
 	cons_sc.sc_swaprtsdtr = 1;
-	cons_sc.sc_iackhook = clmpcc_pcctwo_consiackhook;
+	cons_sc.sc_iackhook = clmpcc_pcctwo_iackhook;
 	cons_sc.sc_vector_base = PCCTWO_SCC_VECBASE;
 	cons_sc.sc_rpilr = 0x03;
 	cons_sc.sc_tpilr = 0x02;
 	cons_sc.sc_mpilr = 0x01;
 
-	clmpcc_cnattach(&cons_sc, 0, 9600);
+	clmpcc_cnattach(&cons_sc.sc_super, CLMPCC_CONSOLE_CHAN, CLMPCC_CONSOLE_RATE);
 }

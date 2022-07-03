@@ -375,7 +375,7 @@ stall(const char *message, ...)
 	vsyslog(LOG_ALERT, message, ap);
 	va_end(ap);
 	closelog();
-	(void)sleep(STALL_TIMEOUT);
+// XXX TKM not implemented for 88k yet 	(void)sleep(STALL_TIMEOUT);
 }
 
 /*
@@ -432,8 +432,9 @@ void
 disaster(int sig)
 {
 
-	emergency("fatal signal: %s", strsignal(sig));
-	(void)sleep(STALL_TIMEOUT);
+// XXX TKM - can cause recursive call to malloc:	emergency("fatal signal: %s", strsignal(sig));
+	emergency("fatal signal: %d", sig);
+// XXX TKM not implemented for 88k yet 	(void)sleep(STALL_TIMEOUT);
 	_exit(sig);		/* reboot */
 }
 
@@ -451,7 +452,7 @@ getsecuritylevel(void)
 	name[1] = KERN_SECURELVL;
 	len = sizeof curlevel;
 	if (sysctl(name, 2, &curlevel, &len, NULL, 0) == -1) {
-		emergency("cannot get kernel security level: %m");
+// XXX TKM strerror() causing problem in malloc(): 		emergency("cannot get kernel security level: %m");
 		return (-1);
 	}
 	return (curlevel);
@@ -531,7 +532,7 @@ setctty(const char *name)
 	int fd;
 
 	(void) revoke(name);
-	nanosleep(&dtrtime, NULL);	/* leave DTR low for a bit */
+	// XXX TKM not implemented yet for 88k nanosleep(&dtrtime, NULL);	/* leave DTR low for a bit */
 	if ((fd = open(name, O_RDWR)) == -1) {
 		stall("can't open %s: %m", name);
 		_exit(1);
@@ -645,7 +646,7 @@ single_user(void)
 		 */
 		argv[0] = "-sh";
 		argv[1] = 0;
-		setenv("PATH", INIT_PATH, 1);
+// XXX TKM - causes bus error in malloc:		setenv("PATH", INIT_PATH, 1);
 #ifdef ALTSHELL
 		if (altshell[0])
 			argv[0] = altshell;
@@ -655,7 +656,7 @@ single_user(void)
 #endif /* ALTSHELL */
 		(void)execv(INIT_BSHELL, argv);
 		emergency("can't exec %s for single user: %m", INIT_BSHELL);
-		(void)sleep(STALL_TIMEOUT);
+		// XXX TKM not implemented for 88k yet (void)sleep(STALL_TIMEOUT);
 		_exit(1);
 	}
 

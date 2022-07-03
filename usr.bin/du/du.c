@@ -75,7 +75,8 @@ main(int argc, char *argv[])
 	int64_t totalblocks;
 	int ftsoptions, listdirs, listfiles;
 	int Hflag, Lflag, Pflag, aflag, ch, cflag, gkmflag, nflag, rval, sflag;
-	const char *noargv[2];
+	char dot[] = ".";
+	char *noargv[2];
 
 	Hflag = Lflag = Pflag = aflag = cflag = gkmflag = nflag = sflag = 0;
 	totalblocks = 0;
@@ -164,9 +165,9 @@ main(int argc, char *argv[])
 	}
 
 	if (!*argv) {
-		noargv[0] = ".";
+		noargv[0] = dot;
 		noargv[1] = NULL;
-		(const char *)argv = noargv;
+		argv = noargv;
 	}
 
 	if (!gkmflag)

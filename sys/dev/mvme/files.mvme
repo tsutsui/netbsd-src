@@ -13,8 +13,7 @@ attach	vmetwo at mainbus
 file	dev/mvme/vme_two.c			vmetwo needs-flag
 
 # PCCChip2 found on many MVME boards
-device	pcctwo { [ ipl = -1 ] }
-attach	pcctwo at mainbus
+device	pcctwo { [offset = -1], [ ipl = -1 ] }
 file	dev/mvme/pcctwo.c			pcctwo needs-flag
 
 # This is not as odd as it looks. If the user doesn't define
@@ -27,7 +26,8 @@ attach	clock at pcctwo with clock_pcctwo
 file	dev/mvme/clock_pcctwo.c			clock_pcctwo
 
 # MVME68K/MVME88K Printer
-attach	lpt at pcctwo with lpt_pcctwo
+define use_alt_lpt  # XXX see /sys/dev/ppbus/files.ppbus
+attach	lpt at pcctwo with lpt_pcctwo: use_alt_lpt
 file	dev/mvme/lpt_mvme.c			lpt needs-flag
 file	dev/mvme/lpt_pcctwo.c			lpt_pcctwo
 
@@ -35,7 +35,13 @@ file	dev/mvme/lpt_pcctwo.c			lpt_pcctwo
 attach	ie at pcctwo with ie_pcctwo
 file	dev/mvme/if_ie_mvme.c			ie_pcctwo
 
+# MVME68K/MVME88K Ethernet Interface
+device	iee: ifnet, ether, arp, i82596
+attach	iee at pcctwo with iee_pcctwo
+file	dev/mvme/if_iee_pcctwo.c		iee_pcctwo
+
 # CD2401 Quad Serial Controller
+defparam opt_clmpcc_console.h	CLMPCC_CONSOLE_CHAN CLMPCC_CONSOLE_RATE
 attach	clmpcc at pcctwo with clmpcc_pcctwo
 file	dev/mvme/clmpcc_pcctwo.c		clmpcc_pcctwo needs-flag
 

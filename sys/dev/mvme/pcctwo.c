@@ -59,8 +59,6 @@ __KERNEL_RCSID(0, "$NetBSD: pcctwo.c,v 1.4 2005/02/04 02:10:44 perry Exp $");
  */
 struct pcctwo_softc *sys_pcctwo;
 
-int pcctwoprint(void *, const char *);
-
 
 /* ARGSUSED */
 void
@@ -101,7 +99,7 @@ pcctwo_init(sc, pd, devoff)
 	 * Attach configured children.
 	 */
 	npa._pa_base = devoff;
-	while (pd->pcc_name != NULL) {
+	while (pd != NULL && pd->pcc_name != NULL) {
 		/*
 		 * Note that IPL is filled in by match function.
 		 */
@@ -129,7 +127,7 @@ pcctwoprint(aux, cp)
 	if (cp)
 		aprint_normal("%s at %s", pa->pa_name, cp);
 
-	aprint_normal(" offset 0x%lx", pa->pa_offset - pa->_pa_base);
+	aprint_normal(" offset 0x%lx", (unsigned long)(pa->pa_offset - pa->_pa_base));
 	if (pa->pa_ipl != -1)
 		aprint_normal(" ipl %d", pa->pa_ipl);
 

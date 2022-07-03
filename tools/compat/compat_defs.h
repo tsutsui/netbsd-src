@@ -61,6 +61,9 @@
 #if HAVE_STDDEF_H
 #include <stddef.h>
 #endif
+#if HAVE_DIRENT_H
+#include <dirent.h>
+#endif
 
 #ifdef _NETBSD_SOURCE
 #error _NETBSD_SOURCE is *not* to be defined.
@@ -185,7 +188,7 @@ extern int optind, opterr, optopt;
 char *dirname(char *);
 #endif
 
-#if !HAVE_DIRFD
+#if !HAVE_DIRFD && !defined(dirfd)
 #if HAVE_DIR_DD_FD
 #define dirfd(dirp) ((dirp)->dd_fd)
 #else

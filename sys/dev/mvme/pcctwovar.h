@@ -70,6 +70,7 @@ struct pcctwo_device {
 
 /* Shorthand for locators. */
 #include "locators.h"
+#define pcctwocf_offset cf_loc[PCCTWOCF_OFFSET]
 #define pcctwocf_ipl	cf_loc[PCCTWOCF_IPL]
 
 /*
@@ -87,7 +88,7 @@ struct pcctwo_softc {
 				    int, int, struct evcnt *);
 	void			(*sc_isrunlink)(void *, int);
 	struct evcnt *		(*sc_isrevcnt)(void *, int);
-#if defined(MVME162) || defined(MVME172)
+#if defined(MVME162) || defined(MVME172) || defined(mvme88k)
 	struct evcnt		sc_evcnt;
 #endif
 };
@@ -95,6 +96,7 @@ struct pcctwo_softc {
 extern struct pcctwo_softc *sys_pcctwo;
 
 extern void pcctwo_init(struct pcctwo_softc *, struct pcctwo_device *, int);
+extern int pcctwoprint(void *, const char *);
 extern struct evcnt *pcctwointr_evcnt(int);
 extern void pcctwointr_establish(int, int (*)(void *), int, void *,
 		struct evcnt *);

@@ -60,10 +60,10 @@ __RCSID("$NetBSD: pt_filter.c,v 1.5 2005/02/09 13:57:57 xtraeme Exp $");
 
 #define FILTER_CMD_SIZE	8192
 
-static void fill_cmd(char **, char *, char *, int);
+static void fill_cmd(const char **, char *, char *, int);
 
 static void
-fill_cmd(char **cmdv, char *path, char *buff, int n)
+fill_cmd(const char **cmdv, char *path, char *buff, int n)
 {
 	int     i;
 	/* Make tempbuff at least as large as buff. */
@@ -85,7 +85,7 @@ fill_cmd(char **cmdv, char *path, char *buff, int n)
  * of the path, and exec v[2] v[3] ... on the remainder.
  */
 int
-portal_rfilter(struct portal_cred *pcr, char *key, char **v, int kso, int *fdp)
+portal_rfilter(struct portal_cred *pcr, char *key, const char **v, int kso, int *fdp)
 {
 	char    cmd[FILTER_CMD_SIZE];
 	char   *path;
@@ -168,7 +168,7 @@ portal_rfilter(struct portal_cred *pcr, char *key, char **v, int kso, int *fdp)
 }
 
 int
-portal_wfilter(struct portal_cred *pcr, char *key, char **v, int kso, int *fdp)
+portal_wfilter(struct portal_cred *pcr, char *key, const char **v, int kso, int *fdp)
 {
 	char    cmd[FILTER_CMD_SIZE];
 	char   *path;

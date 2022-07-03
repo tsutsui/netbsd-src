@@ -312,6 +312,8 @@ clmpcc_attach(sc)
 
 #ifndef __HAVE_GENERIC_SOFT_INTERRUPTS
 	sc->sc_soft_running = 0;
+	if (sc->sc_softhook == NULL)
+		panic("clmpcc_attach: attachment driver must initialize sc_softhook!");
 #else
 	sc->sc_softintr_cookie =
 	    softintr_establish(IPL_SOFTSERIAL, clmpcc_softintr, sc);

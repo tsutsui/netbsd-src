@@ -1,0 +1,3 @@
+NOTE:  Only RAMDISK has been updated for NetBSD at the current time.
+
+files.mvme88k should be updated wrt mvme68k - MID VME, etc.

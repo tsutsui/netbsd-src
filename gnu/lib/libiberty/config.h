@@ -8,7 +8,7 @@
 
 
 /* 1234 = LIL_ENDIAN, 4321 = BIGENDIAN */
-#define BYTEORDER 1234
+#define BYTEORDER 4321
 
 /* Define to one of _getb67, GETB67, getb67 for Cray-2 and Cray-YMP systems.
    This function is required for alloca.c support on those systems. */
@@ -75,7 +75,7 @@
 #define HAVE_INDEX 1
 
 /* Define to 1 if you have the `insque' function. */
-/* #undef HAVE_INSQUE */
+#define HAVE_INSQUE 1
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
@@ -322,7 +322,7 @@
 
 /* Define if the host machine stores words of multi-word integers in
    big-endian order. */
-/* #undef HOST_WORDS_BIG_ENDIAN */
+#define HOST_WORDS_BIG_ENDIAN 1
 
 /* Define if canonicalize_file_name is not declared in system header files. */
 #define NEED_DECLARATION_CANONICALIZE_FILE_NAME 1
@@ -361,7 +361,7 @@
 #define TIME_WITH_SYS_TIME 1
 
 /* whether byteorder is bigendian */
-/* #undef WORDS_BIGENDIAN */
+#define WORDS_BIGENDIAN 1
 
 /* Define to empty if `const' does not conform to ANSI C. */
 /* #undef const */

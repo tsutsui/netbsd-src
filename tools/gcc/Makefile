@@ -62,7 +62,7 @@ native-gcc: .native/.configure_done
 			--build=`${.CURDIR}/../../gnu/dist/gcc/config.guess` \
 			--host=${MACHINE_GNU_PLATFORM} \
 			--target=${MACHINE_GNU_PLATFORM}) && \
-		(cd .native/libiberty && ${MAKE} ${CONFIGURE_ENV} all) && \
+		(cd .native/libiberty && ${CONFIGURE_ENV} ${MAKE} all) && \
 		(cd .native/gcc && ${MAKE} tree-check.h HOST_CC=${HOST_CC:Q}) && \
 		(cd .native && touch gcc/cc1obj gcc/cc1plus gcc/f771 && \
 			${MAKE} configure-target-libiberty \
