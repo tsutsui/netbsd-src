@@ -147,6 +147,15 @@
 #define __UNCONST(a)	((void *)(unsigned long)(const void *)(a))
 
 /*
+ * The following macro is used to remove the volatile cast-away warnings
+ * from gcc -Wcast-qual; as above it should be used with caution
+ * because it can hide valid errors or warnings.  Valid uses include
+ * making it possible to pass a volatile pointer to memset().
+ * For the same reasons as above, we use unsigned long and not intptr_t.
+ */
+#define __UNVOLATILE(a)	((void *)(unsigned long)(volatile void *)(a))
+
+/*
  * GCC2 provides __extension__ to suppress warnings for various GNU C
  * language extensions under "-ansi -pedantic".
  */
