@@ -85,6 +85,7 @@ struct mvmebus_mapresc {
 };
 
 
+#ifndef mvme88k
 /*
  * This records the VMEbus-specific details of a region of phyisical
  * memory accessible through a VMEbus slave map.
@@ -95,7 +96,7 @@ struct mvmebus_dmamap {
 	vme_swap_t		vm_swap;
 	struct mvmebus_range	*vm_slave;
 };
-
+#endif
 
 struct mvmebus_softc {
 	struct device		sc_dev;
@@ -113,7 +114,9 @@ struct mvmebus_softc {
 	void			(*sc_intr_disestablish)(void *, int, int, int,
 				    struct evcnt *);
 	struct vme_chipset_tag	sc_vct;
+#ifndef mvme88k
 	struct mvme68k_bus_dma_tag	sc_mvmedmat;
+#endif
 };
 
 
@@ -131,6 +134,7 @@ void *	mvmebus_intr_establish(void *, vme_intr_handle_t, int,
 	    int (*) (void *), void *);
 void	mvmebus_intr_disestablish(void *, vme_intr_handle_t);
 
+#ifndef mvme88k
 int	mvmebus_dmamap_create(void *, vme_size_t, vme_am_t, vme_datasize_t,
 	    vme_swap_t, int, vme_size_t, vme_addr_t, int, bus_dmamap_t *);
 void	mvmebus_dmamap_destroy(void *, bus_dmamap_t);
@@ -154,6 +158,7 @@ int	mvmebus_dmamem_map(bus_dma_tag_t, bus_dma_segment_t *, int,
 void	mvmebus_dmamem_unmap(bus_dma_tag_t, caddr_t, size_t);
 paddr_t	mvmebus_dmamem_mmap(bus_dma_tag_t, bus_dma_segment_t *, int,
 	    off_t, int, int);
+#endif
 
 extern vme_am_t _mvmebus_am_cap[];
 extern const char *mvmebus_irq_name[];

@@ -40,6 +40,13 @@ union dinode {
 #define DIP(dp, field) \
 	(is_ufs2 ? (dp)->dp2.di_##field : (dp)->dp1.di_##field)
 
+#define	DIP_SET(dp, field, val) do { \
+	if (!is_ufs2)	\
+		(dp)->dp1.di_##field = (val);	\
+	else					\
+		(dp)->dp2.di_##field = (val);	\
+	} while (0)
+
 /*
  * Filestore-independent UFS data, so code can be more easily shared
  * between ffs, lfs, and maybe ext2fs and others as well.

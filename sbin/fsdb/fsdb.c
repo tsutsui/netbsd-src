@@ -388,7 +388,7 @@ CMDFUNCSTART(uplink)
 		return 1;
 	nlink = iswap16(DIP(curinode, nlink));
 	nlink++;
-	DIP(curinode, nlink) = iswap16(nlink);
+	DIP_SET(curinode, nlink, iswap16(nlink));
 	printf("inode %d link count now %d\n", curinum, nlink);
 	inodirty();
 	return 0;
@@ -402,7 +402,7 @@ CMDFUNCSTART(downlink)
 		return 1;
 	nlink = iswap16(DIP(curinode, nlink));
 	nlink--;
-	DIP(curinode, nlink) = iswap16(nlink);
+	DIP_SET(curinode, nlink, iswap16(nlink));
 	printf("inode %d link count now %d\n", curinum, nlink);
 	inodirty();
 	return 0;
@@ -1069,7 +1069,7 @@ CMDFUNCSTART(newtype)
 		warnx("try one of `file', `dir', `socket', `fifo'");
 		return 1;
 	}
-	DIP(curinode, mode)  = iswap16((mode & ~IFMT) | type);
+	DIP_SET(curinode, mode, iswap16((mode & ~IFMT) | type));
 	inodirty();
 	printactive();
 	return 0;
@@ -1090,7 +1090,7 @@ CMDFUNCSTART(chmode)
 		return 1;
 	}
 	mode = iswap16(DIP(curinode, mode));
-	DIP(curinode, mode) = iswap16((mode & ~07777) | modebits);
+	DIP_SET(curinode, mode, iswap16((mode & ~07777) | modebits));
 	inodirty();
 	printactive();
 	return 0;
@@ -1109,7 +1109,7 @@ CMDFUNCSTART(chlen)
 		warnx("bad length '%s'", argv[1]);
 		return 1;
 	}
-	DIP(curinode, size) = iswap64(len);
+	DIP_SET(curinode, size, iswap64(len));
 	inodirty();
 	printactive();
 	return 0;
@@ -1133,7 +1133,7 @@ CMDFUNCSTART(chaflags)
 		    flags);
 		return (1);
 	}
-	DIP(curinode, flags) = iswap32(flags);
+	DIP_SET(curinode, flags, iswap32(flags));
 	inodirty();
 	printactive();
 	return 0;
@@ -1156,7 +1156,7 @@ CMDFUNCSTART(chgen)
 		warnx("gen set beyond 32-bit range of field (0x%lx)", gen);
 		return (1);
 	}
-	DIP(curinode, gen) = iswap32(gen);
+	DIP_SET(curinode, gen, iswap32(gen));
 	inodirty();
 	printactive();
 	return 0;
@@ -1179,7 +1179,7 @@ CMDFUNCSTART(linkcount)
 		warnx("max link count is %d", USHRT_MAX);
 		return 1;
 	}
-	DIP(curinode, nlink) = iswap16(lcnt);
+	DIP_SET(curinode, nlink, iswap16(lcnt));
 	inodirty();
 	printactive();
 	return 0;
@@ -1207,7 +1207,7 @@ CMDFUNCSTART(chowner)
 	if (!is_ufs2 && sblock->fs_old_inodefmt < FS_44INODEFMT)
 		curinode->dp1.di_ouid = iswap32(uid);
 	else
-		DIP(curinode, uid) = iswap32(uid);
+		DIP_SET(curinode, uid, iswap32(uid));
 	inodirty();
 	printactive();
 	return 0;
@@ -1234,7 +1234,7 @@ CMDFUNCSTART(chgroup)
 	if (sblock->fs_old_inodefmt < FS_44INODEFMT)
 		curinode->dp1.di_ogid = iswap32(gid);
 	else
-		DIP(curinode, gid) = iswap32(gid);
+		DIP_SET(curinode, gid, iswap32(gid));
 	inodirty();
 	printactive();
 	return 0;
@@ -1300,8 +1300,8 @@ CMDFUNCSTART(chmtime)
 
 	if (dotime(argv[1], &rsec, &nsec))
 		return 1;
-	DIP(curinode, mtime) = rsec;
-	DIP(curinode, mtimensec) = nsec;
+	DIP_SET(curinode, mtime, rsec);
+	DIP_SET(curinode, mtimensec, nsec);
 	inodirty();
 	printactive();
 	return 0;
@@ -1313,8 +1313,8 @@ CMDFUNCSTART(chatime)
 
 	if (dotime(argv[1], &rsec, &nsec))
 		return 1;
-	DIP(curinode, atime) = rsec;
-	DIP(curinode, atimensec) = nsec;
+	DIP_SET(curinode, atime, rsec);
+	DIP_SET(curinode, atimensec, nsec);
 	inodirty();
 	printactive();
 	return 0;
@@ -1326,8 +1326,8 @@ CMDFUNCSTART(chctime)
 
 	if (dotime(argv[1], &rsec, &nsec))
 		return 1;
-	DIP(curinode, ctime) = rsec;
-	DIP(curinode, ctimensec) = nsec;
+	DIP_SET(curinode, ctime, rsec);
+	DIP_SET(curinode, ctimensec, nsec);
 	inodirty();
 	printactive();
 	return 0;

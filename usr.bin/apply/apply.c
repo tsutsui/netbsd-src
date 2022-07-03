@@ -196,7 +196,7 @@ main(int argc, char *argv[])
 int
 shell_system(const char *command)
 {
-	static char *name, *shell;
+	static const char *name, *shell;
 	int status;
 	pid_t pid;
 	int omask;
@@ -204,7 +204,7 @@ shell_system(const char *command)
 
 	if (shell == NULL) {
 		if ((shell = getenv("SHELL")) == NULL)
-			(const char *)shell = _PATH_BSHELL;
+			shell = _PATH_BSHELL;
 		if ((name = strrchr(shell, '/')) == NULL)
 			name = shell;
 		else

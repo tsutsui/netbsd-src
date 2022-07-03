@@ -1565,8 +1565,13 @@ issignal(struct lwp *l)
 				printf("Process (pid %d) got signal %d\n",
 				    p->p_pid, signum);
 #endif
+#if 1 /* XXX avoid infinite signal handling loop. */
+				goto keep;
+#else
 				break;		/* == ignore */
+#endif
 			}
+
 			/*
 			 * If there is a pending stop signal to process
 			 * with default action, stop here,

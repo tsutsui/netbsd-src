@@ -320,6 +320,9 @@ changequote([,])dnl
 	COREFILE=trad-core.lo
 	TRAD_HEADER='"hosts/m68kaux.h"'
 	;;
+  m88*-*-netbsd* | m88*-*-openbsd*)
+	COREFILE=netbsd-core.lo
+	;;
   m88*-*-sysv4*)
 	;;
   m88*-motorola-sysv*)

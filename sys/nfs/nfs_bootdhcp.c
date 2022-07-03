@@ -614,21 +614,41 @@ bootpc_call(nd, procp)
 #ifdef NFS_BOOT_DHCP
 	if (bpc.dhcp_ok) {
 		u_int32_t leasetime;
-		bootp->bp_vend[6] = DHCPREQUEST;
-		bootp->bp_vend[7] = TAG_REQ_ADDR;
-		bootp->bp_vend[8] = 4;
-		memcpy(&bootp->bp_vend[9], &bpc.replybuf->bp_yiaddr, 4);
-		bootp->bp_vend[13] = TAG_SERVERID;
-		bootp->bp_vend[14] = 4;
-		memcpy(&bootp->bp_vend[15], &bpc.dhcp_serverip.s_addr, 4);
-		bootp->bp_vend[19] = TAG_LEASETIME;
-		bootp->bp_vend[20] = 4;
+		unsigned int index = 6;
+
+		bootp->bp_vend[index++] = DHCPREQUEST;
+
+		bootp->bp_vend[index++] = TAG_REQ_ADDR;
+		bootp->bp_vend[index++] = 4;
+		memcpy(&bootp->bp_vend[index], &bpc.replybuf->bp_yiaddr, 4);
+		index += 4;
+
+		bootp->bp_vend[index++] = TAG_SERVERID;
+		bootp->bp_vend[index++] = 4;
+		memcpy(&bootp->bp_vend[index], &bpc.dhcp_serverip.s_addr, 4);
+		index += 4;
+
+		bootp->bp_vend[index++] = TAG_LEASETIME;
+		bootp->bp_vend[index++] = 4;
 		leasetime = htonl(300);
-		memcpy(&bootp->bp_vend[21], &leasetime, 4);
-		bootp->bp_vend[25] = TAG_CLASSID;
-		bootp->bp_vend[26] = vcilen;
-		memcpy(&bootp->bp_vend[27], vci, vcilen);
-		bootp->bp_vend[27 + vcilen] = TAG_END;
+		memcpy(&bootp->bp_vend[index], &leasetime, 4);
+		index += 4;
+
+		bootp->bp_vend[index++] = TAG_PARAM_REQ;
+		bootp->bp_vend[index++] = 6;
+		bootp->bp_vend[index++] = TAG_SUBNET_MASK;
+		bootp->bp_vend[index++] = TAG_GATEWAY;
+		bootp->bp_vend[index++] = TAG_HOST_NAME;
+		bootp->bp_vend[index++] = TAG_DOMAIN_NAME;
+		bootp->bp_vend[index++] = TAG_ROOT_PATH;
+		bootp->bp_vend[index++] = TAG_SWAP_SERVER;
+
+		bootp->bp_vend[index++] = TAG_CLASSID;
+		bootp->bp_vend[index++] = vcilen;
+		memcpy(&bootp->bp_vend[index], vci, vcilen);
+		index += vcilen;
+
+		bootp->bp_vend[index] = TAG_END;
 
 		bpc.expected_dhcpmsgtype = DHCPACK;
 

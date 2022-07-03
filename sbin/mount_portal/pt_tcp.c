@@ -63,7 +63,7 @@ __RCSID("$NetBSD: pt_tcp.c,v 1.19 2005/02/09 13:57:57 xtraeme Exp $");
  * An unrecognised suffix is an error.
  */
 int
-portal_tcp(struct portal_cred *pcr, char *key, char **v, int kso, int *fdp)
+portal_tcp(struct portal_cred *pcr, char *key, const char **v, int kso, int *fdp)
 {
 	char host[MAXHOSTNAMELEN];
 	char port[MAXHOSTNAMELEN];

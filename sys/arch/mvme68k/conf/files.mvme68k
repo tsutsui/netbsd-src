@@ -20,6 +20,8 @@ include "dev/vme/files.vme"
 # Grab the common MVME glue
 include "dev/mvme/files.mvme"
 
+attach	pcctwo at mainbus
+
 # MVME-147 Peripheral Channel Controller
 device pcc { [ ipl = -1 ] }
 attach pcc at mainbus

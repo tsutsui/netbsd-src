@@ -16,6 +16,7 @@ TARGET_ENDIANNESS=	1234
 .elif ${MACHINE_ARCH} == "hppa" || \
       ${MACHINE_ARCH} == "m68000" || \
       ${MACHINE_ARCH} == "m68k" || \
+      ${MACHINE_ARCH} == "m88k" || \
       ${MACHINE_ARCH} == "powerpc" || \
       ${MACHINE_ARCH} == "sparc" || \
       ${MACHINE_ARCH} == "sparc64" || \

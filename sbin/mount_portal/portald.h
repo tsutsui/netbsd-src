@@ -56,7 +56,7 @@ typedef struct provider provider;
 struct provider {
 	const char *pr_match;
 	int (*pr_func)(struct portal_cred *,
-				char *key, char **v, int so, int *fdp);
+				char *key, const char **v, int so, int *fdp);
 };
 extern provider providers[];
 
@@ -64,20 +64,20 @@ extern provider providers[];
  * Portal providers
  */
 extern int portal_exec(struct portal_cred *,
-				char *key, char **v, int so, int *fdp);
+				char *key, const char **v, int so, int *fdp);
 extern int portal_file(struct portal_cred *,
-				char *key, char **v, int so, int *fdp);
+				char *key, const char **v, int so, int *fdp);
 extern int portal_tcp(struct portal_cred *,
-				char *key, char **v, int so, int *fdp);
+				char *key, const char **v, int so, int *fdp);
 extern int portal_rfilter(struct portal_cred *,
-				char *key, char **v, int so, int *fdp);
+				char *key, const char **v, int so, int *fdp);
 extern int portal_wfilter(struct portal_cred *,
-				char *key, char **v, int so, int *fdp);
+				char *key, const char **v, int so, int *fdp);
 
 /*
  * Global functions
  */
 extern void activate(qelem *q, int so);
-extern char **conf_match(qelem *q, char *key);
+extern const char **conf_match(qelem *q, char *key);
 extern void conf_read(qelem *q, char *conf);
 extern int lose_credentials(struct portal_cred *);

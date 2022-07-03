@@ -418,7 +418,7 @@ adjust(struct inodesc *idesc, int lcnt)
 				printf(" (ADJUSTED)\n");
 		}
 		if (preen || reply("ADJUST") == 1) {
-			DIP(dp, nlink) = iswap16(nlink - lcnt);
+			DIP_SET(dp, nlink, iswap16(nlink - lcnt));
 			inodirty();
 		} else 
 			markclean=  0;
@@ -598,7 +598,7 @@ linkup(ino_t orphan, ino_t parentdir, char *name)
 			(void)makeentry(orphan, lfdir, "..");
 		dp = ginode(lfdir);
 		nlink = DIP(dp, nlink);
-		DIP(dp, nlink) = iswap16(iswap16(nlink) + 1);
+		DIP_SET(dp, nlink, iswap16(iswap16(nlink) + 1));
 		inodirty();
 		inoinfo(lfdir)->ino_linkcnt++;
 		reparent(orphan, lfdir);
@@ -651,8 +651,8 @@ makeentry(ino_t parent, ino_t ino, char *name)
 	idesc.id_name = name;
 	dp = ginode(parent);
 	if (iswap64(DIP(dp, size)) % dirblksiz) {
-		DIP(dp, size) =
-		    iswap64(roundup(iswap64(DIP(dp, size)), dirblksiz));
+		DIP_SET(dp, size,
+		    iswap64(roundup(iswap64(DIP(dp, size)), dirblksiz)));
 		inodirty();
 	}
 	if ((ckinode(dp, &idesc) & ALTERED) != 0)
@@ -796,7 +796,7 @@ allocdir(ino_t parent, ino_t request, int mode)
 	     cp += dirblksiz)
 		memmove(cp, &emptydir, sizeof emptydir);
 	dirty(bp);
-	DIP(dp, nlink) = iswap16(2);
+	DIP_SET(dp, nlink, iswap16(2));
 	inodirty();
 	if (ino == ROOTINO) {
 		inoinfo(ino)->ino_linkcnt = iswap16(DIP(dp, nlink));
@@ -818,7 +818,7 @@ allocdir(ino_t parent, ino_t request, int mode)
 		inoinfo(parent)->ino_linkcnt++;
 	}
 	dp = ginode(parent);
-	DIP(dp, nlink) = iswap16(iswap16(DIP(dp, nlink)) + 1);
+	DIP_SET(dp, nlink, iswap16(iswap16(DIP(dp, nlink)) + 1));
 	inodirty();
 	return (ino);
 }
@@ -833,7 +833,7 @@ freedir(ino_t ino, ino_t parent)
 
 	if (ino != parent) {
 		dp = ginode(parent);
-		DIP(dp, nlink) = iswap16(iswap16(DIP(dp, nlink)) -1);
+		DIP_SET(dp, nlink, iswap16(iswap16(DIP(dp, nlink)) -1));
 		inodirty();
 	}
 	freeino(ino);

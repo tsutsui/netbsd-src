@@ -74,10 +74,10 @@ void	clock_config(struct device *, struct clock_attach_args *,
 	})
 
 /*
- * Sun chose the year `68' as their base count, so that
- * cl_year==0 means 1968.
+ * Motorola chose the year `1900' as their base count. It has already
+ * wrapped by now...
  */
-#define YEAR0   1968
+#define	YEAR0	00
 
 /*
  * interrupt level for clock

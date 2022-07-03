@@ -97,7 +97,7 @@
 #define	PCC2REG_SCC_RX_PIACK	0x27	/* SCC Receive PIACK */
 #define	PCC2REG_ETH_ERR_STATUS	0x28	/* LANC Error Status */
 #define	PCC2REG_ETH_ICSR	0x2a	/* LANC Interrupt Control */
-#define	PCC2REG_ETH_BERR_STATUS	0x2b	/* LANC Bus Error Interrupt Ctrl */
+#define	PCC2REG_ETH_BERR_ICSR	0x2b	/* LANC Bus Error Interrupt Ctrl */
 #define	PCC2REG_SCSI_ERR_STATUS	0x2c	/* SCSI Error Status */
 #define	PCC2REG_SCSI_ICSR	0x2f	/* SCSI Interrupt Control */
 #define	PCC2REG_PRT_ACK_ICSR	0x30	/* Printer ACK Interrupt Control */

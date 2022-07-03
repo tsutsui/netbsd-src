@@ -86,7 +86,9 @@ static struct vme_two_handler {
 				 sizeof(struct vme_two_handler))
 
 static	int  vmetwo_local_isr_trampoline(void *);
+#ifdef MVME68K
 static	void vmetwo_softintr_assert(void);
+#endif
 
 static	struct vmetwo_softc *vmetwo_sc;
 
@@ -115,7 +117,7 @@ vmetwo_probe(bus_space_tag_t bt, bus_addr_t offset)
 			return (0);
 		}
 #endif
-#if defined(MVME167) || defined(MVME177) || defined(MVME88K)
+#if defined(MVME167) || defined(MVME177) || defined(mvme88k)
 		/*
 		 * No VMEChip2 on mvme167/177, however, is a Big Deal.
 		 * In fact, it means the hardware's shot since the
@@ -199,8 +201,10 @@ vmetwo_intr_init(struct vmetwo_softc *sc)
 	reg = vme2_lcsr_read(sc, VME2LCSR_MISC_STATUS) | VME2_MISC_STATUS_MIEN;
 	vme2_lcsr_write(sc, VME2LCSR_MISC_STATUS, reg);
 
+#if NVMETWO > 0
 	/* Allow the MD code the chance to do some initialising */
 	vmetwo_md_intr_init(sc);
+#endif
 
 #if defined(MVME167) || defined(MVME177)
 #if defined(MVME162) || defined(MVME172)
@@ -219,7 +223,9 @@ vmetwo_intr_init(struct vmetwo_softc *sc)
 	/* Setup hardware assisted soft interrupts */
 	vmetwo_intr_establish(sc, 1, 1, VME2_VEC_SOFT0, 1,
 	    (int (*)(void *))softintr_dispatch, NULL, NULL);
+#ifdef MVME68K
 	_softintr_chipset_assert = vmetwo_softintr_assert;
+#endif
 }
 
 static int
@@ -428,9 +434,10 @@ vmetwo_intr_disestablish(csc, lvl, vec, last, evcnt)
 	splx(s);
 }
 
+#ifdef MVME68K
 static void
 vmetwo_softintr_assert(void)
 {
-
 	vme2_lcsr_write(vmetwo_sc, VME2LCSR_SOFTINT_SET, VME2_SOFTINT_SET(0));
 }
+#endif

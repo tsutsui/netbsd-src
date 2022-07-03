@@ -124,22 +124,48 @@ osiop_pcctwo_attach(parent, self, args)
 	pa = (struct pcctwo_attach_args *) args;
 	sc = (struct osiop_pcctwo_softc *) self;
 
+#if defined(mvme68k)
+
+	switch (machineid) {
 	/*
 	 * On the '17x the siop's clock is the same as the CPU clock.
 	 * On the other boards, the siop runs at twice the CPU clock.
 	 * Also, the 17x cannot do proper bus-snooping (the 68060 is
 	 * lame in this repspect) so don't enable it on that board.
 	 */
-#ifdef MVME68K
-	if (machineid == MVME_172 || machineid == MVME_177) {
+#if defined(MVME172) || defined(MVME177)
+	case MVME_172:
+	case MVME_177:
 		clk = cpuspeed;
 		ctest7 = 0;
-	} else {
+		break;
+#endif
+	default:
 		clk = cpuspeed * 2;
 		ctest7 = OSIOP_CTEST7_SC0;
+		break;
+	}
+
+#elif defined(mvme88k)
+
+	switch (machineid) {
+#ifdef MVME197
+	case MVME_197:
+		clk = cpuspeed;
+		break;
+#endif
+#ifdef MVME187
+	case MVME_187:
+	case MVME_8120:
+		clk = cpuspeed * 2;
+		break;
+#endif
+	default:
+		clk = 50;	/* XXX wild guess */
+		break;
 	}
 #else
-#error Set up siop clock speed for mvme187
+#error "Unsupported platform"
 #endif
 
 	sc->sc_osiop.sc_bst = pa->pa_bust;

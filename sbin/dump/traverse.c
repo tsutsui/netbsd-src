@@ -487,8 +487,8 @@ dumpino(union dinode *dp, ino_t ino)
 	 * as a zero length file.
 	 */
 	if (DIP(dp, flags) & SF_SNAPSHOT) {
-		DIP(dp, size) = 0;
-		DIP(dp, flags) &= ~SF_SNAPSHOT;
+		DIP_SET(dp, size, 0);
+		DIP_SET(dp, flags, DIP(dp, flags) & ~SF_SNAPSHOT);
 	}
 	if (!is_ufs2) {
 		if (needswap)

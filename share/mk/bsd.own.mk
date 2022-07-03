@@ -418,6 +418,13 @@ NOPIC=		# defined
 .endif
 
 #
+# The m88k port is incomplete.
+#
+.if ${MACHINE_ARCH} == "m88k" && ${OBJECT_FMT} == "ELF"
+NOPIC=		# defined
+.endif
+
+#
 # The hppa port is incomplete.
 #
 .if ${MACHINE_ARCH} == "hppa"
@@ -479,15 +486,16 @@ MACHINE_GNU_ARCH=${GNU_ARCH.${MACHINE_ARCH}:U${MACHINE_ARCH}}
      ${MACHINE_GNU_ARCH} == "armeb" || \
      ${MACHINE_ARCH} == "ns32k" || \
      ${MACHINE_ARCH} == "i386" || \
+     ${MACHINE_ARCH} == "m88k" || \
      ${MACHINE_ARCH} == "m68k" || \
      ${MACHINE_ARCH} == "m68000" || \
      ${MACHINE_GNU_ARCH} == "sh" || \
      ${MACHINE_GNU_ARCH} == "shle" || \
      ${MACHINE_ARCH} == "sparc" || \
      ${MACHINE_ARCH} == "vax")
-MACHINE_GNU_PLATFORM?=${MACHINE_GNU_ARCH}--netbsdelf
+MACHINE_GNU_PLATFORM?=${MACHINE_GNU_ARCH}--netbsdelf3
 .else
-MACHINE_GNU_PLATFORM?=${MACHINE_GNU_ARCH}--netbsd
+MACHINE_GNU_PLATFORM?=${MACHINE_GNU_ARCH}--netbsd3
 .endif
 
 TARGETS+=	all clean cleandir depend dependall includes \

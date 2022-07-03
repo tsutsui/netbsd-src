@@ -57,6 +57,13 @@ union dinode {
 #define       DIP(dp, field) \
 	(is_ufs2 ? (dp)->dp2.di_##field : (dp)->dp1.di_##field)
 
+#define	DIP_SET(dp, field, val) do { \
+	if (!is_ufs2)	\
+		(dp)->dp1.di_##field = (val);	\
+	else					\
+		(dp)->dp2.di_##field = (val);	\
+	} while (0)
+
 #ifndef BUFSIZ
 #define BUFSIZ 1024
 #endif
@@ -120,6 +127,12 @@ struct bufarea {
 #define       IBLK(bp, i) \
 	(is_ufs2 ?  (bp)->b_un.b_indir2[i] : (bp)->b_un.b_indir1[i])
 
+#define IBLK_SET(bp, i, val) do {		\
+	if (!is_ufs2)	\
+		(bp)->b_un.b_indir1[i] = (val);	\
+	else					\
+		(bp)->b_un.b_indir2[i] = (val);	\
+	} while (0)
 
 #define	B_INUSE 1
 

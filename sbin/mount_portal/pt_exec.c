@@ -51,7 +51,7 @@ __RCSID("$NetBSD: pt_exec.c,v 1.8 2005/02/09 13:57:57 xtraeme Exp $");
 #include "portald.h"
 
 int
-portal_exec(struct portal_cred *pcr, char *key, char **v, int so, int *fdp)
+portal_exec(struct portal_cred *pcr, char *key, const char **v, int so, int *fdp)
 {
 
 	return (ENOEXEC);

@@ -90,6 +90,7 @@ extern void output_ascii PARAMS ((FILE *, const char *, int,
 				  const char *, int));
 extern void output_label PARAMS ((int));
 extern struct rtx_def *m88k_builtin_saveregs PARAMS ((void));
+extern void m88k_override_options PARAMS ((void));
 extern enum m88k_instruction classify_integer PARAMS ((enum machine_mode, int));
 extern int mak_mask_p PARAMS ((int));
 

@@ -267,6 +267,7 @@ cat <<EOF
     /* .gnu.warning sections are handled specially by elf32.em.  */
     *(.gnu.warning)
     ${RELOCATING+${OTHER_TEXT_SECTIONS}}
+
   } =${NOP-0}
   .fini         ${RELOCATING-0} :
   {
@@ -306,6 +307,10 @@ cat <<EOF
   ${RELOCATING+${CREATE_SHLIB-PROVIDE (__fini_array_start = .);}}
   .fini_array   ${RELOCATING-0} : { *(.fini_array) }
   ${RELOCATING+${CREATE_SHLIB-PROVIDE (__fini_array_end = .);}}
+
+  /* 88Open stuff */
+  ${RELOCATING+${CREATE_SHLIB-PROVIDE (__.tdesc_start = .);}}
+  .tdesc        ${RELOCATING-0} : { *(.tdesc) }
 
   .data         ${RELOCATING-0} :
   {

@@ -4005,6 +4005,11 @@ ENUMDOC
   internally by the linker after analysis of a 
   BFD_RELOC_XTENSA_ASM_EXPAND.
 
+ENUM
+  BFD_RELOC_M88K_26_PCREL
+ENUMDOC
+  m88k relocation 26bit pcrel
+
 ENDSENUM
   BFD_RELOC_UNUSED
 CODE_FRAGMENT

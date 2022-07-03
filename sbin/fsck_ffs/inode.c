@@ -109,8 +109,8 @@ ckinode(union dinode *dp, struct inodesc *idesc)
 				    pathbuf);
 				if (reply("ADJUST LENGTH") == 1) {
 					dp = ginode(idesc->id_number);
-					DIP(dp, size) = iswap64(i *
-					    sblock->fs_bsize);
+					DIP_SET(dp, size, iswap64(i *
+					    sblock->fs_bsize));
 					printf(
 					    "YOU MUST RERUN FSCK AFTERWARDS\n");
 					rerun = 1;
@@ -152,9 +152,9 @@ ckinode(union dinode *dp, struct inodesc *idesc)
 				    pathbuf);
 				if (reply("ADJUST LENGTH") == 1) {
 					dp = ginode(idesc->id_number);
-					DIP(dp, size) =
+					DIP_SET(dp, size,
 					    iswap64(iswap64(DIP(dp, size))
-						- remsize);
+						- remsize));
 					remsize = 0;
 					printf(
 					    "YOU MUST RERUN FSCK AFTERWARDS\n");
@@ -216,7 +216,7 @@ iblock(struct inodesc *idesc, long ilevel, u_int64_t isize)
 			(void)snprintf(buf, sizeof(buf),
 			    "PARTIALLY TRUNCATED INODE I=%u", idesc->id_number);
 			if (dofix(idesc, buf)) {
-				IBLK(bp, i) = 0;
+				IBLK_SET(bp, i, 0);
 				dirty(bp);
 			} else
 				markclean=  0;
@@ -247,9 +247,9 @@ iblock(struct inodesc *idesc, long ilevel, u_int64_t isize)
 				    pathbuf);
 				if (reply("ADJUST LENGTH") == 1) {
 					dp = ginode(idesc->id_number);
-					DIP(dp, size) =
+					DIP_SET(dp, size,
 					    iswap64(iswap64(DIP(dp, size))
-						- isize);
+						- isize));
 					isize = 0;
 					printf(
 					    "YOU MUST RERUN FSCK AFTERWARDS\n");

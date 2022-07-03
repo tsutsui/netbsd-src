@@ -29,7 +29,6 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define COFF_MAGIC MC88OMAGIC
 #define BFD_ARCH bfd_arch_m88k
 #define COFF_FLAGS F_AR32W
-#endif
 
 #define NEED_FX_R_TYPE
 #define TC_KEEP_FX_OFFSET
@@ -59,6 +58,14 @@ struct reloc_info_m88k
 };
 
 #define relocation_info reloc_info_m88k
+
+#endif /* M88KCOFF */
+
+#ifdef OBJ_ELF
+#define TARGET_FORMAT "elf32-m88k"
+#define BFD_ARCH bfd_arch_m88k
+#define TARGET_ARCH BFD_ARCH
+#endif
 
 /* The m88k uses '@' to start local labels.  */
 #define LEX_AT (LEX_BEGIN_NAME | LEX_NAME)

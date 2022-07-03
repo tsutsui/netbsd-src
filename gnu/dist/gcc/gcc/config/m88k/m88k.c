@@ -104,6 +104,73 @@ static void m88k_encode_section_info PARAMS ((tree, int));
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
+/* Do any checking or such that is needed after processing the -m switches.  */
+
+void
+m88k_override_options ()
+{
+  register int i;
+
+  if ((target_flags & MASK_88000) == 0)
+    target_flags |= CPU_DEFAULT;
+
+  if (TARGET_88110)
+    {
+      target_flags |= MASK_USE_DIV;
+      target_flags &= ~MASK_CHECK_ZERO_DIV;
+    }
+
+  m88k_cpu = (TARGET_88000 ? PROCESSOR_M88000
+	      : (TARGET_88100 ? PROCESSOR_M88100 : PROCESSOR_M88110));
+
+  if (TARGET_BIG_PIC)
+    flag_pic = 2;
+
+  if ((target_flags & MASK_EITHER_LARGE_SHIFT) == MASK_EITHER_LARGE_SHIFT)
+    error ("-mtrap-large-shift and -mhandle-large-shift are incompatible");\
+
+  if (!TARGET_SVR4)
+    {
+      target_flags |= MASK_SVR3;
+      target_flags &= ~MASK_SVR4;
+    }
+
+  if (TARGET_SVR4 && !TARGET_NO_POUND_SIGN)
+    {
+      for (i = 0; i < FIRST_PSEUDO_REGISTER; i++)
+	reg_names[i]--;
+      m88k_pound_sign = "#";
+    }
+
+  if (m88k_short_data)
+    {
+      const char *p = m88k_short_data;
+      while (*p)
+	if (ISDIGIT (*p))
+	  p++;
+	else
+	  {
+	    error ("invalid option `-mshort-data-%s'", m88k_short_data);
+	    break;
+	  }
+      m88k_gp_threshold = atoi (m88k_short_data);
+      if (m88k_gp_threshold > 0x7fffffff)
+	error ("-mshort-data-%s is too large ", m88k_short_data);
+      if (flag_pic)
+	error ("-mshort-data-%s and PIC are incompatible", m88k_short_data);
+    }
+
+  if (TARGET_OMIT_LEAF_FRAME_POINTER)       /* keep nonleaf frame pointers */
+    flag_omit_frame_pointer = 1;
+
+#ifdef SUBTARGET_OVERRIDE_OPTIONS
+  SUBTARGET_OVERRIDE_OPTIONS;
+#endif
+#ifdef SUBSUBTARGET_OVERRIDE_OPTIONS
+  SUBSUBTARGET_OVERRIDE_OPTIONS;
+#endif
+}
+
 /* Determine what instructions are needed to manufacture the integer VALUE
    in the given MODE.  */
 
@@ -933,15 +1000,23 @@ output_call (operands, addr)
 	      operands[1] = dest;
 	      return (REG_P (addr)
 		      ? "jsr %0\n\tbr %l1"
+#ifndef GOT_REL
+                      : "bsr %0\n\tbr %l1");
+#else
 		      : (flag_pic
 			 ? "bsr %0#plt\n\tbr %l1"
 			 : "bsr %0\n\tbr %l1"));
+#endif
 	    }
 
 	  /* Output the short branch form.  */
 	  output_asm_insn ((REG_P (addr)
 			    ? "jsr.n %0"
+#ifndef GOT_REL
+			    : "bsr.n %0"),
+#else
 			    : (flag_pic ? "bsr.n %0#plt" : "bsr.n %0")),
+#endif
 			   operands);
 
 #ifdef USE_GAS
@@ -976,7 +1051,11 @@ output_call (operands, addr)
     }
   return (REG_P (addr)
 	  ? "jsr%. %0"
+#ifndef GOT_REL
+	  : "bsr%. %0");
+#else
 	  : (flag_pic ? "bsr%. %0#plt" : "bsr%. %0"));
+#endif
 }
 
 static void
@@ -2078,6 +2157,7 @@ m88k_output_function_epilogue (stream, size)
      should only happen if the function has no prologue and no body.  */
   if (GET_CODE (insn) == NOTE)
     insn = prev_nonnote_insn (insn);
+
   if (insn == 0 || GET_CODE (insn) != BARRIER)
     fprintf (stream, "\tjmp\t %s\n", reg_names[1]);
 
@@ -2435,17 +2515,29 @@ output_function_profiler (file, labelno, name, savep)
   ASM_GENERATE_INTERNAL_LABEL (label, "LP", labelno);
   if (flag_pic == 2)
     {
+#ifndef GOT_REL  // TBD - is this #got_rel stuff still used, or obsolete? as doesn't recognize it
+      fprintf (file, "\tor.u\t %s,%s,%shi16(%s)\n",
+	       temp, reg_names[0], m88k_pound_sign, &label[1]);
+      fprintf (file, "\tor\t %s,%s,%slo16(%s)\n",
+	       temp, temp, m88k_pound_sign, &label[1]);
+#else
       fprintf (file, "\tor.u\t %s,%s,%shi16(%s#got_rel)\n",
 	       temp, reg_names[0], m88k_pound_sign, &label[1]);
       fprintf (file, "\tor\t %s,%s,%slo16(%s#got_rel)\n",
 	       temp, temp, m88k_pound_sign, &label[1]);
+#endif
       sprintf (dbi, "\tld\t %s,%s,%s\n", temp,
 	       reg_names[PIC_OFFSET_TABLE_REGNUM], temp);
     }
   else if (flag_pic)
     {
+#ifndef GOT_REL
+      sprintf (dbi, "\tld\t %s,%s,%s\n", temp,
+	       reg_names[PIC_OFFSET_TABLE_REGNUM], &label[1]);
+#else
       sprintf (dbi, "\tld\t %s,%s,%s#got_rel\n", temp,
 	       reg_names[PIC_OFFSET_TABLE_REGNUM], &label[1]);
+#endif
     }
   else
     {
@@ -2455,9 +2547,11 @@ output_function_profiler (file, labelno, name, savep)
 	       temp, temp, m88k_pound_sign, &label[1]);
     }
 
+#ifdef GOT_REL
   if (flag_pic)
     fprintf (file, "\tbsr.n\t %s#plt\n", name);
   else
+#endif
     fprintf (file, "\tbsr.n\t %s\n", name);
   fputs (dbi, file);
 
@@ -2516,6 +2610,9 @@ m88k_function_arg (args_so_far, mode, type, named)
   if (mode == BLKmode && TARGET_WARN_PASS_STRUCT)
     warning ("argument #%d is a structure", args_so_far + 1);
 
+  if (type == 0 && mode == BLKmode)
+    abort ();	/* m88k_function_arg argument `type' is NULL for BLKmode. */
+
   if ((args_so_far & 1) != 0
       && (mode == DImode || mode == DFmode
 	  || (type != 0 && TYPE_ALIGN (type) > 32)))
@@ -2526,13 +2623,10 @@ m88k_function_arg (args_so_far, mode, type, named)
     return (rtx) 0;             /* don't put args in registers */
 #endif
 
-  if (type == 0 && mode == BLKmode)
-    abort ();	/* m88k_function_arg argument `type' is NULL for BLKmode. */
-
   bytes = (mode != BLKmode) ? GET_MODE_SIZE (mode) : int_size_in_bytes (type);
   words = (bytes + 3) / 4;
 
-  if (args_so_far + words > 8)
+  if ((args_so_far + words) > 8)
     return (rtx) 0;             /* args have exhausted registers */
 
   else if (mode == BLKmode
@@ -2709,11 +2803,24 @@ m88k_va_arg (valist, type)
   arg_align = save_expr (arg_align);
 
   /* Decide if we should read from stack or regs.  */
+  if (!reg_p)
+  {
+    base = stk;
+  }
+  else
+  {
   t = build (LT_EXPR, integer_type_node, arg_align, build_int_2 (8, 0));
   base = build (COND_EXPR, TREE_TYPE (reg), t, reg, stk);
-
+  }
+  
   /* Find the final address.  */
+#if 0
   t = build (PLUS_EXPR, TREE_TYPE (base), base, arg_align);
+#else
+  t =  build (MULT_EXPR, TREE_TYPE(arg_align),
+	      arg_align, build_int_2(UNITS_PER_WORD, 0));
+  t = build (PLUS_EXPR, TREE_TYPE (base), base, t);
+#endif
   addr_rtx = expand_expr (t, NULL_RTX, Pmode, EXPAND_NORMAL);
   addr_rtx = copy_to_reg (addr_rtx);
 
@@ -3049,7 +3156,9 @@ print_operand (file, x, code)
       else if (flag_pic && xc == UNSPEC)
 	{
 	  output_addr_const (file, XVECEXP (x, 0, 0));
+#ifdef GOT_REL
 	  fputs ("#got_rel", file);
+#endif
 	}
       else if (xc == CONST_DOUBLE)
 	output_operand_lossage ("operand is const_double");
@@ -3061,7 +3170,9 @@ print_operand (file, x, code)
       if (flag_pic && (xc == SYMBOL_REF || xc == LABEL_REF))
 	{
 	  output_addr_const (file, x);
+#ifdef GOT_REL
 	  fputs ("#got_rel", file);
+#endif
 	  return;
 	}
       goto name;
@@ -3144,7 +3255,9 @@ print_operand_address (file, addr)
 	    {
 	      fprintf (file, "%s,", reg_names[REGNO (reg0)]);
 	      output_addr_const (file, reg1);
+#ifdef GOT_REL
 	      fputs ("#got_rel", file);
+#endif
 	    }
 	  else abort ();
 	}

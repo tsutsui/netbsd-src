@@ -57,7 +57,8 @@ __RCSID("$NetBSD: yacc.y,v 1.3 2004/01/02 12:09:48 itojun Exp $");
 
 #include "ldef.h"
 
-static int			debug = 0, num_csids = 0;
+int				debug = 0;
+static int			num_csids = 0;
 static char			*output = NULL;
 static char			*name, *encoding, *variable;
 static u_int32_t		invalid;

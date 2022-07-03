@@ -5,7 +5,7 @@
 #
 # $Revision: 1.1.1.1 $
 # $Id: get_anchors.pl,v 1.1.1.1 2004/04/27 04:13:01 heas Exp $
-# $Source: /cvsroot/src/gnu/dist/postfix/mantools/Attic/get_anchors.pl,v $
+# $Source: /cvsroot/src/gnu/dist/postfix/mantools/get_anchors.pl,v $
 #
 
 use HTML::Parser;

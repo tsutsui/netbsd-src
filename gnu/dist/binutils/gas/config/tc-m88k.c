@@ -27,6 +27,20 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "subsegs.h"
 #include "m88k-opcode.h"
 
+#if defined (OBJ_ELF)
+#include "elf/m88k.h"
+
+#define reloc_type elf_m88k_reloc_type
+
+#define RELOC_LO16 BFD_RELOC_LO16
+#define RELOC_HI16 BFD_RELOC_HI16
+#define RELOC_PC16 BFD_RELOC_16_PCREL
+#define RELOC_PC26 BFD_RELOC_M88K_26_PCREL
+#define RELOC_32   BFD_RELOC_32
+#define NO_RELOC   R_88K_NONE
+
+#endif
+
 struct field_val_assoc
 {
   char *name;
@@ -142,12 +156,24 @@ static char *get_pcr PARAMS ((char *param, struct m88k_insn *insn,
 static int calcop PARAMS ((struct m88k_opcode *format,
 			   char *param, struct m88k_insn *insn));
 
+static void s_uacons PARAMS ((int));
+
 extern char *myname;
 static struct hash_control *op_hash = NULL;
 
 /* These bits should be turned off in the first address of every segment */
 int md_seg_align = 7;
 
+#ifdef TE_NetBSD
+/* These chars start a comment anywhere in a source file (except inside
+   another comment.  */
+const char comment_chars[] = "|";
+
+/* These chars only start a comment at the beginning of a line.  */
+const char line_comment_chars[] = "#";
+
+const char line_separator_chars[] = ";";
+#else
 /* These chars start a comment anywhere in a source file (except inside
    another comment.  */
 const char comment_chars[] = ";";
@@ -156,6 +182,7 @@ const char comment_chars[] = ";";
 const char line_comment_chars[] = "#";
 
 const char line_separator_chars[] = "";
+#endif
 
 /* Chars that can be used to separate mant from exp in floating point nums */
 const char EXP_CHARS[] = "eE";
@@ -175,6 +202,8 @@ const pseudo_typeS md_pseudo_table[] =
   {"bss", s_lcomm, 1},
   {"string", stringer, 0},
   {"word", cons, 4},
+  {"uahalf", cons, 2},
+  {"uaword", cons, 4},
   /* Force set to be treated as an instruction.  */
   {"set", NULL, 0},
   {".set", s_set, 0},
@@ -290,6 +319,7 @@ md_assemble (op)
 		   insn.reloc);
       break;
 
+#ifdef M88KCOFF
     case RELOC_IW16:
       fix_new_exp (frag_now,
 		   thisfrag - frag_now->fr_literal,
@@ -298,6 +328,7 @@ md_assemble (op)
 		   0,
 		   insn.reloc);
       break;
+#endif
 
     case RELOC_PC16:
       fix_new_exp (frag_now,
@@ -337,6 +368,18 @@ calcop (format, param, insn)
 
   insn->opcode = format->opcode;
   opcode = 0;
+
+ /*
+  * Instructions which have no arguments (such as rte) will get
+  * correctly reported only if param == "", although there could be
+  * whitespace following the instruction.
+  * Rather than eating whitespace here, let's assume everything is
+  * fine. If there were non-wanted arguments, this will be parsed as
+  * an incorrect opcode at the offending line, so that's not too bad.
+  * -- miod
+  */
+ if (*fmt == '\0')
+	 return 1;
 
   for (;;)
     {
@@ -527,11 +570,13 @@ get_imm16 (param, insn)
       reloc = RELOC_LO16;
       param += 4;
     }
+#ifdef M88KCOFF
   else if (!strncmp (param, "iw16", 4) && !ISALNUM (param[4]))
     {
       reloc = RELOC_IW16;
       param += 4;
     }
+#endif
 
   save_ptr = input_line_pointer;
   input_line_pointer = param;
@@ -1092,6 +1137,36 @@ tc_coff_fix2rtype (fixp)
     }
 }
 
+/* Fill in rs_align_code fragments.  */
+
+void
+m88k_handle_align (fragp)
+     fragS *fragp;
+{
+  static const unsigned char nop_pattern[] = { 0xf4, 0x00, 0x58, 0x00 };
+
+  int bytes;
+  char *p;
+
+  if (fragp->fr_type != rs_align_code)
+    return;
+
+  bytes = fragp->fr_next->fr_address - fragp->fr_address - fragp->fr_fix;
+  p = fragp->fr_literal + fragp->fr_fix;
+
+  if (bytes & 3)
+    {
+      int fix = bytes & 3;
+      memset (p, 0, fix);
+      p += fix;
+      bytes -= fix;
+      fragp->fr_fix += fix;
+    }
+
+  memcpy (p, nop_pattern, 4);
+  fragp->fr_var = 4;
+}
+
 /* Apply a fixS to the object file.  Since COFF does not use addends
    in relocs, the addend is actually stored directly in the object
    file itself.  */
@@ -1155,6 +1230,8 @@ md_apply_fix3 (fixP, valP, seg)
     fixP->fx_done = 1;
 }
 
+#endif /* M88KCOFF */
+
 /* Where a PC relative offset is calculated from.  On the m88k they
    are calculated from just after the instruction.  */
 
@@ -1174,34 +1251,122 @@ md_pcrel_from (fixp)
   /*NOTREACHED*/
 }
 
-/* Fill in rs_align_code fragments.  */
+#ifdef OBJ_ELF
 
-void
-m88k_handle_align (fragp)
-     fragS *fragp;
+/* Round up a section size to the appropriate boundary.  */
+/* XXX taken straight from 68k */
+valueT
+md_section_align (segment, size)
+     segT segment ATTRIBUTE_UNUSED;
+     valueT size;
 {
-  static const unsigned char nop_pattern[] = { 0xf4, 0x00, 0x58, 0x00 };
+#ifdef BFD_ASSEMBLER
+  /* For a.out, force the section size to be aligned.  If we don't do
+     this, BFD will align it for us, but it will not write out the
+     final bytes of the section.  This may be a bug in BFD, but it is
+     easier to fix it here since that is how the other a.out targets
+     work.  */
+  int align;
 
-  int bytes;
-  char *p;
+  align = bfd_get_section_alignment (stdoutput, segment);
+  size = ((size + (1 << align) - 1) & ((valueT) -1 << align));
+#endif
 
-  if (fragp->fr_type != rs_align_code)
-    return;
-
-  bytes = fragp->fr_next->fr_address - fragp->fr_address - fragp->fr_fix;
-  p = fragp->fr_literal + fragp->fr_fix;
-
-  if (bytes & 3)
-    {
-      int fix = bytes & 3;
-      memset (p, 0, fix);
-      p += fix;
-      bytes -= fix;
-      fragp->fr_fix += fix;
-    }
-
-  memcpy (p, nop_pattern, 4);
-  fragp->fr_var = 4;
+  return size;
 }
 
-#endif /* M88KCOFF */
+arelent *
+tc_gen_reloc (seg, fixp)
+     asection *seg ATTRIBUTE_UNUSED;
+     fixS *fixp;
+{
+  arelent *reloc;
+
+  reloc = (arelent *) xmalloc (sizeof (arelent));
+
+  reloc->sym_ptr_ptr = (asymbol **) xmalloc (sizeof (asymbol *));
+  *reloc->sym_ptr_ptr = symbol_get_bfdsym (fixp->fx_addsy);
+  reloc->address = fixp->fx_frag->fr_address + fixp->fx_where;
+  reloc->howto = bfd_reloc_type_lookup (stdoutput, fixp->fx_r_type);
+  if (reloc->howto == (reloc_howto_type *) NULL)
+    {
+      as_bad_where (fixp->fx_file, fixp->fx_line,
+		    _("reloc %d not supported by object file format"),
+		    (int) fixp->fx_r_type);
+      return NULL;
+    }
+//  reloc->addend = fixp->fx_addnumber;
+  reloc->addend = fixp->fx_offset; // TKM - added
+
+  return reloc;
+}
+
+/* Apply a fixup to the object code.  This is called for all the
+   fixups we generated by the call to fix_new_exp, above.  In the call
+   above we used a reloc code which was the largest legal reloc code
+   plus the operand index.  Here we undo that to recover the operand
+   index.  At this point all symbol values should be fully resolved,
+   and we attempt to completely resolve the reloc.  If we can not do
+   that, we determine the correct reloc code and put it back in the
+   fixup.
+
+   This is the ELF version.
+*/
+
+void
+md_apply_fix3 (fixP, valP, seg)
+     fixS *fixP;
+     valueT * valP;
+     segT seg ATTRIBUTE_UNUSED;
+{
+  long val = * (long *) valP;
+  unsigned char* buf;
+  long insn;
+
+  buf = fixP->fx_frag->fr_literal + fixP->fx_where;
+//  fixP->fx_offset = 0;
+
+//printf("reloc: type=%s, where=0x%lx, orig=0x%lx val=0x%lx, offset=0x%lx addnumber=0x%lx\n", bfd_get_reloc_code_name(fixP->fx_r_type), fixP->fx_where, *(unsigned long*)buf, val, fixP->fx_offset, fixP->fx_addnumber);
+
+  switch (fixP->fx_r_type)
+    {
+    case RELOC_PC26:
+      insn  = bfd_getb32(buf);
+      insn |= (val >> 2) & 0x03ffffff;
+      bfd_putb32(insn, buf);
+      break;
+
+    case RELOC_PC16:
+      buf[0] = val >> 10;
+      buf[1] = val >> 2;
+      break;
+
+    case RELOC_HI16:
+      *valP = val = val >> 16;
+      buf[0] = val >> 8;
+      buf[1] = val;
+      break;
+
+    case RELOC_LO16:
+      *valP = val = val & 0xffff;
+      buf[0] = val >> 8;
+      buf[1] = val;
+      break;
+
+    case BFD_RELOC_32:
+      buf[0] = val >> 24;
+      buf[1] = val >> 16;
+      buf[2] = val >> 8;
+      buf[3] = val;
+      break;
+
+    default:
+      printf("unexpected reloc type %d (%s)\n", fixP->fx_r_type, bfd_get_reloc_code_name(fixP->fx_r_type));
+      abort ();
+    }
+
+  if (fixP->fx_addsy == NULL && fixP->fx_pcrel == 0)
+    fixP->fx_done = 1;
+}
+
+#endif /* OBJ_ELF */
