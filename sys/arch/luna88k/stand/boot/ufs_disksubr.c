@@ -1,5 +1,4 @@
-/*	$OpenBSD: ufs_disksubr.c,v 1.4 2013/11/05 00:51:58 krw Exp $	*/
-/*	$NetBSD: ufs_disksubr.c,v 1.2 2013/01/14 01:37:57 tsutsui Exp $	*/
+/*	$NetBSD$	*/
 
 /*
  * Copyright (c) 1992 OMRON Corporation.
@@ -82,27 +81,9 @@
 #include <luna88k/stand/boot/samachdep.h>
 #include <luna88k/stand/boot/scsireg.h>
 
-#define	BBSIZE 8192
-#define	LABEL_SIZE BBSIZE
-u_char lbl_buff[LABEL_SIZE];
-
-/*
- * Given a struct sun_disklabel, assume it has an extended partition
- * table and compute the correct value for sl_xpsum.
- */
-static __inline u_int
-sun_extended_sum(struct sun_disklabel *sl, void *end)
-{
-	u_int sum, *xp, *ep;
-
-	xp = (u_int *)&sl->sl_xpmag;
-	ep = (u_int *)end;
-
-	sum = 0;
-	for (; xp < ep; xp++)
-		sum += *xp;
-	return (sum);
-}
+#define BBSIZE	8192
+#define LABEL_SIZE BBSIZE
+uint8_t lbl_buff[LABEL_SIZE];
 
 /*
  * Attempt to read a disk label from a device
@@ -116,143 +97,40 @@ char *
 readdisklabel(struct scsi_softc *sc, uint tgt, struct disklabel *lp)
 {
 	u_char *bp = lbl_buff;
-	struct sun_disklabel *slp;
-	struct partition *npp;
-	struct sun_dkpart *spp;
-	u_short cksum = 0, *sp1, *sp2;
-	int i, secpercyl;
+	struct disklabel *dlp;
+	char *msg = NULL;
 	static struct scsi_generic_cdb cdb = {
 		6,
 		{ CMD_READ, 0, 0, 0, 1, 0 }
 	};
 
-	if (DL_GETDSIZE(lp) == 0)
-		DL_SETDSIZE(lp, 0x1fffffff);
+	if (lp->d_secperunit == 0)
+		lp->d_secperunit = 0x1fffffff;
 	lp->d_npartitions = 1;
-	if (DL_GETPSIZE(&lp->d_partitions[0]) == 0)
-		DL_SETPSIZE(&lp->d_partitions[0], 0x1fffffff);
-	DL_SETPSIZE(&lp->d_partitions[0], 0);
+	if (lp->d_partitions[0].p_size == 0)
+		lp->d_partitions[0].p_size = 0x1fffffff;
+	lp->d_partitions[0].p_offset = 0;
 
-	if (scsi_immed_command(sc, tgt, 0, &cdb, bp, DEV_BSIZE) != 0)
-		return "I/O error";
-
-	slp = (struct sun_disklabel *)bp;
-	if (slp->sl_magic != SUN_DKMAGIC)
-		return "no disk label";
-
-	sp1 = (u_short *)slp;
-	sp2 = (u_short *)(slp + 1);
-	while (sp1 < sp2)
-		cksum ^= *sp1++;
-	if (cksum != 0)
-		return "disk label corrupted";
-
-	lp->d_magic = DISKMAGIC;
-	lp->d_magic2 = DISKMAGIC;
-	lp->d_flags = D_VENDOR;
-	memcpy(lp->d_packname, slp->sl_text, sizeof(lp->d_packname));
-	lp->d_nsectors = slp->sl_nsectors;
-	lp->d_ntracks = slp->sl_ntracks;
-	lp->d_ncylinders = slp->sl_ncylinders;
-
-	secpercyl = slp->sl_nsectors * slp->sl_ntracks;
-	lp->d_secpercyl = secpercyl;
-	if (DL_GETDSIZE(lp) == 0)
-		DL_SETDSIZE(lp, (u_int64_t)secpercyl * slp->sl_ncylinders);
-	lp->d_version = 1;
-
-	memcpy(&lp->d_uid, &slp->sl_uid, sizeof(slp->sl_uid));
-
-	lp->d_acylinders = slp->sl_acylinders;
-
-	lp->d_npartitions = MAXPARTITIONS;
-	/* These are as defined in <ufs/ffs/fs.h> */
-	lp->d_bbsize = BBSIZE;    /* XXX */
-	lp->d_sbsize = BBSIZE;    /* XXX */
-
-	for (i = 0; i < 8; i++) {
-		spp = &slp->sl_part[i];
-		npp = &lp->d_partitions[i];
-		/* UniOS label uses blkoffset, not cyloffset */
-		DL_SETPOFFSET(npp, spp->sdkp_cyloffset);
-		DL_SETPSIZE(npp, spp->sdkp_nsectors);
-		if (DL_GETPSIZE(npp) == 0) {
-			npp->p_fstype = FS_UNUSED;
-		} else {
-			npp->p_fstype = i == 2 ? FS_UNUSED :
-			    i == 1 ? FS_SWAP : FS_BSDFFS;
-			if (npp->p_fstype == FS_BSDFFS) {
-				/*
-				 * The sun label does not store the FFS fields,
-				 * so just set them with default values here.
-				 */
-				npp->p_fragblock = 8 | 3
-				    /* DISKLABELV1_FFS_FRAGBLOCK(2048, 8); */ ;
-				npp->p_cpg = 16;
+	if (scsi_immed_command(sc, tgt, 0, &cdb, bp, DEV_BSIZE) != 0) {
+		msg = "I/O error";
+	} else {
+		for (dlp = (struct disklabel *)bp;
+		     dlp <= (struct disklabel *)(bp + DEV_BSIZE - sizeof(*dlp));
+		     dlp = (struct disklabel *)((char *)dlp + sizeof(long))) {
+			if (dlp->d_magic != DISKMAGIC ||
+			    dlp->d_magic2 != DISKMAGIC) {
+				if (msg == NULL)
+					msg = "no disk label";
+			} else if (dlp->d_npartitions > MAXPARTITIONS ||
+			   dkcksum(dlp) != 0)
+				msg = "disk label corrupted";
+			else {
+				*lp = *dlp;
+				msg = NULL;
+				break;
 			}
 		}
 	}
 
-	/*
-	 * XXX BandAid XXX
-	 * UniOS rootfs sits on part c which don't begin at sect 0,
-	 * and impossible to mount.  Thus, make it usable as part b.
-	 * XXX how to setup a swap partition on disks shared with UniOS???
-	 */
-	if (slp->sl_rpm == 0 && DL_GETPOFFSET(&lp->d_partitions[2]) != 0) {
-		lp->d_partitions[1] = lp->d_partitions[2];
-		lp->d_partitions[1].p_fstype = FS_BSDFFS;
-	}
-
-	/* Clear "extended" partition info, tentatively */
-	for (i = 0; i < SUNXPART; i++) {
-		npp = &lp->d_partitions[i+8];
-		DL_SETPOFFSET(npp, 0);
-		DL_SETPSIZE(npp, 0);
-		npp->p_fstype = FS_UNUSED;
-	}
-
-	/* Check to see if there's an "extended" partition table
-	 * SL_XPMAG partitions had checksums up to just before the
-	 * (new) sl_types variable, while SL_XPMAGTYP partitions have
-	 * checksums up to the just before the (new) sl_xxx1 variable.
-	 */
-	if ((slp->sl_xpmag == SL_XPMAG &&
-	    sun_extended_sum(slp, &slp->sl_types) == slp->sl_xpsum) ||
-	    (slp->sl_xpmag == SL_XPMAGTYP &&
-	    sun_extended_sum(slp, &slp->sl_xxx1) == slp->sl_xpsum)) {
-		/*
-		 * There is.  Copy over the "extended" partitions.
-		 * This code parallels the loop for partitions a-h.
-		 */
-		for (i = 0; i < SUNXPART; i++) {
-			spp = &slp->sl_xpart[i];
-			npp = &lp->d_partitions[i+8];
-			DL_SETPOFFSET(npp, spp->sdkp_cyloffset);
-			DL_SETPSIZE(npp, spp->sdkp_nsectors);
-			if (DL_GETPSIZE(npp) == 0) {
-				npp->p_fstype = FS_UNUSED;
-				continue;
-			}
-			npp->p_fstype = FS_BSDFFS;
-			if (npp->p_fstype == FS_BSDFFS) {
-				npp->p_fragblock = 8 | 3
-				    /* DISKLABELV1_FFS_FRAGBLOCK(2048, 8); */ ;
-				npp->p_cpg = 16;
-			}
-		}
-		if (slp->sl_xpmag == SL_XPMAGTYP) {
-			for (i = 0; i < MAXPARTITIONS; i++) {
-				npp = &lp->d_partitions[i];
-				npp->p_fstype = slp->sl_types[i];
-				npp->p_fragblock = slp->sl_fragblock[i];
-				npp->p_cpg = slp->sl_cpg[i];
-			}
-		}
-	}
-
-	lp->d_checksum = 0;
-	lp->d_checksum = dkcksum(lp);
-
-	return NULL;
+	return msg;
 }
