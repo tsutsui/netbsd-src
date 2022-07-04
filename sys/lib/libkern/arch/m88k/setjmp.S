@@ -29,7 +29,9 @@
  * rights to redistribute these changes.
  */
 
+#if defined(_KERNEL_OPT)
 #include "opt_ddb.h"
+#endif
 
 #ifdef DDB
 
