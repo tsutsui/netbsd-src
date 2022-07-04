@@ -74,7 +74,7 @@
 #endif
 #endif
 
-#ifdef _KERNEL
+#if defined(_KERNEL) || defined(_STANDALONE)
 
 #ifdef _LOCORE
 /*
@@ -197,6 +197,6 @@
 #define	DMT_DREG_OFFSET		7
 #define	DMT_DREG_WIDTH		5
 
-#endif	/* _KERNEL */
+#endif	/* _KERNEL || _STANDALONE */
 
 #endif /* __M88K_ASM_H__ */
