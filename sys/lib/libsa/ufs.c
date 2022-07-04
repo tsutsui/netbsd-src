@@ -583,7 +583,7 @@ ufs_open(const char *path, struct open_file *f)
 	 * Calculate indirect block levels.
 	 */
 	{
-		indp_t mult;
+		indp_t mult = 0;	/* XXX */
 		int ln2;
 
 		/*
