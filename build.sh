@@ -170,7 +170,7 @@ getarch()
 		MACHINE_ARCH=m68k
 		;;
 
-        mvme88k)
+        luna88k|mvme88k)
                 MACHINE_ARCH=m88k
                 ;;
 
