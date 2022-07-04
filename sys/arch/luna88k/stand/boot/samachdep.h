@@ -148,6 +148,9 @@ void sioinit(void);
 /* ufs_disklabel.c */
 char *readdisklabel(struct scsi_softc *, uint, struct disklabel *);
 
+/* strtol.c */
+long strtol(const char *, char **, int);
+
 #define DELAY(n)	delay(n)
 
 extern	struct fs_ops file_system_disk[];
