@@ -94,7 +94,7 @@ struct	sd_softc {
 	short	sc_type;	/* drive type */
 	short	sc_punit;	/* physical unit (scsi lun) */
 	u_short	sc_bshift;	/* convert device blocks to DEV_BSIZE blks */
-	daddr32_t sc_blks;	/* number of blocks on device */
+	daddr_t sc_blks;	/* number of blocks on device */
 	int	sc_blksize;	/* device block size in bytes */
 
 	struct disklabel sc_label;
@@ -298,7 +298,7 @@ static struct scsi_generic_cdb cdb_write = {
 };
 
 int
-sdstrategy(void *devdata, int func, daddr32_t dblk, size_t size, void *v_buf,
+sdstrategy(void *devdata, int func, daddr_t dblk, size_t size, void *v_buf,
     size_t *rsize)
 {
 	struct sd_softc *sc = devdata;
@@ -306,7 +306,7 @@ sdstrategy(void *devdata, int func, daddr32_t dblk, size_t size, void *v_buf,
 	uint8_t *buf = v_buf;
 	int target = sc->sc_tgt;
 	struct scsi_generic_cdb *cdb;
-	daddr32_t blk;
+	daddr_t blk;
 	u_int nblk  = size >> sc->sc_bshift;
 	int stat;
 #ifdef DEBUG
