@@ -138,7 +138,7 @@ int scsi_request_sense(struct scsi_softc *, int, int, u_char *, unsigned int);
 int scsi_test_unit_rdy(struct scsi_softc *, int, int);
 
 /* sd.c */
-int sdstrategy(void *, int, daddr32_t, size_t, void *, size_t *);
+int sdstrategy(void *, int, daddr_t, size_t, void *, size_t *);
 int sdopen(struct open_file *, ...);
 int sdclose(struct open_file *);
 
