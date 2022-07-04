@@ -87,7 +87,6 @@
 #include <luna88k/stand/boot/samachdep.h>
 #include <luna88k/stand/boot/status.h>
 #include <lib/libsa/loadfile.h>
-#include <lib/libsa/arc4.h>
 
 int howto;
 
