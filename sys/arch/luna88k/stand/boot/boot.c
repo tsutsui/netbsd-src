@@ -90,7 +90,6 @@
 
 int howto;
 
-int	loadrandom(const char *, char *, size_t);
 #if 0
 static int get_boot_device(const char *, int *, int *, int *);
 #endif
@@ -98,9 +97,6 @@ static int get_boot_device(const char *, int *, int *, int *);
 void (*cpu_boot)(uint32_t, uint32_t);
 uint32_t cpu_bootarg1;
 uint32_t cpu_bootarg2;
-
-char rnddata[BOOTRANDOM_MAX];
-struct rc4_ctx randomctx;
 
 #if 0
 int
@@ -165,10 +161,7 @@ bootunix(char *line)
 #if 0
 	int dev, unit, part;
 #endif
-	uint64_t marks[MARK_MAX];
-	char *lparen, *rparen;
-	char rndpath[MAXPATHLEN];
-	static int rnd_loaded = 0;
+	u_long marks[MARK_MAX];
 
 #if 0
 	if (get_boot_device(line, &dev, &unit, &part) != 0) {
@@ -176,30 +169,6 @@ bootunix(char *line)
 		return ST_ERROR;
 	}
 #endif
-
-	/*
-	 * Try and load randomness from the boot device.
-	 */
-	if (rnd_loaded == 0) {
-		lparen = strchr(line, '(');
-		if (lparen != NULL)
-			rparen = strchr(line, ')');
-		else
-			rparen = NULL;
-		if (rparen != NULL &&
-		    rparen + 1 - line < sizeof rndpath) {
-			rparen++;
-			memcpy(rndpath, line, rparen - line);
-			rndpath[rparen - line] = '\0';
-			strlcat(rndpath, BOOTRANDOM, sizeof rndpath);
-		} else
-			strlcpy(rndpath, BOOTRANDOM, sizeof rndpath);
-
-		rnd_loaded = loadrandom(rndpath, rnddata, sizeof(rnddata));
-	}
-
-	rc4_keysetup(&randomctx, rnddata, sizeof rnddata);
-	rc4_skip(&randomctx, 1536);
 
 	/* Note marks[MARK_START] is passed as an load address offset */
 	memset(marks, 0, sizeof(marks));
@@ -221,35 +190,4 @@ bootunix(char *line)
 	printf("Booting kernel failed. (%s)\n", strerror(errno));
 
 	return ST_ERROR;
-}
-
-int
-loadrandom(const char *name, char *buf, size_t buflen)
-{
-	struct stat sb;
-	int fd, error = 0;
-
-	fd = open(name, O_RDONLY);
-	if (fd == -1) {
-		if (errno != EPERM)
-			printf("cannot open %s: %s\n", name, strerror(errno));
-		return -1;
-	}
-	if (fstat(fd, &sb) == -1) {
-		error = -1;
-		goto done;
-	}
-	if (read(fd, buf, buflen) != buflen) {
-		error = -1;
-		goto done;
-	}
-	if (sb.st_mode & S_ISTXT) {
-		printf("NOTE: random seed is being reused.\n");
-		error = -1;
-		goto done;
-	}
-	fchmod(fd, sb.st_mode | S_ISTXT);
-done:
-	close(fd);
-	return (error);
 }
