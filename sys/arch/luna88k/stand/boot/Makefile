@@ -1,19 +1,28 @@
+#	$NetBSD$
 #	$OpenBSD: Makefile,v 1.12 2019/12/10 11:28:13 aoyama Exp $
-#	$NetBSD: Makefile,v 1.9 2013/01/22 15:48:40 tsutsui Exp $
 #	@(#)Makefile	8.2 (Berkeley) 8/15/93
 
 NOMAN= # defined
+NOPIE= # defined
+
+.include <bsd.own.mk>
 
 S= ${.CURDIR}/../../../..
+LIBSADIR+=	${S}/lib/libsa
 
 CPPFLAGS+=	-nostdinc -D_STANDALONE
 CPPFLAGS+=	-I${.CURDIR} -I${.OBJDIR} -I${S} -I${S}/arch
 
 CPPFLAGS+=	-DSUPPORT_DISK
 CPPFLAGS+=	-DSUPPORT_ETHERNET
-CPPFLAGS+=	-DSUPPORT_BOOTP
+CPPFLAGS+=	-DSUPPORT_DHCP -DSUPPORT_BOOTP
 #CPPFLAGS+=	-DBOOTP_DEBUG -DNETIF_DEBUG -DETHER_DEBUG -DNFS_DEBUG
 #CPPFLAGS+=	-DRPC_DEBUG -DRARP_DEBUG -DNET_DEBUG -DDEBUG -DPARANOID
+
+CFLAGS=		-Os
+CFLAGS+=	-ffreestanding
+CFLAGS+=	-Wall -Werror
+CFLAGS+=	-Wstrict-prototypes -Wmissing-prototypes -Wpointer-arith
 
 OBJCOPY?=	objcopy
 TEXTADDR=	0x700000	# 7MB
@@ -37,39 +46,49 @@ SRCS+=	ufs_disksubr.c
 
 # netboot support
 SRCS+=	if_le.c lance.c getsecs.c
+.PATH: ${LIBSADIR}
 SRCS+=	dev_net.c
 
 PROG=   boot
 
 ### find out what to use for libkern
-.PATH:	${S}/lib/libkern
-SRCS+=	memcpy.c memmove.c strlcat.c strlcpy.c strlen.c
-SRCS+=	muldi3.c negdi2.c ashldi3.c ashrdi3.c
+KERN_AS=	library
+.include "${S}/lib/libkern/Makefile.inc"
+
+### find out what to use for libz
+Z_AS=		library
+.include "${S}/lib/libz/Makefile.inc"
 
 ### find out what to use for libsa
-.PATH:	${S}/lib/libsa
-SRCS+=	arc4.c strtol.c
-
-SAREL=
-SADST=	${.CURDIR}/${__objdir}
-USE_LOADFILE=	yes
+SA_AS=		library
+SAMISCMAKEFLAGS+=SA_USE_LOADFILE=yes SA_USE_CREAD=yes SA_ENABLE_LS_OP=yes
 .include "${S}/lib/libsa/Makefile.inc"
 
 LIBS=	${SALIB} ${ZLIB} ${KERNLIB}
 
 ${PROG}: ${LDSCRIPT} ${OBJS} ${LIBS}
+	${_MKTAGET_LINK}
 	${LD} ${LINKFORMAT} -x -o ${PROG}.elf ${OBJS} ${LIBS}
-	${OBJCOPY} -S -O a.out-m88k-openbsd --impure ${PROG}.elf ${PROG}
-
-install: ${PROG}
-	install -m 555 -g bin -o bin ${PROG} ${DESTDIR}${MDEC_DIR}
+	${OBJCOPY} -S -O a.out-m88k-netbsd --impure ${PROG}.elf ${PROG}
 
 CLEANFILES+=	${PROG}.elf
+CLEANFILES+=	machine m88k
 
-.if !make(clean) && !make(cleandir) && !make(includes) && !make(obj)
-.BEGIN:
-	@([ -h machine ] || ln -s ${.CURDIR}/../../include machine)
-	@([ -h m88k ] || ln -s ${.CURDIR}/../../../m88k/include m88k)
-.endif
+.BEGIN: machine m88k
+.NOPATH: machine m88k
+realdepend realall: machine m88k
+
+machine::
+	-rm -f $@
+	ln -s ${S}/arch/${MACHINE}/include $@
+
+m88k::
+	-rm -f $@
+	ln -s ${S}/arch/m88k/include $@
+
+cleandir distclean: .WAIT cleanlibdir
+
+cleanlibdir:
+	-rm -rf lib
 
 .include <bsd.prog.mk>

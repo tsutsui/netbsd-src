@@ -41,9 +41,9 @@
 #include <netinet/in.h>
 
 #include <luna88k/stand/boot/samachdep.h>
+#include <lib/libsa/dev_net.h>
 #include <lib/libsa/nfs.h>
 #include <lib/libsa/ufs.h>
-#include "dev_net.h"
 
 #define xxstrategy	\
 	(int (*)(void *, int, daddr32_t, size_t, void *, size_t *))nullsys

@@ -106,7 +106,7 @@
 #include <luna88k/stand/boot/samachdep.h>
 #include <luna88k/stand/boot/status.h>
 #include <lib/libsa/loadfile.h>
-#include "dev_net.h"
+#include <lib/libsa/dev_net.h>
 
 static void get_fuse_rom_data(void);
 static void get_nvram_data(void);
