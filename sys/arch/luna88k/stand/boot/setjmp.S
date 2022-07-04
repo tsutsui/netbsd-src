@@ -32,48 +32,48 @@
 
 /* int setjmp(label_t *); */
 ENTRY(setjmp)
-	st	%r1,  %r2, 0
-	st	%r14, %r2, 4
-	st	%r15, %r2, 2*4
-	st	%r16, %r2, 3*4
-	st	%r17, %r2, 4*4
-	st	%r18, %r2, 5*4
-	st	%r19, %r2, 6*4
-	st	%r20, %r2, 7*4
-	st	%r21, %r2, 8*4
-	st	%r22, %r2, 9*4
-	st	%r23, %r2, 10*4
-	st	%r24, %r2, 11*4
-	st	%r25, %r2, 12*4
-	st	%r26, %r2, 13*4
-	st	%r27, %r2, 14*4
-	st	%r28, %r2, 15*4
-	st	%r29, %r2, 16*4
-	st	%r30, %r2, 17*4
-	st	%r31, %r2, 18*4
-	jmp.n	%r1
-	 or	%r2,  %r0, %r0
+	st	r1,  r2, 0
+	st	r14, r2, 4
+	st	r15, r2, 2*4
+	st	r16, r2, 3*4
+	st	r17, r2, 4*4
+	st	r18, r2, 5*4
+	st	r19, r2, 6*4
+	st	r20, r2, 7*4
+	st	r21, r2, 8*4
+	st	r22, r2, 9*4
+	st	r23, r2, 10*4
+	st	r24, r2, 11*4
+	st	r25, r2, 12*4
+	st	r26, r2, 13*4
+	st	r27, r2, 14*4
+	st	r28, r2, 15*4
+	st	r29, r2, 16*4
+	st	r30, r2, 17*4
+	st	r31, r2, 18*4
+	jmp.n	r1
+	 or	r2,  r0, r0
 
 /* void longjmp(label_t*); */
 ENTRY(longjmp)
-	ld	%r1,  %r2, 0
-	ld	%r14, %r2, 4
-	ld	%r15, %r2, 2*4
-	ld	%r16, %r2, 3*4
-	ld	%r17, %r2, 4*4
-	ld	%r18, %r2, 5*4
-	ld	%r19, %r2, 6*4
-	ld	%r20, %r2, 7*4
-	ld	%r21, %r2, 8*4
-	ld	%r22, %r2, 9*4
-	ld	%r23, %r2, 10*4
-	ld	%r24, %r2, 11*4
-	ld	%r25, %r2, 12*4
-	ld	%r26, %r2, 13*4
-	ld	%r27, %r2, 14*4
-	ld	%r28, %r2, 15*4
-	ld	%r29, %r2, 16*4
-	ld	%r30, %r2, 17*4
-	ld	%r31, %r2, 18*4
-	jmp.n	%r1
-	 or	%r2,  %r0, 1
+	ld	r1,  r2, 0
+	ld	r14, r2, 4
+	ld	r15, r2, 2*4
+	ld	r16, r2, 3*4
+	ld	r17, r2, 4*4
+	ld	r18, r2, 5*4
+	ld	r19, r2, 6*4
+	ld	r20, r2, 7*4
+	ld	r21, r2, 8*4
+	ld	r22, r2, 9*4
+	ld	r23, r2, 10*4
+	ld	r24, r2, 11*4
+	ld	r25, r2, 12*4
+	ld	r26, r2, 13*4
+	ld	r27, r2, 14*4
+	ld	r28, r2, 15*4
+	ld	r29, r2, 16*4
+	ld	r30, r2, 17*4
+	ld	r31, r2, 18*4
+	jmp.n	r1
+	 or	r2,  r0, 1

@@ -67,41 +67,41 @@ ASLOCAL(main_start)
 	 * They will then proceed to run the kernel, as if the kernel
 	 * had been directly booted from the PROM.
 	 */
-	or.u	%r3,  %r0,  %hi16(_ASM_LABEL(cpu_park_address))
-	or	%r3,  %r3,  %lo16(_ASM_LABEL(cpu_park_address))
+	or.u	r3,  r0,  hi16(_ASM_LABEL(cpu_park_address))
+	or	r3,  r3,  lo16(_ASM_LABEL(cpu_park_address))
 
-	or.u	%r2,  %r0,  %hi16(_ASM_LABEL(cpu_park))
-	or	%r2,  %r2,  %lo16(_ASM_LABEL(cpu_park))
+	or.u	r2,  r0,  hi16(_ASM_LABEL(cpu_park))
+	or	r2,  r2,  lo16(_ASM_LABEL(cpu_park))
 	FLUSH_PIPELINE
-	xmem	%r2,  %r3,  %r0
+	xmem	r2,  r3,  r0
 
-	bcnd	eq0,  %r2, 1f	/* master! causing all the others to park */
-	jmp	%r2		/* park ourselves */
+	bcnd	eq0,  r2, 1f	/* master! causing all the others to park */
+	jmp	r2		/* park ourselves */
 
 1:
 	/* clear BSS */
-	or.u	%r2, %r0, %hi16(_C_LABEL(edata))
-	or	%r2, %r2, %lo16(_C_LABEL(edata))
-	or.u	%r4, %r0, %hi16(_C_LABEL(end))
-	or	%r4, %r4, %lo16(_C_LABEL(end))
-1:	st	%r0, %r2, %r0
-	addu	%r2, %r2, 4
-	cmp	%r3, %r2, %r4
-	bb1	ne,  %r3, 1b
+	or.u	r2, r0, hi16(_C_LABEL(edata))
+	or	r2, r2, lo16(_C_LABEL(edata))
+	or.u	r4, r0, hi16(_C_LABEL(end))
+	or	r4, r4, lo16(_C_LABEL(end))
+1:	st	r0, r2, r0
+	addu	r2, r2, 4
+	cmp	r3, r2, r4
+	bb1	ne,  r3, 1b
 
 	/* setup stack, below our image */
-	or.u	%r31, %r0,  %hi16(_ASM_LABEL(__start))
-	or	%r31, %r31, %lo16(_ASM_LABEL(__start))
+	or.u	r31, r0,  hi16(_ASM_LABEL(__start))
+	or	r31, r31, lo16(_ASM_LABEL(__start))
 
 	/* read dip switch settings */
-	or.u	%r11, %r0,  %hi16(OBIO_PIO0A)
-	ld.bu	%r10, %r11, %lo16(OBIO_PIO0A)
-	mak	%r10, %r10, 0<8>
-	ld.bu	%r12, %r11, %lo16(OBIO_PIO0B)
-	or	%r10, %r10, %r12
+	or.u	r11, r0,  hi16(OBIO_PIO0A)
+	ld.bu	r10, r11, lo16(OBIO_PIO0A)
+	mak	r10, r10, 0<8>
+	ld.bu	r12, r11, lo16(OBIO_PIO0B)
+	or	r10, r10, r12
 
-	or.u	%r11, %r0,  %hi16(_C_LABEL(dipswitch))
-	st.h	%r10, %r11, %lo16(_C_LABEL(dipswitch))
+	or.u	r11, r0,  hi16(_C_LABEL(dipswitch))
+	st.h	r10, r11, lo16(_C_LABEL(dipswitch))
 
 	bsr	_C_LABEL(main)
 	bsr	_C_LABEL(_rtt)
@@ -109,39 +109,39 @@ ASLOCAL(main_start)
 
 ASLOCAL(cpu_park)
 	/* spin a while */
-	or.u	%r2,  %r0,  1
+	or.u	r2,  r0,  1
 9:
-	subu	%r2,  %r2,  1
-	bcnd	ne0,  %r2,  9b
+	subu	r2,  r2,  1
+	bcnd	ne0,  r2,  9b
 
 	/* if kernel entry point is known, exit */
-	or.u	%r1,  %r0,  %hi16(_C_LABEL(cpu_boot))
-	ld	%r1,  %r1,  %lo16(_C_LABEL(cpu_boot))
-	bcnd	eq0,  %r1,  _ASM_LABEL(cpu_park)
+	or.u	r1,  r0,  hi16(_C_LABEL(cpu_boot))
+	ld	r1,  r1,  lo16(_C_LABEL(cpu_boot))
+	bcnd	eq0,  r1,  _ASM_LABEL(cpu_park)
 
-	or.u	%r2,  %r0,  1
+	or.u	r2,  r0,  1
 9:
-	subu	%r2,  %r2,  1
-	bcnd	ne0,  %r2,  9b
+	subu	r2,  r2,  1
+	bcnd	ne0,  r2,  9b
 
-	or.u	%r2,  %r0, %hi16(_C_LABEL(cpu_bootarg1))
-	ld	%r2,  %r2, %lo16(_C_LABEL(cpu_bootarg1))
-	or.u	%r3,  %r0, %hi16(_C_LABEL(cpu_bootarg2))
-	ld	%r3,  %r3, %lo16(_C_LABEL(cpu_bootarg2))
+	or.u	r2,  r0, hi16(_C_LABEL(cpu_bootarg1))
+	ld	r2,  r2, lo16(_C_LABEL(cpu_bootarg1))
+	or.u	r3,  r0, hi16(_C_LABEL(cpu_bootarg2))
+	ld	r3,  r3, lo16(_C_LABEL(cpu_bootarg2))
 
-	jmp	%r1
+	jmp	r1
 
 GLOBAL(delay)
-	bcnd	eq0, %r2, 2f
-	or.u	%r3, %r0, %hi16(_C_LABEL(cpuspeed))
-	ld	%r3, %r3, %lo16(_C_LABEL(cpuspeed))
-	mul	%r4, %r2, %r3
-	subu	%r4, %r4, 4
+	bcnd	eq0, r2, 2f
+	or.u	r3, r0, hi16(_C_LABEL(cpuspeed))
+	ld	r3, r3, lo16(_C_LABEL(cpuspeed))
+	mul	r4, r2, r3
+	subu	r4, r4, 4
 1:
-	bcnd.n	gt0, %r4, 1b
-	 subu	%r4, %r4, 2
+	bcnd.n	gt0, r4, 1b
+	 subu	r4, r4, 2
 2:
-	jmp	%r1
+	jmp	r1
 
 	.data
 

@@ -37,14 +37,14 @@ static __inline__ uint32_t
 get_vbr(void)
 {
 	uint32_t vbr;
-	__asm__ volatile ("ldcr %0, %%cr7" : "=r"(vbr));
+	__asm__ volatile ("ldcr %0, cr7" : "=r"(vbr));
 	return vbr;
 }
 
 static __inline__ void
 set_vbr(uint32_t vbr)
 {
-	__asm__ volatile ("stcr %0, %%cr7" :: "r"(vbr));
+	__asm__ volatile ("stcr %0, cr7" :: "r"(vbr));
 }
 
 /*
