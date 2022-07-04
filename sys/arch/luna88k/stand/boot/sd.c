@@ -327,8 +327,8 @@ sdstrategy(void *devdata, int func, daddr_t dblk, size_t size, void *v_buf,
 	cdb->cdb[4] = (blk & 0x0000ff00) >>  8;
 	cdb->cdb[5] = (blk & 0x000000ff);
 
-	cdb->cdb[7] = ((nblk >> _DEV_BSHIFT) & 0xff00) >> 8;
-	cdb->cdb[8] = ((nblk >> _DEV_BSHIFT) & 0x00ff);
+	cdb->cdb[7] = ((nblk >> DEV_BSHIFT) & 0xff00) >> 8;
+	cdb->cdb[8] = ((nblk >> DEV_BSHIFT) & 0x00ff);
 
 #ifdef DEBUG
 	printf("sdstrategy(%d,%d): blk = %lu (0x%lx), nblk = %u (0x%x)\n",
