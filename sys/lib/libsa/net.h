@@ -38,6 +38,10 @@
  * SUCH DAMAGE.
  */
 
+#include <net/if_ether.h>       /* for ETHER_ADDR_LEN */
+#include <netinet/in.h>
+#include <netinet/in_systm.h>
+
 #ifndef _KERNEL	/* XXX - see <netinet/in.h> */
 #undef __IPADDR
 #define __IPADDR(x)	htonl((u_int32_t)(x))
