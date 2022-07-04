@@ -171,7 +171,7 @@ lance_get(void *cookie, void *data, size_t maxlen)
 		goto out;
 	}
 	len -= 4;
-	memcpy(data, (void *)lemem->lem_rbuf[sc->sc_currmd], min(len, maxlen));
+	memcpy(data, (void *)lemem->lem_rbuf[sc->sc_currmd], MIN(len, maxlen));
 
  out:
 	rmd->rmd2 = -LEMTU;
@@ -207,7 +207,7 @@ lance_put(void *cookie, void *data, size_t len)
 		continue;
 	tmd->tmd1_bits = LE_T1_STP | LE_T1_ENP;
 	memcpy((void *)lemem->lem_tbuf[sc->sc_curtmd], data, len);
-	tmd->tmd2 = -max(len, LEMINSIZE);
+	tmd->tmd2 = -MAX(len, LEMINSIZE);
 	tmd->tmd3 = 0;
 
 	/* start TX */
