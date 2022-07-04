@@ -56,7 +56,7 @@
 				} while(/* CONSTCOND */0)
 #define PROGRESS(a)		(void) printf a
 #define ALLOC(a)		alloc(a)
-#define DEALLOC(a, b)		dealloc(a, b)
+#define FREE(a, b)		free(a, b)
 #define OKMAGIC(a)		((a) == NMAGIC || (a) == OMAGIC)
 
 #else
@@ -64,7 +64,7 @@
 #define WARN(a)			warn a
 #define PROGRESS(a)		/* nothing */
 #define ALLOC(a)		malloc(a)
-#define DEALLOC(a, b)		free(a)
+#define FREE(a, b)		free(a)
 #define OKMAGIC(a)		((a) == NMAGIC || (a) == OMAGIC)
 
 #endif
