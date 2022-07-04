@@ -34,6 +34,9 @@
 #include <machine/board.h>
 #include <luna88k/dev/timekeeper.h>
 
+#include <lib/libkern/libkern.h>
+#include <lib/libsa/net.h>
+
 #define _DS_GET(off, data) \
 	do { *chiptime = (off); (data) = (*chipdata); } while (0)
 #define _DS_SET(off, data) \
