@@ -28,7 +28,7 @@ OBJCOPY?=	objcopy
 TEXTADDR=	0x700000	# 7MB
 LDSCRIPT=	${.CURDIR}/boot.ldscript
 LINKFORMAT=	-static -N -Ttext ${TEXTADDR} -T ${LDSCRIPT} \
-		--warn-common -nopie -znorelro
+		--warn-common -nopie #-znorelro
 
 SRCS=	locore.S
 SRCS+=	init_main.c
