@@ -25,13 +25,7 @@
 #include <machine/asm.h>
 #include <machine/asm_macro.h>
 #include <machine/psl.h>
-
-typedef struct label_t {
-        long val[19];
-} label_t;
-
-extern int setjmp(label_t *);
-extern void longjmp(label_t *);
+#include <luna88k/stand/boot/samachdep.h>
 
 static label_t badaddr_jmpbuf;
 static uint32_t badaddr_psr;
@@ -40,7 +34,7 @@ static uint32_t prom_vbr;
 static uint32_t vector_page[512 * 2] __attribute__ ((__aligned__(0x1000)));
 
 static __inline__ uint32_t
-get_vbr()
+get_vbr(void)
 {
 	uint32_t vbr;
 	__asm__ volatile ("ldcr %0, %%cr7" : "=r"(vbr));
@@ -76,7 +70,7 @@ br(uint32_t delta)
 }
 
 static void
-libsa_fault_init()
+libsa_fault_init(void)
 {
 	int vec;
 	uint32_t *insn;

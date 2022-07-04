@@ -52,6 +52,7 @@ char awaitkey(const char *, int, int);
 
 /* bcd.c */
 unsigned int bcdtobin(unsigned int);
+unsigned int bintobcd(unsigned int);
 
 /* bmc.c */
 void bmccnprobe(struct consdev *);
@@ -89,6 +90,9 @@ extern const u_short bmdfont[][20];
 /* getline.c */
 int getline(const char *, char *);
 
+/* if_le.c */
+int leinit(void);
+
 /* init_main.c */
 extern int cpuspeed;
 extern int nplane;
@@ -113,6 +117,7 @@ extern u_int bootdev;
 extern uint16_t dipswitch;
 extern volatile uint32_t tick;
 int setjmp(label_t *);
+void longjmp(label_t *);
 void delay(int);
 
 /* prf.c */

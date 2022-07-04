@@ -27,6 +27,7 @@
 
 #include <lib/libkern/libkern.h>
 #include <luna88k/stand/boot/samachdep.h>
+#include <lib/libsa/net.h>
 
 static void print_countdown(const char *, int);
 

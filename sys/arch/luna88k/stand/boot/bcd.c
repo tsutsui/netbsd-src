@@ -6,6 +6,7 @@
  * Public domain.
  */
 
+#include <luna88k/stand/boot/samachdep.h>
 #include <lib/libkern/libkern.h>
 
 unsigned int
