@@ -82,6 +82,7 @@
  */
 #include <sys/param.h>
 #include <sys/disklabel.h>
+#include <machine/stdarg.h>
 #include <luna88k/stand/boot/samachdep.h>
 #include <luna88k/stand/boot/scsireg.h>
 #include <luna88k/stand/boot/scsivar.h>
