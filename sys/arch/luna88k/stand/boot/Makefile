@@ -43,6 +43,7 @@ SRCS+=	sio.c
 SRCS+=	bmc.c bmd.c font.c kbd.c
 SRCS+=	sc.c sd.c
 SRCS+=	ufs_disksubr.c
+SRCS+=	strtol.c
 
 # netboot support
 SRCS+=	if_le.c lance.c getsecs.c
