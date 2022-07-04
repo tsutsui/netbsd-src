@@ -102,7 +102,7 @@ bmccnprobe(struct consdev *cp)
 
 	/* initialize required fields */
 	cp->cn_dev = 1;
-	cp->cn_pri = CN_LOWPRI;
+	cp->cn_pri = CN_NORMAL;
 }
 
 void
