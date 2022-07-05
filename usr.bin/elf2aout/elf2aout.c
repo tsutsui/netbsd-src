@@ -131,6 +131,8 @@ get_mid(const Elf32_Ehdr *ex)
 		return MID_I386;
 	case EM_68K:
 		return MID_M68K;
+	case EM_88K:
+		return MID_M88K;
 	case EM_OR1K:
 		return MID_OR1K;
 	case EM_MIPS:
