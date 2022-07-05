@@ -1,4 +1,4 @@
-/*	$NetBSD: elf2aout.c,v 1.11 2004/04/23 02:55:11 simonb Exp $	*/
+/*	$NetBSD: elf2aout.c,v 1.23 2019/05/19 09:14:13 wiz Exp $	*/
 
 /*
  * Copyright (c) 1995
@@ -34,6 +34,14 @@
    The minimal symbol table is copied, but the debugging symbols and
    other informational sections are not. */
 
+#if HAVE_NBTOOL_CONFIG_H
+#include "nbtool_config.h"
+#endif
+
+#ifndef TARGET_BYTE_ORDER
+#define TARGET_BYTE_ORDER	BYTE_ORDER
+#endif
+
 #include <sys/types.h>
 #include <sys/exec_aout.h>
 #include <sys/exec_elf.h>
@@ -50,17 +58,136 @@
 
 
 struct sect {
-	unsigned long vaddr;
-	unsigned long len;
+	/* should be unsigned long, but assume no a.out binaries on LP64 */
+	uint32_t vaddr;
+	uint32_t len;
 };
 
-void	combine __P((struct sect *, struct sect *, int));
-int	phcmp __P((const void *, const void *));
-char   *saveRead __P((int file, off_t offset, off_t len, char *name));
-void	copy __P((int, int, off_t, off_t));
-void	translate_syms __P((int, int, off_t, off_t, off_t, off_t));
+static void	combine(struct sect *, struct sect *, int);
+static int	phcmp(const void *, const void *);
+static void   *saveRead(int file, off_t offset, size_t len, const char *name);
+static void	copy(int, int, off_t, off_t);
+static void	translate_syms(int, int, off_t, off_t, off_t, off_t);
 
-int    *symTypeTable;
+#if TARGET_BYTE_ORDER != BYTE_ORDER
+static void	bswap32_region(int32_t* , int);
+#endif
+
+static int    *symTypeTable;
+static int     debug;
+
+static __dead void
+usage(void)
+{
+	fprintf(stderr, "Usage: %s [-Os] <elf executable> <a.out executable>\n",
+	    getprogname());
+	exit(EXIT_FAILURE);
+}
+
+static const struct {
+	const char *n;
+	int v;
+} nv[] = {
+	{ ".text", N_TEXT },
+	{ ".rodata", N_TEXT },
+	{ ".data", N_DATA },
+	{ ".sdata", N_DATA },
+	{ ".lit4", N_DATA },
+	{ ".lit8", N_DATA },
+	{ ".bss", N_BSS },
+	{ ".sbss", N_BSS },
+};
+
+static int
+get_symtab_type(const char *name)
+{
+	size_t i;
+	for (i = 0; i < __arraycount(nv); i++) {
+		if (strcmp(name, nv[i].n) == 0)
+			return nv[i].v;
+	}
+	if (debug)
+		warnx("section `%s' is not handled\n", name);
+	return 0;
+}
+
+static uint32_t
+get_mid(const Elf32_Ehdr *ex)
+{
+	switch (ex->e_machine) {
+#ifdef notyet
+	case EM_AARCH64:
+		return MID_AARCH64;
+	case EM_ALPHA:
+		return MID_ALPHA;
+#endif
+	case EM_ARM:
+		return MID_ARM6;
+#ifdef notyet
+	case EM_PARISC:
+		return MID_HPPA;
+#endif
+	case EM_386:
+		return MID_I386;
+	case EM_68K:
+		return MID_M68K;
+	case EM_OR1K:
+		return MID_OR1K;
+	case EM_MIPS:
+		if (ex->e_ident[EI_DATA] == ELFDATA2LSB)
+			return MID_PMAX;
+		else
+			return MID_MIPS;
+	case EM_PPC:
+		return MID_POWERPC;
+#ifdef notyet
+	case EM_PPC64:
+		return MID_POWERPC64;
+		break;
+#endif
+	case EM_RISCV:
+		return MID_RISCV;
+	case EM_SH:
+		return MID_SH3;
+	case EM_SPARC:
+	case EM_SPARC32PLUS:
+	case EM_SPARCV9:
+		if (ex->e_ident[EI_CLASS] == ELFCLASS32)
+			return MID_SPARC;
+#ifdef notyet
+		return MID_SPARC64;
+	case EM_X86_64:
+		return MID_X86_64;
+#else
+		break;
+#endif
+	case EM_VAX:
+		return MID_VAX;
+	case EM_NONE:
+		return MID_ZERO;
+	default:
+		break;
+	}
+	if (debug)
+		warnx("Unsupported machine `%d'", ex->e_machine);
+	return MID_ZERO;
+}
+
+static unsigned char
+get_type(Elf32_Half shndx)
+{
+	switch (shndx) {
+	case SHN_UNDEF:
+		return N_UNDF;
+	case SHN_ABS:
+		return N_ABS;
+	case SHN_COMMON:
+	case SHN_MIPS_ACOMMON:
+		return N_COMM;
+	default:
+		return (unsigned char)symTypeTable[shndx];
+	}
+}
 
 int
 main(int argc, char **argv)
@@ -69,60 +196,97 @@ main(int argc, char **argv)
 	Elf32_Phdr *ph;
 	Elf32_Shdr *sh;
 	char   *shstrtab;
-	int     strtabix, symtabix;
-	int     i;
+	ssize_t i, strtabix, symtabix;
 	struct sect text, data, bss;
 	struct exec aex;
 	int     infile, outfile;
-	unsigned long cur_vma = ULONG_MAX;
-	int     symflag = 0;
+	uint32_t cur_vma = UINT32_MAX;
+	uint32_t mid;
+	int symflag = 0, c;
+	unsigned long magic = ZMAGIC;
 
 	strtabix = symtabix = 0;
 	text.len = data.len = bss.len = 0;
 	text.vaddr = data.vaddr = bss.vaddr = 0;
 
+	while ((c = getopt(argc, argv, "dOs")) != -1) {
+		switch (c) {
+		case 'd':
+			debug++;
+			break;
+		case 's':
+			symflag = 1;
+			break;
+		case 'O':
+			magic = OMAGIC;
+			break;
+		case '?':
+		default:
+		usage:
+			usage();
+		}
+	}
+
+	argc -= optind;
+	argv += optind;
+
 	/* Check args... */
-	if (argc < 3 || argc > 4) {
-usage:
-		fprintf(stderr,
-		    "usage: elf2aout <elf executable> <a.out executable> [-s]\n");
-		exit(1);
-	}
-	if (argc == 4) {
-		if (strcmp(argv[3], "-s"))
-			goto usage;
-		symflag = 1;
-	}
+	if (argc != 2)
+		goto usage;
+
+
 	/* Try the input file... */
-	if ((infile = open(argv[1], O_RDONLY)) < 0) {
-		fprintf(stderr, "Can't open %s for read: %s\n",
-		    argv[1], strerror(errno));
-		exit(1);
-	}
+	if ((infile = open(argv[0], O_RDONLY)) < 0)
+		err(EXIT_FAILURE, "Can't open `%s' for read", argv[0]);
+
 	/* Read the header, which is at the beginning of the file... */
 	i = read(infile, &ex, sizeof ex);
 	if (i != sizeof ex) {
-		fprintf(stderr, "ex: %s: %s.\n",
-		    argv[1], i ? strerror(errno) : "End of file reached");
-		exit(1);
+		if (i == -1)
+			err(EXIT_FAILURE, "Error reading `%s'", argv[1]);
+		else
+			errx(EXIT_FAILURE, "End of file reading `%s'", argv[1]);
 	}
+#if TARGET_BYTE_ORDER != BYTE_ORDER
+	ex.e_type	= bswap16(ex.e_type);
+	ex.e_machine	= bswap16(ex.e_machine);
+	ex.e_version	= bswap32(ex.e_version);
+	ex.e_entry 	= bswap32(ex.e_entry);
+	ex.e_phoff	= bswap32(ex.e_phoff);
+	ex.e_shoff	= bswap32(ex.e_shoff);
+	ex.e_flags	= bswap32(ex.e_flags);
+	ex.e_ehsize	= bswap16(ex.e_ehsize);
+	ex.e_phentsize	= bswap16(ex.e_phentsize);
+	ex.e_phnum	= bswap16(ex.e_phnum);
+	ex.e_shentsize	= bswap16(ex.e_shentsize);
+	ex.e_shnum	= bswap16(ex.e_shnum);
+	ex.e_shstrndx	= bswap16(ex.e_shstrndx);
+#endif
+	// Not yet
+	if (ex.e_ident[EI_CLASS] == ELFCLASS64)
+		errx(EXIT_FAILURE, "Only 32 bit is supported");
+
 	/* Read the program headers... */
-	ph = (Elf32_Phdr *) saveRead(infile, ex.e_phoff,
-	    ex.e_phnum * sizeof(Elf32_Phdr), "ph");
+	ph = saveRead(infile, ex.e_phoff,
+	    (size_t)ex.e_phnum * sizeof(Elf32_Phdr), "ph");
+#if TARGET_BYTE_ORDER != BYTE_ORDER
+	bswap32_region((int32_t*)ph, sizeof(Elf32_Phdr) * ex.e_phnum);
+#endif
 	/* Read the section headers... */
-	sh = (Elf32_Shdr *) saveRead(infile, ex.e_shoff,
-	    ex.e_shnum * sizeof(Elf32_Shdr), "sh");
+	sh = saveRead(infile, ex.e_shoff,
+	    (size_t)ex.e_shnum * sizeof(Elf32_Shdr), "sh");
+#if TARGET_BYTE_ORDER != BYTE_ORDER
+	bswap32_region((int32_t*)sh, sizeof(Elf32_Shdr) * ex.e_shnum);
+#endif
 	/* Read in the section string table. */
 	shstrtab = saveRead(infile, sh[ex.e_shstrndx].sh_offset,
-	    sh[ex.e_shstrndx].sh_size, "shstrtab");
+	    (size_t)sh[ex.e_shstrndx].sh_size, "shstrtab");
 
 	/* Find space for a table matching ELF section indices to a.out symbol
 	 * types. */
-	symTypeTable = (int *) malloc(ex.e_shnum * sizeof(int));
-	if (!symTypeTable) {
-		fprintf(stderr, "symTypeTable: can't allocate.\n");
-		exit(1);
-	}
+	symTypeTable = malloc(ex.e_shnum * sizeof(int));
+	if (symTypeTable == NULL)
+		err(EXIT_FAILURE, "symTypeTable: can't allocate");
 	memset(symTypeTable, 0, ex.e_shnum * sizeof(int));
 
 	/* Look for the symbol table and string table... Also map section
@@ -131,19 +295,10 @@ usage:
 		char   *name = shstrtab + sh[i].sh_name;
 		if (!strcmp(name, ".symtab"))
 			symtabix = i;
+		else if (!strcmp(name, ".strtab"))
+			strtabix = i;
 		else
-			if (!strcmp(name, ".strtab"))
-				strtabix = i;
-			else
-				if (!strcmp(name, ".text") || !strcmp(name, ".rodata"))
-					symTypeTable[i] = N_TEXT;
-				else
-					if (!strcmp(name, ".data") || !strcmp(name, ".sdata") ||
-					    !strcmp(name, ".lit4") || !strcmp(name, ".lit8"))
-						symTypeTable[i] = N_DATA;
-					else
-						if (!strcmp(name, ".bss") || !strcmp(name, ".sbss"))
-							symTypeTable[i] = N_BSS;
+			symTypeTable[i] = get_symtab_type(name);
 	}
 
 	/* Figure out if we can cram the program header into an a.out
@@ -160,9 +315,14 @@ usage:
 		    ph[i].p_type == PT_PHDR || ph[i].p_type == PT_MIPS_REGINFO)
 			continue;
 		/* Section types we can't handle... */
-		else
-			if (ph[i].p_type != PT_LOAD)
-				errx(1, "Program header %d type %d can't be converted.", i, ph[i].p_type);
+		if (ph[i].p_type == PT_TLS) {
+			if (debug)
+				warnx("Can't handle TLS section");
+			continue;
+		}
+		if (ph[i].p_type != PT_LOAD)
+			errx(EXIT_FAILURE, "Program header %zd "
+			    "type %d can't be converted.", i, ph[i].p_type);
 		/* Writable (data) segment? */
 		if (ph[i].p_flags & PF_W) {
 			struct sect ndata, nbss;
@@ -189,14 +349,14 @@ usage:
 
 	/* Sections must be in order to be converted... */
 	if (text.vaddr > data.vaddr || data.vaddr > bss.vaddr ||
-	    text.vaddr + text.len > data.vaddr || data.vaddr + data.len > bss.vaddr) {
-		fprintf(stderr, "Sections ordering prevents a.out conversion.\n");
-		exit(1);
-	}
+	    text.vaddr + text.len > data.vaddr ||
+	    data.vaddr + data.len > bss.vaddr)
+		errx(EXIT_FAILURE, "Sections ordering prevents a.out "
+		    "conversion.");
 	/* If there's a data section but no text section, then the loader
 	 * combined everything into one section.   That needs to be the text
 	 * section, so just make the data section zero length following text. */
-	if (data.len && !text.len) {
+	if (data.len && text.len == 0) {
 		text = data;
 		data.vaddr = text.vaddr + text.len;
 		data.len = 0;
@@ -209,36 +369,39 @@ usage:
 		text.len = data.vaddr - text.vaddr;
 
 	/* We now have enough information to cons up an a.out header... */
-	aex.a_midmag = htonl((symflag << 26) | (MID_PMAX << 16) | OMAGIC);
-	if (ex.e_machine == EM_PPC)
-		aex.a_midmag = htonl((symflag << 26) | (MID_POWERPC << 16)
-			| OMAGIC);
-		
+	mid = get_mid(&ex);
+	aex.a_midmag = (u_long)htonl(((u_long)symflag << 26)
+	    | ((u_long)mid << 16) | magic);
+
 	aex.a_text = text.len;
 	aex.a_data = data.len;
 	aex.a_bss = bss.len;
 	aex.a_entry = ex.e_entry;
 	aex.a_syms = (sizeof(struct nlist) *
-	    (symtabix != -1
-		? sh[symtabix].sh_size / sizeof(Elf32_Sym) : 0));
+	    (symtabix != -1 ? sh[symtabix].sh_size / sizeof(Elf32_Sym) : 0));
 	aex.a_trsize = 0;
 	aex.a_drsize = 0;
+#if TARGET_BYTE_ORDER != BYTE_ORDER
+	aex.a_text = bswap32(aex.a_text);
+	aex.a_data = bswap32(aex.a_data);
+	aex.a_bss = bswap32(aex.a_bss);
+	aex.a_entry = bswap32(aex.a_entry);
+	aex.a_syms = bswap32(aex.a_syms);
+	aex.a_trsize = bswap32(aex.a_trsize);
+	aex.a_drsize = bswap32(aex.a_drsize);
+#endif
 
 	/* Make the output file... */
-	if ((outfile = open(argv[2], O_WRONLY | O_CREAT, 0777)) < 0) {
-		fprintf(stderr, "Unable to create %s: %s\n", argv[2], strerror(errno));
-		exit(1);
-	}
+	if ((outfile = open(argv[1], O_WRONLY | O_CREAT, 0777)) < 0)
+		err(EXIT_FAILURE, "Unable to create `%s'", argv[1]);
 	/* Truncate file... */
 	if (ftruncate(outfile, 0)) {
-		warn("ftruncate %s", argv[2]);
+		warn("ftruncate %s", argv[1]);
 	}
 	/* Write the header... */
 	i = write(outfile, &aex, sizeof aex);
-	if (i != sizeof aex) {
-		perror("aex: write");
-		exit(1);
-	}
+	if (i != sizeof aex)
+		err(EXIT_FAILURE, "Can't write `%s'", argv[1]);
 	/* Copy the loadable sections.   Zero-fill any gaps less than 64k;
 	 * complain about any zero-filling, and die if we're asked to
 	 * zero-fill more than 64k. */
@@ -247,25 +410,22 @@ usage:
 		 * that the section can be loaded before copying. */
 		if (ph[i].p_type == PT_LOAD && ph[i].p_filesz) {
 			if (cur_vma != ph[i].p_vaddr) {
-				unsigned long gap = ph[i].p_vaddr - cur_vma;
+				uint32_t gap = ph[i].p_vaddr - cur_vma;
 				char    obuf[1024];
 				if (gap > 65536)
-					errx(1,
-			"Intersegment gap (%ld bytes) too large.", (long) gap);
-#ifdef DEBUG
-				warnx("Warning: %ld byte intersegment gap.",
-				    (long)gap);
-#endif
+					errx(EXIT_FAILURE,
+			"Intersegment gap (%u bytes) too large", gap);
+				if (debug)
+					warnx("%u byte intersegment gap", gap);
 				memset(obuf, 0, sizeof obuf);
 				while (gap) {
-					int     count = write(outfile, obuf, (gap > sizeof obuf
-						? sizeof obuf : gap));
-					if (count < 0) {
-						fprintf(stderr, "Error writing gap: %s\n",
-						    strerror(errno));
-						exit(1);
-					}
-					gap -= count;
+					ssize_t count = write(outfile, obuf,
+					    (gap > sizeof obuf
+					    ? sizeof obuf : gap));
+					if (count < 0)
+						err(EXIT_FAILURE,
+						    "Error writing gap");
+					gap -= (uint32_t)count;
 				}
 			}
 			copy(outfile, infile, ph[i].p_offset, ph[i].p_filesz);
@@ -278,8 +438,12 @@ usage:
 	    sh[symtabix].sh_offset, sh[symtabix].sh_size,
 	    sh[strtabix].sh_offset, sh[strtabix].sh_size);
 
+	free(ph);
+	free(sh);
+	free(shstrtab);
+	free(symTypeTable);
 	/* Looks like we won... */
-	exit(0);
+	return EXIT_SUCCESS;
 }
 /* translate_syms (out, in, offset, size)
 
@@ -287,70 +451,87 @@ usage:
    nlist format and write it to out. */
 
 void
-translate_syms(out, in, symoff, symsize, stroff, strsize)
-	int     out, in;
-	off_t   symoff, symsize;
-	off_t   stroff, strsize;
+translate_syms(int out, int in, off_t symoff, off_t symsize,
+    off_t stroff, off_t strsize)
 {
 #define SYMS_PER_PASS	64
 	Elf32_Sym inbuf[64];
 	struct nlist outbuf[64];
-	int     i, remaining, cur;
+	ssize_t i, remaining, cur;
 	char   *oldstrings;
 	char   *newstrings, *nsp;
-	int     newstringsize;
+	size_t  newstringsize;
+	uint32_t stringsizebuf;
 
 	/* Zero the unused fields in the output buffer.. */
 	memset(outbuf, 0, sizeof outbuf);
 
 	/* Find number of symbols to process... */
-	remaining = symsize / sizeof(Elf32_Sym);
+	remaining = (ssize_t)(symsize / (off_t)sizeof(Elf32_Sym));
 
 	/* Suck in the old string table... */
-	oldstrings = saveRead(in, stroff, strsize, "string table");
+	oldstrings = saveRead(in, stroff, (size_t)strsize, "string table");
 
-	/* Allocate space for the new one.   XXX We make the wild assumption
-	 * that no two symbol table entries will point at the same place in
-	 * the string table - if that assumption is bad, this could easily
-	 * blow up. */
-	newstringsize = strsize + remaining;
-	newstrings = (char *) malloc(newstringsize);
-	if (!newstrings) {
-		fprintf(stderr, "No memory for new string table!\n");
-		exit(1);
-	}
+	/*
+	 * Allocate space for the new one.  We will increase the space if
+	 * this is too small
+	 */
+	newstringsize = (size_t)(strsize + remaining);
+	newstrings = malloc(newstringsize);
+	if (newstrings == NULL)
+		err(EXIT_FAILURE, "No memory for new string table!");
 	/* Initialize the table pointer... */
 	nsp = newstrings;
 
 	/* Go the start of the ELF symbol table... */
-	if (lseek(in, symoff, SEEK_SET) < 0) {
-		perror("translate_syms: lseek");
-		exit(1);
-	}
+	if (lseek(in, symoff, SEEK_SET) < 0)
+		err(EXIT_FAILURE, "Can't seek");
 	/* Translate and copy symbols... */
-	while (remaining) {
+	for (; remaining; remaining -= cur) {
 		cur = remaining;
 		if (cur > SYMS_PER_PASS)
 			cur = SYMS_PER_PASS;
-		remaining -= cur;
-		if ((i = read(in, inbuf, cur * sizeof(Elf32_Sym)))
-		    != cur * sizeof(Elf32_Sym)) {
+		if ((i = read(in, inbuf, (size_t)cur * sizeof(Elf32_Sym)))
+		    != cur * (ssize_t)sizeof(Elf32_Sym)) {
 			if (i < 0)
-				perror("translate_syms");
+				err(EXIT_FAILURE, "%s: read error", __func__);
 			else
-				fprintf(stderr, "translate_syms: premature end of file.\n");
-			exit(1);
+				errx(EXIT_FAILURE, "%s: premature end of file",
+					__func__);
 		}
 		/* Do the translation... */
 		for (i = 0; i < cur; i++) {
 			int     binding, type;
+			size_t off, len;
 
+#if TARGET_BYTE_ORDER != BYTE_ORDER
+			inbuf[i].st_name  = bswap32(inbuf[i].st_name);
+			inbuf[i].st_value = bswap32(inbuf[i].st_value);
+			inbuf[i].st_size  = bswap32(inbuf[i].st_size);
+			inbuf[i].st_shndx = bswap16(inbuf[i].st_shndx);
+#endif
+			off = (size_t)(nsp - newstrings);
+
+			/* length of this symbol with leading '_' and trailing '\0' */
+			len = strlen(oldstrings + inbuf[i].st_name) + 1 + 1;
+
+			/* Does it fit? If not make more space */
+			if (newstringsize - off < len) {
+				char *nns;
+
+				newstringsize += (size_t)(remaining) * len;
+				nns = realloc(newstrings, newstringsize);
+				if (nns == NULL)
+					err(EXIT_FAILURE, "No memory for new string table!");
+				newstrings = nns;
+				nsp = newstrings + off;
+			}
 			/* Copy the symbol into the new table, but prepend an
 			 * underscore. */
 			*nsp = '_';
 			strcpy(nsp + 1, oldstrings + inbuf[i].st_name);
 			outbuf[i].n_un.n_strx = nsp - newstrings + 4;
-			nsp += strlen(nsp) + 1;
+			nsp += len;
 
 			type = ELF32_ST_TYPE(inbuf[i].st_info);
 			binding = ELF32_ST_BIND(inbuf[i].st_info);
@@ -360,104 +541,94 @@ translate_syms(out, in, symoff, symsize, stroff, strsize)
 			if (type == STT_FILE)
 				outbuf[i].n_type = N_FN;
 			else
-				if (inbuf[i].st_shndx == SHN_UNDEF)
-					outbuf[i].n_type = N_UNDF;
-				else
-					if (inbuf[i].st_shndx == SHN_ABS)
-						outbuf[i].n_type = N_ABS;
-					else
-						if (inbuf[i].st_shndx == SHN_COMMON ||
-						    inbuf[i].st_shndx == SHN_MIPS_ACOMMON)
-							outbuf[i].n_type = N_COMM;
-						else
-							outbuf[i].n_type = symTypeTable[inbuf[i].st_shndx];
+				outbuf[i].n_type = get_type(inbuf[i].st_shndx);
 			if (binding == STB_GLOBAL)
 				outbuf[i].n_type |= N_EXT;
 			/* Symbol values in executables should be compatible. */
 			outbuf[i].n_value = inbuf[i].st_value;
+#if TARGET_BYTE_ORDER != BYTE_ORDER
+			outbuf[i].n_un.n_strx = bswap32(outbuf[i].n_un.n_strx);
+			outbuf[i].n_desc      = bswap16(outbuf[i].n_desc);
+			outbuf[i].n_value     = bswap32(outbuf[i].n_value);
+#endif
 		}
 		/* Write out the symbols... */
-		if ((i = write(out, outbuf, cur * sizeof(struct nlist)))
-		    != cur * sizeof(struct nlist)) {
-			fprintf(stderr, "translate_syms: write: %s\n", strerror(errno));
-			exit(1);
-		}
+		if ((i = write(out, outbuf, (size_t)cur * sizeof(struct nlist)))
+		    != cur * (ssize_t)sizeof(struct nlist))
+			err(EXIT_FAILURE, "%s: write failed", __func__);
 	}
 	/* Write out the string table length... */
-	if (write(out, &newstringsize, sizeof newstringsize)
-	    != sizeof newstringsize) {
-		fprintf(stderr,
-		    "translate_syms: newstringsize: %s\n", strerror(errno));
-		exit(1);
-	}
+	stringsizebuf = (uint32_t)newstringsize;
+#if TARGET_BYTE_ORDER != BYTE_ORDER
+	stringsizebuf = bswap32(stringsizebuf);
+#endif
+	if (write(out, &stringsizebuf, sizeof stringsizebuf)
+	    != sizeof stringsizebuf)
+		err(EXIT_FAILURE, "%s: newstringsize: write failed", __func__);
 	/* Write out the string table... */
-	if (write(out, newstrings, newstringsize) != newstringsize) {
-		fprintf(stderr, "translate_syms: newstrings: %s\n", strerror(errno));
-		exit(1);
-	}
+	if (write(out, newstrings, newstringsize) != (ssize_t)newstringsize)
+		err(EXIT_FAILURE, "%s: newstrings: write failed", __func__);
+	free(newstrings);
+	free(oldstrings);
 }
 
-void
-copy(out, in, offset, size)
-	int     out, in;
-	off_t   offset, size;
+static void
+copy(int out, int in, off_t offset, off_t size)
 {
 	char    ibuf[4096];
-	int     remaining, cur, count;
+	ssize_t remaining, cur, count;
 
-	/* Go to the start of the ELF symbol table... */
-	if (lseek(in, offset, SEEK_SET) < 0) {
-		perror("copy: lseek");
-		exit(1);
-	}
-	remaining = size;
+	/* Go to the start of the segment... */
+	if (lseek(in, offset, SEEK_SET) < 0)
+		err(EXIT_FAILURE, "%s: lseek failed", __func__);
+	if (size > SSIZE_MAX)
+		err(EXIT_FAILURE, "%s: can not copy this much", __func__);
+	remaining = (ssize_t)size;
 	while (remaining) {
 		cur = remaining;
-		if (cur > sizeof ibuf)
+		if (cur > (int)sizeof ibuf)
 			cur = sizeof ibuf;
 		remaining -= cur;
-		if ((count = read(in, ibuf, cur)) != cur) {
-			fprintf(stderr, "copy: read: %s\n",
-			    count ? strerror(errno) : "premature end of file");
-			exit(1);
+		if ((count = read(in, ibuf, (size_t)cur)) != cur) {
+			if (count < 0)
+				err(EXIT_FAILURE, "%s: read error", __func__);
+			else
+				errx(EXIT_FAILURE, "%s: premature end of file",
+					__func__);
 		}
-		if ((count = write(out, ibuf, cur)) != cur) {
-			perror("copy: write");
-			exit(1);
-		}
+		if ((count = write(out, ibuf, (size_t)cur)) != cur)
+			err(EXIT_FAILURE, "%s: write failed", __func__);
 	}
 }
+
 /* Combine two segments, which must be contiguous.   If pad is true, it's
    okay for there to be padding between. */
-void
-combine(base, new, pad)
-	struct sect *base, *new;
-	int     pad;
+static void
+combine(struct sect *base, struct sect *new, int pad)
 {
-	if (!base->len)
+
+	if (base->len == 0)
 		*base = *new;
 	else
 		if (new->len) {
 			if (base->vaddr + base->len != new->vaddr) {
 				if (pad)
 					base->len = new->vaddr - base->vaddr;
-				else {
-					fprintf(stderr,
-					    "Non-contiguous data can't be converted.\n");
-					exit(1);
-				}
+				else
+					errx(EXIT_FAILURE, "Non-contiguous "
+					    "data can't be converted");
 			}
 			base->len += new->len;
 		}
 }
 
-int
-phcmp(vh1, vh2)
-	const void *vh1, *vh2;
+static int
+phcmp(const void *vh1, const void *vh2)
 {
-	Elf32_Phdr *h1, *h2;
-	h1 = (Elf32_Phdr *) vh1;
-	h2 = (Elf32_Phdr *) vh2;
+	const Elf32_Phdr *h1, *h2;
+
+	h1 = (const Elf32_Phdr *)vh1;
+	h2 = (const Elf32_Phdr *)vh2;
 
 	if (h1->p_vaddr > h2->p_vaddr)
 		return 1;
@@ -468,23 +639,37 @@ phcmp(vh1, vh2)
 			return 0;
 }
 
-char   *
-saveRead(int file, off_t offset, off_t len, char *name)
+static void *
+saveRead(int file, off_t offset, size_t len, const char *name)
 {
 	char   *tmp;
-	int     count;
+	ssize_t count;
 	off_t   off;
-	if ((off = lseek(file, offset, SEEK_SET)) < 0) {
-		fprintf(stderr, "%s: fseek: %s\n", name, strerror(errno));
-		exit(1);
-	}
-	if (!(tmp = (char *) malloc(len)))
-		errx(1, "%s: Can't allocate %ld bytes.", name, (long)len);
+
+	if ((off = lseek(file, offset, SEEK_SET)) < 0)
+		errx(EXIT_FAILURE, "%s: seek failed", name);
+	if ((tmp = malloc(len)) == NULL)
+		errx(EXIT_FAILURE,
+		    "%s: Can't allocate %jd bytes.", name, (intmax_t)len);
 	count = read(file, tmp, len);
-	if (count != len) {
-		fprintf(stderr, "%s: read: %s.\n",
-		    name, count ? strerror(errno) : "End of file reached");
-		exit(1);
+	if ((size_t)count != len) {
+		if (count < 0)
+			err(EXIT_FAILURE, "%s: read error", name);
+		else
+			errx(EXIT_FAILURE, "%s: premature end of file",
+			    name);
 	}
 	return tmp;
 }
+
+#if TARGET_BYTE_ORDER != BYTE_ORDER
+/* swap a 32bit region */
+static void
+bswap32_region(int32_t* p, int len)
+{
+	size_t i;
+
+	for (i = 0; i < len / sizeof(int32_t); i++, p++)
+		*p = bswap32(*p);
+}
+#endif
