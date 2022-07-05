@@ -56,6 +56,10 @@ SUBDIR+=	macppc-fixcoff
 SUBDIR+=	prep-mkbootimage
 .endif
 
+.if ${MACHINE_ARCH} == "m88k"
+SUBDIR+=	m88k-elf2aout
+.endif
+
 .if (${MACHINE_ARCH} == "mipsel" || ${MACHINE_ARCH} == "mipseb")
 SUBDIR+=	mips-elf2ecoff
 .endif
