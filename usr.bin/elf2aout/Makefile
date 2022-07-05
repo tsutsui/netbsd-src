@@ -7,6 +7,7 @@ WARNS=6
 # Build ELF to aout tools on m68k/earmv4/powerpc,
 # for kernels with old bootblocks.
 .if (${MACHINE_CPU} == "m68k" || \
+     ${MACHINE_CPU} == "m88k" || \
      ${MACHINE_CPU} == "arm" || \
      ${MACHINE_CPU} == "powerpc" )
 PROG=	elf2aout
