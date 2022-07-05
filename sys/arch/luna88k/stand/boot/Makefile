@@ -30,6 +30,8 @@ LDSCRIPT=	${.CURDIR}/boot.ldscript
 LINKFORMAT=	-static -N -Ttext ${TEXTADDR} -T ${LDSCRIPT} \
 		--warn-common -nopie #-znorelro
 
+ELF2AOUT_OPTS=	-O	# LUNA's firmware requires OMAGIC a.out
+
 SRCS=	locore.S
 SRCS+=	init_main.c
 SRCS+=	fault.c setjmp.S
@@ -70,9 +72,10 @@ LIBS=	${SALIB} ${ZLIB} ${KERNLIB}
 ${PROG}: ${LDSCRIPT} ${OBJS} ${LIBS}
 	${_MKTAGET_LINK}
 	${LD} ${LINKFORMAT} -x -o ${PROG}.elf ${OBJS} ${LIBS}
-	${OBJCOPY} -S -O a.out-m88k-netbsd --impure ${PROG}.elf ${PROG}
+	${M88K_ELF2AOUT} ${ELF2AOUT_OPTS} ${PROG}.elf ${PROG}.aout
+	mv ${PROG}.aout ${PROG}
 
-CLEANFILES+=	${PROG}.elf
+CLEANFILES+=	${PROG}.elf ${PROG}.aout
 CLEANFILES+=	machine m88k
 
 .BEGIN: machine m88k
