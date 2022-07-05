@@ -92,4 +92,16 @@ cleandir distclean: .WAIT cleanlibdir
 cleanlibdir:
 	-rm -rf lib
 
+# if there is a 'version' file, add rule for vers.c and add it to SRCS
+# and CLEANFILES
+.if exists(version)
+.PHONY: vers.c
+vers.c: version
+	${_MKTARGET_CREATE}
+	${HOST_SH} ${S}/conf/newvers_stand.sh ${.CURDIR}/version ${MACHINE}
+
+SRCS+=  vers.c
+CLEANFILES+= vers.c
+.endif
+
 .include <bsd.prog.mk>
