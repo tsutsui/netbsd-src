@@ -113,7 +113,11 @@ const char *pbus_exception_type[] = {
 };
 #endif
 
+#if defined(mvme88k)
 #include <machine/bugio.h>  // XXX TKM
+#else
+#define bugreturn()	/* XXX */
+#endif
 
 __dead void
 panictrap(int type, struct trapframe *frame)
