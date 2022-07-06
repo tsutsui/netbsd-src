@@ -46,32 +46,23 @@
 #include <machine/cpu.h>
 #include <machine/autoconf.h>
 
-#include <scsi/scsi_all.h>
-#include <scsi/scsi_message.h>
-#include <scsi/scsiconf.h>
+#include <dev/scsipi/scsi_all.h>
+#include <dev/scsipi/scsipi_all.h>
+#include <dev/scsipi/scsi_message.h> 
+#include <dev/scsipi/scsiconf.h>
 
-#include <luna88k/dev/mb89352reg.h>
-#include <luna88k/dev/mb89352var.h>
+#include <dev/ic/mb89352reg.h>
+#include <dev/ic/mb89352var.h>
 
 #include <luna88k/luna88k/isr.h>
 
-int  spc_mainbus_match(struct device *, void *, void *);
+#include "ioconf.h"
+
+int  spc_mainbus_match(struct device *, struct cfdata *, void *);
 void spc_mainbus_attach(struct device *, struct device *, void *);
 
-struct cfattach spc_ca = {
-	sizeof(struct spc_softc), spc_mainbus_match, spc_mainbus_attach
-};
-
-struct cfdriver spc_cd = {
-	NULL, "spc", DV_DULL
-};
-
-struct scsi_adapter spc_switch = {
-	spc_scsi_cmd,
-        minphys,		/* no max at this level; handled by DMA code */
-	NULL,
-	NULL,
-};
+CFATTACH_DECL(spc, sizeof(struct spc_softc),
+    spc_mainbus_match, spc_mainbus_attach, NULL, NULL);
 
 /* bus space tag for spc */
 struct luna88k_bus_space_tag spc_bst = {
@@ -82,7 +73,7 @@ struct luna88k_bus_space_tag spc_bst = {
 };
 
 int
-spc_mainbus_match(struct device *parent, void *cf, void *aux)
+spc_mainbus_match(struct device *parent, struct cfdata *cf, void *aux)
 {
 	struct mainbus_attach_args *ma = aux;
 
@@ -107,11 +98,9 @@ spc_mainbus_attach(struct device *parent, struct device *self, void *aux)
 	sc->sc_iot = &spc_bst;
 	sc->sc_ioh = ma->ma_addr;
 	sc->sc_initiator = 7;
-	sc->sc_dma_start = NULL;
-	sc->sc_dma_done = NULL;
 
 	isrlink_autovec(spc_intr, (void *)sc, ma->ma_ilvl, ISRPRI_BIO,
 	    self->dv_xname);
 
-	spc_attach(sc, &spc_switch);
+	spc_attach(sc);
 }

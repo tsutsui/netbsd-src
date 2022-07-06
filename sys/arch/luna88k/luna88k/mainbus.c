@@ -66,19 +66,14 @@ static const struct mainbus_attach_args devs[] = {
 };
 
 void mainbus_attach(struct device *, struct device *, void *);
-int  mainbus_match(struct device *, void *, void *);
+int  mainbus_match(struct device *, struct cfdata *, void *);
 int  mainbus_print(void *, const char *);
 
-const struct cfattach mainbus_ca = {
-	sizeof(struct device), mainbus_match, mainbus_attach
-};
-
-struct cfdriver mainbus_cd = {
-        NULL, "mainbus", DV_DULL, 0
-};
+CFATTACH_DECL(mainbus, sizeof(struct device),
+    mainbus_match, mainbus_attach, NULL, NULL);
 
 int
-mainbus_match(struct device *parent, void *cf, void *args)
+mainbus_match(struct device *parent, struct cfdata *cf, void *args)
 {
 	static int mainbus_matched;
 

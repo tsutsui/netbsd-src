@@ -49,23 +49,20 @@
 #include <luna88k/luna88k/isr.h>
 #include <luna88k/dev/siovar.h>
 
-int  sio_match(struct device *, void *, void *);
+#include "ioconf.h"
+
+int  sio_match(struct device *, struct cfdata *, void *);
 void sio_attach(struct device *, struct device *, void *);
 int  sio_print(void *, const char *);
 
-const struct cfattach sio_ca = {
-	sizeof(struct sio_softc), sio_match, sio_attach
-};
-
-struct cfdriver sio_cd = {
-	NULL, "sio", DV_DULL, 0
-};
+CFATTACH_DECL(sio, sizeof(struct sio_softc),
+    sio_match, sio_attach, NULL, NULL);
 
 void nullintr(int);
 int xsiointr(void *);
 
 int
-sio_match(struct device *parent, void *cf, void *aux)
+sio_match(struct device *parent, struct cfdata *cf, void *aux)
 {
 	struct mainbus_attach_args *ma = aux;
 

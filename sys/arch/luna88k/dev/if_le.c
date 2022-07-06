@@ -39,30 +39,35 @@
 
 /* based on OpenBSD: sys/arch/sun3/dev/if_le.c */
 
+#include "opt_inet.h"
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/mbuf.h>
-#include <sys/syslog.h>
 #include <sys/socket.h>
 #include <sys/device.h>
 
 #include <net/if.h>
+#include <net/if_ether.h>
+#include <net/if_media.h>
 
 #ifdef INET
 #include <netinet/in.h>
-#include <netinet/if_ether.h>
+#include <netinet/if_inarp.h>
 #endif
-
-#include <net/if_media.h>
 
 #include <machine/autoconf.h>
 #include <machine/board.h>
 #include <machine/cpu.h>
 
+#include <dev/ic/lancereg.h>
+#include <dev/ic/lancevar.h>
 #include <dev/ic/am7990reg.h>
 #include <dev/ic/am7990var.h>
 
 #include <luna88k/luna88k/isr.h>
+
+#include "ioconf.h"
 
 /*
  * LANCE registers.
@@ -84,19 +89,18 @@ struct	le_softc {
 	struct	lereg1 *sc_r1;		/* LANCE registers */
 };
 
-static int	le_match(struct device *, void *, void *);
+static int	le_match(struct device *, struct cfdata *, void *);
 static void	le_attach(struct device *, struct device *, void *);
 
-struct cfattach le_ca = {
-	sizeof(struct le_softc), le_match, le_attach
-};
+CFATTACH_DECL(le, sizeof(struct le_softc),
+    le_match, le_attach, NULL, NULL);
 
-hide void lewrcsr(struct am7990_softc *, u_int16_t, u_int16_t);
-hide u_int16_t lerdcsr(struct am7990_softc *, u_int16_t);
-hide void myetheraddr(u_int8_t *);
+static void lewrcsr(struct lance_softc *, u_int16_t, u_int16_t);
+static u_int16_t lerdcsr(struct lance_softc *, u_int16_t);
+static void myetheraddr(u_int8_t *);
 
-hide void
-lewrcsr(struct am7990_softc *sc, u_int16_t port, u_int16_t val)
+static void
+lewrcsr(struct lance_softc *sc, u_int16_t port, u_int16_t val)
 {
 	register struct lereg1 *ler1 = ((struct le_softc *)sc)->sc_r1;
 
@@ -104,8 +108,8 @@ lewrcsr(struct am7990_softc *sc, u_int16_t port, u_int16_t val)
 	ler1->ler1_rdp = val;
 }
 
-hide u_int16_t
-lerdcsr(struct am7990_softc *sc, u_int16_t port)
+static u_int16_t
+lerdcsr(struct lance_softc *sc, u_int16_t port)
 {
 	register struct lereg1 *ler1 = ((struct le_softc *)sc)->sc_r1;
 	u_int16_t val;
@@ -116,7 +120,7 @@ lerdcsr(struct am7990_softc *sc, u_int16_t port)
 }
 
 static int
-le_match(struct device *parent, void *cf, void *aux)
+le_match(struct device *parent, struct cfdata *cf, void *aux)
 {
         struct mainbus_attach_args *ma = aux;
 
@@ -130,7 +134,7 @@ void
 le_attach(struct device *parent, struct device *self, void *aux)
 {
 	struct le_softc *lesc = (struct le_softc *)self;
-	struct am7990_softc *sc = &lesc->sc_am7990;
+	struct lance_softc *sc = &lesc->sc_am7990.lsc;
         struct mainbus_attach_args *ma = aux;
 
         lesc->sc_r1 = (struct lereg1 *)ma->ma_addr;     /* LANCE */
@@ -140,20 +144,20 @@ le_attach(struct device *parent, struct device *self, void *aux)
         sc->sc_addr = (u_long)sc->sc_mem & 0xffffff;
         sc->sc_memsize = 64 * 1024;                     /* 64KB */
 
-        myetheraddr(sc->sc_arpcom.ac_enaddr);
+        myetheraddr(sc->sc_enaddr);
 
-	sc->sc_copytodesc = am7990_copytobuf_contig;
-	sc->sc_copyfromdesc = am7990_copyfrombuf_contig;
-	sc->sc_copytobuf = am7990_copytobuf_contig;
-	sc->sc_copyfrombuf = am7990_copyfrombuf_contig;
-	sc->sc_zerobuf = am7990_zerobuf_contig;
+	sc->sc_copytodesc = lance_copytobuf_contig;
+	sc->sc_copyfromdesc = lance_copyfrombuf_contig;
+	sc->sc_copytobuf = lance_copytobuf_contig;
+	sc->sc_copyfrombuf = lance_copyfrombuf_contig;
+	sc->sc_zerobuf = lance_zerobuf_contig;
 
 	sc->sc_rdcsr = lerdcsr;
 	sc->sc_wrcsr = lewrcsr;
 	sc->sc_hwreset = NULL;
 	sc->sc_hwinit = NULL;
 
-	am7990_config(sc);
+	am7990_config(&lesc->sc_am7990);
 
         isrlink_autovec(am7990_intr, (void *)sc, ma->ma_ilvl, ISRPRI_NET,
 	    self->dv_xname);
@@ -173,7 +177,7 @@ le_attach(struct device *parent, struct device *self, void *aux)
 extern int machtype;
 extern char fuse_rom_data[];
 
-hide void
+static void
 myetheraddr(u_int8_t *ether)
 {
         unsigned i, loc;
