@@ -41,7 +41,6 @@
 #include <sys/systm.h>
 #include <sys/device.h>
 #include <sys/kernel.h>
-#include <sys/evcount.h>
 
 #include <machine/autoconf.h>
 #include <machine/board.h>	/* machtype value */
@@ -59,7 +58,6 @@ struct timekeeper_softc {
 	struct device sc_dev;
 	void *sc_clock, *sc_nvram;
 	int sc_nvramsize;
-	struct evcount sc_count;
 };
 
 /*
@@ -133,9 +131,7 @@ clock_attach(parent, self, aux)
 		break;
 	}
 
-	evcount_attach(&sc->sc_count, self->dv_xname, (void *)&ma->ma_ilvl, &evcount_intr);
-
-	clockattach(&sc->sc_dev, clockwork, &sc->sc_count);
+	clockattach(&sc->sc_dev, clockwork);
 }
 
 /*
