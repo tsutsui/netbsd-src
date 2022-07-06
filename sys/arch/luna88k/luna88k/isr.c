@@ -45,7 +45,6 @@
 #include <sys/systm.h>
 #include <sys/malloc.h>
 #include <sys/vmmeter.h>
-#include <sys/evcount.h>
 
 #include <uvm/uvm_extern.h>
 
@@ -94,8 +93,6 @@ isrlink_autovec(int (*func)(void *), void *arg, int ipl, int priority,
 	newisr->isr_arg = arg;
 	newisr->isr_ipl = ipl;
 	newisr->isr_priority = priority;
-	evcount_attach(&newisr->isr_count, name, (void *)&newisr->isr_ipl,
-	    &evcount_intr);
 
 	/*
 	 * Some devices are particularly sensitive to interrupt

@@ -51,5 +51,5 @@ struct clockfns {
 	void	(*cf_set)(struct device *, struct clock_ymdhms *);
 };	
 
-void clockattach(struct device *, const struct clockfns *, struct evcount *);
+void clockattach(struct device *, const struct clockfns *);
 int clockintr(void *);

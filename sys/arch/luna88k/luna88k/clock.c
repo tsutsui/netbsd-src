@@ -49,7 +49,6 @@
 #include <sys/systm.h>
 #include <sys/device.h>
 #include <sys/kernel.h>
-#include <sys/evcount.h>
 
 #include <machine/cpu.h>
 
@@ -58,14 +57,12 @@
 
 struct device *clockdev;
 const struct clockfns *clockfns;
-struct evcount *clockevc;
 int clockinitted;
 
 void
-clockattach(dev, fns, evc)
+clockattach(dev, fns)
 	struct device *dev;
 	const struct clockfns *fns;
-	struct evcount *evc;
 {
 	/*
 	 * Just bookkeeping.
@@ -74,7 +71,6 @@ clockattach(dev, fns, evc)
 		panic("clockattach: multiple clocks");
 	clockdev = dev;
 	clockfns = fns;
-	clockevc = evc;
 }
 
 /*
@@ -203,8 +199,6 @@ clockintr(void *eframe)
 {
 	extern unsigned int *clock_reg[];
 	int cpu = cpu_number();
-
-	clockevc->ec_count++;
 
 	*clock_reg[cpu] = 0xffffffff;
 	hardclock(eframe);

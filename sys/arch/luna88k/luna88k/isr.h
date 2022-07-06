@@ -37,7 +37,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/evcount.h>
 #include <sys/queue.h>
 
 /*
@@ -54,7 +53,6 @@ struct isr_autovec {
 	void		*isr_arg;
 	int		isr_ipl;
 	int		isr_priority;
-	struct evcount	isr_count;
 };
 
 typedef LIST_HEAD(, isr_autovec) isr_autovec_list_t;
