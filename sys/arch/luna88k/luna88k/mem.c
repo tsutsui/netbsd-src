@@ -56,10 +56,7 @@ extern vaddr_t last_addr;
 
 /*ARGSUSED*/
 int
-mmopen(dev, flag, mode, p)
-	dev_t dev;
-	int flag, mode;
-	struct proc *p;
+mmopen(dev_t dev, int flag, int mode, struct proc *p)
 {
 
 	switch (minor(dev)) {
@@ -75,10 +72,7 @@ mmopen(dev, flag, mode, p)
 
 /*ARGSUSED*/
 int
-mmclose(dev, flag, mode, p)
-	dev_t dev;
-	int flag, mode;
-	struct proc *p;
+mmclose(dev_t dev, int flag, int mode, struct proc *p)
 {
 
 	return (0);
@@ -86,10 +80,7 @@ mmclose(dev, flag, mode, p)
 
 /*ARGSUSED*/
 int
-mmrw(dev, uio, flags)
-	dev_t dev;
-	struct uio *uio;
-	int flags;
+mmrw(dev_t dev, struct uio *uio, int flags)
 {
 	vaddr_t o, v;
 	int c;
@@ -213,22 +204,14 @@ unlock:
 }
 
 paddr_t
-mmmmap(dev, off, prot)
-        dev_t dev;
-        off_t off;
-	int prot;
+mmmmap(dev_t dev, off_t off, int prot)
 {
 	return (-1);
 }
 
 /*ARGSUSED*/
 int
-mmioctl(dev, cmd, data, flags, p)
-	dev_t dev;
-	u_long cmd;
-	caddr_t data;
-	int flags;
-	struct proc *p;
+mmioctl(dev_t dev, u_long cmd, caddr_t data, int flags, struct proc *p)
 {
 	return (EOPNOTSUPP);
 }

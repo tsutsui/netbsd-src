@@ -98,9 +98,7 @@ struct cfdriver siotty_cd = {
 };
 
 int 
-siotty_match(parent, cf, aux)
-	struct device *parent;
-	void *cf, *aux;
+siotty_match(struct device *parent, void *cf, void *aux)
 {
 	struct sio_attach_args *args = aux;
 
@@ -110,9 +108,7 @@ siotty_match(parent, cf, aux)
 }
 
 void 
-siotty_attach(parent, self, aux)
-	struct device *parent, *self;
-	void *aux;
+siotty_attach(struct device *parent, struct device *self, void *aux)
 {
 	struct sio_softc *scp = (void *)parent;
 	struct siotty_softc *sc = (void *)self;
@@ -144,8 +140,7 @@ siotty_attach(parent, self, aux)
 /*--------------------  low level routine --------------------*/
 
 void
-siottyintr(chan)
-	int chan;
+siottyintr(int chan)
 {
 	struct siotty_softc *sc;
 	struct sioreg *sio;
@@ -197,8 +192,7 @@ siottyintr(chan)
 }
 
 void
-siostart(tp)
-	struct tty *tp;
+siostart(struct tty *tp)
 {
 	struct siotty_softc *sc = siotty_cd.cd_devs[minor(tp->t_dev)];
 	int s, c;
@@ -227,9 +221,7 @@ out:
 }
 
 int
-siostop(tp, flag)
-	struct tty *tp;
-	int flag;
+siostop(struct tty *tp, int flag)
 {
 	int s;
 
@@ -245,9 +237,7 @@ siostop(tp, flag)
 }
 
 int
-sioparam(tp, t)
-	struct tty *tp;
-	struct termios *t;
+sioparam(struct tty *tp, struct termios *t)
 {
 	struct siotty_softc *sc = siotty_cd.cd_devs[minor(tp->t_dev)];
 	int wr4, s;
@@ -305,9 +295,7 @@ sioparam(tp, t)
 }
 
 int
-siomctl(sc, control, op)
-	struct siotty_softc *sc;
-	int control, op;
+siomctl(struct siotty_softc *sc, int control, int op)
 {
 	int val, s, wr5, rr;
 
@@ -354,10 +342,7 @@ siomctl(sc, control, op)
 /*--------------------  cdevsw[] interface --------------------*/
 
 int
-sioopen(dev, flag, mode, p)
-	dev_t dev;
-	int flag, mode;
-	struct proc *p;
+sioopen(dev_t dev, int flag, int mode, struct proc *p)
 {
 	struct siotty_softc *sc;
 	struct tty *tp;
@@ -411,10 +396,7 @@ sioopen(dev, flag, mode, p)
 }
  
 int
-sioclose(dev, flag, mode, p)
-	dev_t dev;
-	int flag, mode;
-	struct proc *p;
+sioclose(dev_t dev, int flag, int mode, struct proc *p)
 {
 	struct siotty_softc *sc = siotty_cd.cd_devs[minor(dev)];
 	struct tty *tp = sc->sc_tty;
@@ -440,10 +422,7 @@ sioclose(dev, flag, mode, p)
 }
  
 int
-sioread(dev, uio, flag)
-	dev_t dev;
-	struct uio *uio;
-	int flag;
+sioread(dev_t dev, struct uio *uio, int flag)
 {
 	struct siotty_softc *sc = siotty_cd.cd_devs[minor(dev)];
 	struct tty *tp = sc->sc_tty;
@@ -455,10 +434,7 @@ sioread(dev, uio, flag)
 }
  
 int
-siowrite(dev, uio, flag)
-	dev_t dev;
-	struct uio *uio;
-	int flag;
+siowrite(dev_t dev, struct uio *uio, int flag)
 {
 	struct siotty_softc *sc = siotty_cd.cd_devs[minor(dev)];
 	struct tty *tp = sc->sc_tty;
@@ -471,10 +447,7 @@ siowrite(dev, uio, flag)
 
 #if 0
 int
-sioselect(dev, events, p)
-	dev_t dev;
-	int events;
-	struct proc *p;
+sioselect(dev_t dev, int events, struct proc *p)
 {
 	struct siotty_softc *sc = siotty_cd.cd_devs[minor(dev)];
 	struct tty *tp = sc->sc_tty;
@@ -488,12 +461,7 @@ sioselect(dev, events, p)
 #endif
 
 int
-sioioctl(dev, cmd, data, flag, p)
-	dev_t dev;
-	u_long cmd;
-	caddr_t data;
-	int flag;
-	struct proc *p;
+sioioctl(dev_t dev, u_long cmd, caddr_t data, int flag, struct proc *p)
 {
 	struct siotty_softc *sc = siotty_cd.cd_devs[minor(dev)];
 	struct tty *tp = sc->sc_tty;
@@ -556,8 +524,7 @@ sioioctl(dev, cmd, data, flag, p)
 
 /* ARSGUSED */
 struct tty *
-siotty(dev)
-	dev_t dev;
+siotty(dev_t dev)
 {
 	struct siotty_softc *sc = siotty_cd.cd_devs[minor(dev)];
  
@@ -567,9 +534,7 @@ siotty(dev)
 /*--------------------  miscellaneous routines --------------------*/
 
 /* EXPORT */ void
-setsioreg(sio, regno, val)
-	struct sioreg *sio;
-	int regno, val;
+setsioreg(struct sioreg *sio, int regno, int val)
 {
 	if (regno != 0)
 		sio->sio_cmd = regno;	/* DELAY(); */
@@ -577,8 +542,7 @@ setsioreg(sio, regno, val)
 }
 
 /* EXPORT */ int
-getsiocsr(sio)
-	struct sioreg *sio;
+getsiocsr(struct sioreg *sio)
 {
 	int val;
 
@@ -606,8 +570,7 @@ struct consdev syscons = {
 };
 
 /* EXPORT */ void
-syscnattach(channel)
-	int channel;
+syscnattach(int channel)
 {
 /*
  * Channel A is immediately initialized with 9600N1 right after cold
@@ -633,8 +596,7 @@ syscnattach(channel)
 }
 
 /* EXPORT */ int
-syscngetc(dev)
-	dev_t dev;
+syscngetc(dev_t dev)
 {
 	struct sioreg *sio;
 	int s, c;
@@ -650,9 +612,7 @@ syscngetc(dev)
 }
 
 /* EXPORT */ void
-syscnputc(dev, c)
-	dev_t dev;
-	int c;
+syscnputc(dev_t dev, int c)
 {
 	struct sioreg *sio;
 	int s;

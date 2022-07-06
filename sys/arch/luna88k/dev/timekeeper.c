@@ -91,9 +91,7 @@ const struct clockfns dsclock_clockfns = {
 };
 
 int
-clock_match(parent, match, aux)
-        struct device *parent;
-        void *match, *aux;
+clock_match(struct device *parent, void *match, void *aux)
 {
 	struct mainbus_attach_args *ma = aux;
 
@@ -105,9 +103,7 @@ clock_match(parent, match, aux)
 extern int machtype; /* in machdep.c */
 
 void
-clock_attach(parent, self, aux)
-        struct device *parent, *self;
-        void *aux;
+clock_attach(struct device *parent, struct device *self, void *aux)
 {
 	struct timekeeper_softc *sc = (void *)self;
 	struct mainbus_attach_args *ma = aux;
@@ -138,10 +134,7 @@ clock_attach(parent, self, aux)
  * Get the time of day, based on the clock's value and/or the base value.
  */
 void
-mkclock_get(dev, base, dt)
-	struct device *dev;
-	time_t base;
-	struct clock_ymdhms *dt;
+mkclock_get(struct device *dev, time_t base, struct clock_ymdhms *dt)
 {
 	struct timekeeper_softc *sc = (void *)dev;
 	volatile u_int8_t *chiptime = (void *)sc->sc_clock;
@@ -169,9 +162,7 @@ mkclock_get(dev, base, dt)
  * Reset the TODR based on the time value.
  */
 void
-mkclock_set(dev, dt)
-	struct device *dev;
-	struct clock_ymdhms *dt;
+mkclock_set(struct device *dev, struct clock_ymdhms *dt)
 {
 	struct timekeeper_softc *sc = (void *)dev;
 	volatile u_int8_t *chiptime = (void *)sc->sc_clock;
@@ -218,10 +209,7 @@ mkclock_set(dev, dt)
  * Get the time of day, based on the clock's value and/or the base value.
  */
 void
-dsclock_get(dev, base, dt)
-	struct device *dev;
-	time_t base;
-	struct clock_ymdhms *dt;
+dsclock_get(struct device *dev, time_t base, struct clock_ymdhms *dt)
 {
 	struct timekeeper_softc *sc = (void *)dev;
 	volatile u_int8_t *chiptime = (void *)sc->sc_clock;
@@ -264,9 +252,7 @@ dsclock_get(dev, base, dt)
  * Reset the TODR based on the time value.
  */
 void
-dsclock_set(dev, dt)
-	struct device *dev;
-	struct clock_ymdhms *dt;
+dsclock_set(struct device *dev, struct clock_ymdhms *dt)
 {
 	struct timekeeper_softc *sc = (void *)dev;
 	volatile u_int8_t *chiptime = (void *)sc->sc_clock;

@@ -96,9 +96,7 @@ hide u_int16_t lerdcsr(struct am7990_softc *, u_int16_t);
 hide void myetheraddr(u_int8_t *);
 
 hide void
-lewrcsr(sc, port, val)
-	struct am7990_softc *sc;
-	u_int16_t port, val;
+lewrcsr(struct am7990_softc *sc, u_int16_t port, u_int16_t val)
 {
 	register struct lereg1 *ler1 = ((struct le_softc *)sc)->sc_r1;
 
@@ -107,9 +105,7 @@ lewrcsr(sc, port, val)
 }
 
 hide u_int16_t
-lerdcsr(sc, port)
-	struct am7990_softc *sc;
-	u_int16_t port;
+lerdcsr(struct am7990_softc *sc, u_int16_t port)
 {
 	register struct lereg1 *ler1 = ((struct le_softc *)sc)->sc_r1;
 	u_int16_t val;
@@ -120,9 +116,7 @@ lerdcsr(sc, port)
 }
 
 static int
-le_match(parent, cf, aux)
-        struct device *parent;
-        void *cf, *aux;
+le_match(struct device *parent, void *cf, void *aux)
 {
         struct mainbus_attach_args *ma = aux;
 
@@ -133,9 +127,7 @@ le_match(parent, cf, aux)
 }
 
 void
-le_attach(parent, self, aux)
-        struct device *parent, *self;
-        void *aux;
+le_attach(struct device *parent, struct device *self, void *aux)
 {
 	struct le_softc *lesc = (struct le_softc *)self;
 	struct am7990_softc *sc = &lesc->sc_am7990;
@@ -182,8 +174,7 @@ extern int machtype;
 extern char fuse_rom_data[];
 
 hide void
-myetheraddr(ether)
-        u_int8_t *ether;
+myetheraddr(u_int8_t *ether)
 {
         unsigned i, loc;
 	volatile struct { u_int32_t ctl; } *ds1220;

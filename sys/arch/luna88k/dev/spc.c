@@ -82,9 +82,7 @@ struct luna88k_bus_space_tag spc_bst = {
 };
 
 int
-spc_mainbus_match(parent, cf, aux)
-	struct device *parent;
-	void *cf, *aux;
+spc_mainbus_match(struct device *parent, void *cf, void *aux)
 {
 	struct mainbus_attach_args *ma = aux;
 
@@ -99,9 +97,7 @@ spc_mainbus_match(parent, cf, aux)
 }
 
 void
-spc_mainbus_attach(parent, self, aux)
-	struct device *parent, *self;
-	void *aux;
+spc_mainbus_attach(struct device *parent, struct device *self, void *aux)
 {
 	struct spc_softc *sc = (void *)self;
 	struct mainbus_attach_args *ma = aux;

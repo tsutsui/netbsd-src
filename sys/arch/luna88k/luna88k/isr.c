@@ -57,7 +57,7 @@
 isr_autovec_list_t isr_autovec[NISRAUTOVEC];
 
 void
-isrinit()
+isrinit(void)
 {
 	int i;
 

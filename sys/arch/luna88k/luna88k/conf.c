@@ -176,8 +176,7 @@ dev_t	swapdev = makedev(3, 0);
  * Returns true if dev is /dev/mem or /dev/kmem.
  */
 int
-iskmemdev(dev)
-	dev_t dev;
+iskmemdev(dev_t dev)
 {
 
 	return (major(dev) == mem_no && minor(dev) < 2);
@@ -187,15 +186,14 @@ iskmemdev(dev)
  * Returns true if dev is /dev/zero.
  */
 int
-iszerodev(dev)
-	dev_t dev;
+iszerodev(dev_t dev)
 {
 
 	return (major(dev) == mem_no && minor(dev) == 12);
 }
 
 dev_t
-getnulldev()
+getnulldev(void)
 {
 	return makedev(mem_no, 2);
 }
