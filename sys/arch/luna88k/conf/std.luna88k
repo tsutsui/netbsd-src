@@ -1,0 +1,10 @@
+#	$NetBSD$
+#
+# Options/devices that all mvme88ks should have
+#
+
+machine		luna88k m88k
+
+#options 	EXEC_AOUT	# support for exec'ing a.out
+options 	EXEC_ELF32	# support for exec'ing Elf
+options 	EXEC_SCRIPT	# support for #! scripts
