@@ -8,4 +8,4 @@
 
 #define	pmap_bootstrap_md(va)	(va)
 
-#endif	_LUNA88K_PMAP_H_
+#endif /*_LUNA88K_PMAP_H_ */
