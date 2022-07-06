@@ -100,6 +100,8 @@ struct wscons_event {
 #define WSKBD_TYPE_SGI		18	/* SGI keyboard */
 #define WSKBD_TYPE_MATRIXKP	19	/* Matrix keypads/buttons */
 
+#define WSKBD_TYPE_LUNA		23	/* OMRON SX-9100 LUNA */
+
 /* Manipulate the keyboard bell. */
 struct wskbd_bell_data {
 	u_int	which;				/* values to get/set */
@@ -287,6 +289,8 @@ struct wsmouse_id {
 #define	WSDISPLAY_TYPE_SUNFFB	39	/* Sun creator FFB */
 #define	WSDISPLAY_TYPE_STI	40	/* HP STI frambuffers */
 #define	WSDISPLAY_TYPE_HDLCD	41	/* Hitachi HD44780 based LCDs */
+
+#define WSDISPLAY_TYPE_LUNA	51	/* OMRON SX-9100 LUNA */
 
 /* Basic display information.  Not applicable to all display types. */
 struct wsdisplay_fbinfo {
