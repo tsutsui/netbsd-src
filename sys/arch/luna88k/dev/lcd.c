@@ -113,9 +113,7 @@ static const char lcd_boot_message2[] = "   SX-9100/DT   ";
  * Autoconf functions
  */
 int
-lcd_match(parent, cf, aux)
-	struct device *parent;
-	void *cf, *aux;
+lcd_match(struct device *parent, void *cf, void *aux)
 {
 	struct mainbus_attach_args *ma = aux;
 
@@ -127,9 +125,7 @@ lcd_match(parent, cf, aux)
 }
 
 void
-lcd_attach(parent, self, aux)
-	struct device *parent, *self;
-	void *aux;
+lcd_attach(struct device *parent, struct device *self, void *aux)
 {
 	printf("\n");
 
@@ -142,10 +138,7 @@ lcd_attach(parent, self, aux)
  */
 
 int
-lcdopen(dev, flags, fmt, p)
-	dev_t dev;
-	int flags, fmt;
-	struct proc *p;
+lcdopen(dev_t dev, int flags, int fmt, struct proc *p)
 {
 	int unit = minor(dev);
 	struct lcd_softc *sc;
@@ -162,10 +155,7 @@ lcdopen(dev, flags, fmt, p)
 }
 
 int
-lcdclose(dev, flags, fmt, p)
-	dev_t dev;
-	int flags, fmt;
-	struct proc *p;
+lcdclose(dev_t dev, int flags, int fmt, struct proc *p)
 {
 	int unit = minor(dev);
 	struct lcd_softc *sc;
@@ -177,10 +167,7 @@ lcdclose(dev, flags, fmt, p)
 }
 
 int
-lcdwrite(dev, uio, flag)
-	dev_t dev;
-	struct uio *uio;
-	int flag;
+lcdwrite(dev_t dev, struct uio *uio, int flag)
 {
 	int error, len;
 	int i, n;
@@ -206,12 +193,7 @@ lcdwrite(dev, uio, flag)
 }
 
 int
-lcdioctl(dev, cmd, addr, flag, p)
-	dev_t dev;
-	u_long cmd;
-	caddr_t addr;
-	int flag;
-	struct proc *p;
+lcdioctl(dev_t dev, u_long cmd, caddr_t addr, int flag, struct proc *p)
 {
 	int val;
 
@@ -292,7 +274,7 @@ lcdioctl(dev, cmd, addr, flag, p)
  * Internal functions
  */
 void
-lcdbusywait()
+lcdbusywait(void)
 {
 	struct pio *p1 = (struct pio *)0x4D000000;
 	int msb, s;
@@ -313,8 +295,7 @@ lcdbusywait()
 }	
 
 void
-lcdput(cc)
-	int cc;
+lcdput(int cc)
 {
 	struct pio *p1 = (struct pio *)0x4D000000;
 	int s;
@@ -331,8 +312,7 @@ lcdput(cc)
 }
 
 void
-lcdctrl(cc)
-	int cc;
+lcdctrl(int cc)
 {
 	struct pio *p1 = (struct pio *)0x4D000000;
 	int s;
@@ -349,8 +329,7 @@ lcdctrl(cc)
 }
 
 void
-lcdshow(s)
-	const char *s;
+lcdshow(const char *s)
 {
 	int cc;
 
@@ -359,7 +338,7 @@ lcdshow(s)
 }
 
 void
-greeting()
+greeting(void)
 {
 	lcdctrl(LCD_INIT);
 	lcdctrl(LCD_ENTRY);

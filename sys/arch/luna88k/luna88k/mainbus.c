@@ -78,9 +78,7 @@ struct cfdriver mainbus_cd = {
 };
 
 int
-mainbus_match(parent, cf, args)
-	struct device *parent;
-	void *cf, *args;
+mainbus_match(struct device *parent, void *cf, void *args)
 {
 	static int mainbus_matched;
 
@@ -91,9 +89,7 @@ mainbus_match(parent, cf, args)
 }
 
 void
-mainbus_attach(parent, self, args)
-	struct device *parent, *self;
-	void *args;
+mainbus_attach(struct device *parent, struct device *self, void *args)
 {
 	int i;
 	extern int machtype;
@@ -112,9 +108,7 @@ mainbus_attach(parent, self, args)
 }
 
 int
-mainbus_print(aux, pnp)
-	void *aux;
-	const char *pnp;
+mainbus_print(void *aux, const char *pnp)
 {
 	struct mainbus_attach_args *ma = aux;
 

@@ -254,7 +254,7 @@ struct consdev romttycons = {
  * Early console initialization: called early on from main, before vm init.
  */
 void
-consinit()
+consinit(void)
 {
 	/*
 	 * Initialize the console before we print anything out.
@@ -280,7 +280,7 @@ consinit()
  * until we find non-memory.
  */
 vaddr_t
-size_memory()
+size_memory(void)
 {
 	unsigned int *volatile look;
 	unsigned int *max;
@@ -328,7 +328,7 @@ size_memory()
 }
 
 int
-getcpuspeed()
+getcpuspeed(void)
 {
 	switch(machtype) {
 	case LUNA_88K:
@@ -341,7 +341,7 @@ getcpuspeed()
 }
 
 void
-identifycpu()
+identifycpu(void)
 {
 	cpuspeed = getcpuspeed();
 	snprintf(cpu_model, sizeof cpu_model,
@@ -350,7 +350,7 @@ identifycpu()
 }
 
 void
-cpu_startup()
+cpu_startup(void)
 {
 	caddr_t v;
 	int sz, i;
@@ -519,8 +519,7 @@ cpu_startup()
  * allocsys() again with the correct base virtual address.
  */
 caddr_t
-allocsys(v)
-	caddr_t v;
+allocsys(caddr_t v)
 {
 
 #define	valloc(name, type, num) \
@@ -537,8 +536,7 @@ allocsys(v)
 }
 
 __dead void
-boot(howto)
-	int howto;
+boot(int howto)
 {
 	/* take a snapshot before clobbering any registers */
 	if (curproc && curproc->p_addr)
@@ -645,7 +643,7 @@ dumpconf(void)
  * the auto-restart code.
  */
 void
-dumpsys()
+dumpsys(void)
 {
 	int maj;
 	int psize;
@@ -762,7 +760,7 @@ abort:
  * Running on a minimal stack here, with interrupts disabled; do nothing fancy.
  */
 void
-secondary_pre_main()
+secondary_pre_main(void)
 {
 	struct cpu_info *ci;
 
@@ -790,7 +788,7 @@ secondary_pre_main()
  * There is nothing to do but display some details about the CPU and its CMMUs.
  */
 void
-secondary_main()
+secondary_main(void)
 {
 	struct cpu_info *ci = curcpu();
 
@@ -891,19 +889,14 @@ out:
 }
 
 int
-cpu_exec_aout_makecmds(p, epp)
-	struct proc *p;
-	struct exec_package *epp;
+cpu_exec_aout_makecmds(struct proc *p, struct exec_package *epp)
 {
 
 	return (ENOEXEC);
 }
 
 int
-sys_sysarch(p, v, retval)
-	struct proc *p;
-	void *v;
-	register_t *retval;
+sys_sysarch(struct proc *p, void *v, register_t *retval)
 {
 #if 0
 	struct sys_sysarch_args	/* {
@@ -920,14 +913,8 @@ sys_sysarch(p, v, retval)
  */
 
 int
-cpu_sysctl(name, namelen, oldp, oldlenp, newp, newlen, p)
-	int *name;
-	u_int namelen;
-	void *oldp;
-	size_t *oldlenp;
-	void *newp;
-	size_t newlen;
-	struct proc *p;
+cpu_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp, void *newp,
+    size_t newlen, struct proc *p)
 {
 	dev_t consdev;
 
@@ -954,7 +941,7 @@ cpu_sysctl(name, namelen, oldp, oldlenp, newp, newlen, p)
  * this is the first C code that's run.
  */
 void
-luna88k_bootstrap()
+luna88k_bootstrap(void)
 {
 	extern int kernelstart;
 	extern struct consdev *cn_tab;
@@ -1058,23 +1045,20 @@ luna88k_bootstrap()
 #define ROMPUTC(x)	(*(void (*)(int))__ROM_FUNC_TABLE[4])(x)
 
 void
-romttycnprobe(cp)
-	struct consdev *cp;
+romttycnprobe(struct consdev *cp)
 {
 	cp->cn_dev = makedev(14, 0);
 	cp->cn_pri = CN_NORMAL;
 }
 
 void
-romttycninit(cp)
-	struct consdev *cp;
+romttycninit(struct consdev *cp)
 {
 	/* Nothing to do */
 }
 
 int
-romttycngetc(dev)
-	dev_t dev;
+romttycngetc(dev_t dev)
 {
 	int s, c;
 
@@ -1087,9 +1071,7 @@ romttycngetc(dev)
 }
 
 void
-romttycnputc(dev, c)
-	dev_t dev;
-	int c;
+romttycnputc(dev_t dev, int c)
 {
 	int s;
 
@@ -1104,8 +1086,7 @@ romttycnputc(dev, c)
 
 /* taken from NetBSD/luna68k */
 void
-microtime(tvp)
-        register struct timeval *tvp;
+microtime(register struct timeval *tvp)
 {
         int s = splclock();
         static struct timeval lasttime;
@@ -1213,8 +1194,7 @@ get_nvram_data(void)
 }
 
 char *
-nvram_by_symbol(symbol)
-	char *symbol;
+nvram_by_symbol(char *symbol)
 {
 	char *value;
 	int i;

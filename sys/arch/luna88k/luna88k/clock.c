@@ -60,9 +60,7 @@ const struct clockfns *clockfns;
 int clockinitted;
 
 void
-clockattach(dev, fns)
-	struct device *dev;
-	const struct clockfns *fns;
+clockattach(struct device *dev, const struct clockfns *fns)
 {
 	/*
 	 * Just bookkeeping.
@@ -91,7 +89,7 @@ clockattach(dev, fns)
  * are no other timers available.
  */
 void
-cpu_initclocks()
+cpu_initclocks(void)
 {
 
 #ifdef DIAGNOSTIC
@@ -108,8 +106,7 @@ cpu_initclocks()
  * but that would be a drag.
  */
 void
-setstatclockrate(newhz)
-	int newhz;
+setstatclockrate(int newhz)
 {
 	/* nothing we can do */
 }
@@ -120,8 +117,7 @@ setstatclockrate(newhz)
  * and the time of year clock (if any) provides the rest.
  */
 void
-inittodr(base)
-	time_t base;
+inittodr(time_t base)
 {
 	struct clock_ymdhms dt;
 	time_t deltat;
@@ -181,7 +177,7 @@ bad:
  * to wrap the TODR around.
  */
 void
-resettodr()
+resettodr(void)
 {
 	struct clock_ymdhms dt;
 

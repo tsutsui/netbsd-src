@@ -65,9 +65,7 @@ void nullintr(int);
 int xsiointr(void *);
 
 int
-sio_match(parent, cf, aux)
-	struct device *parent;
-	void *cf, *aux;
+sio_match(struct device *parent, void *cf, void *aux)
 {
 	struct mainbus_attach_args *ma = aux;
 
@@ -79,9 +77,7 @@ sio_match(parent, cf, aux)
 }
 
 void
-sio_attach(parent, self, aux)
-	struct device *parent, *self;
-	void *aux;
+sio_attach(struct device *parent, struct device *self, void *aux)
 {
 	struct sio_softc *sc = (void *)self;
 	struct mainbus_attach_args *ma = aux;
@@ -104,9 +100,7 @@ sio_attach(parent, self, aux)
 }
 
 int
-sio_print(aux, name)
-	void *aux;
-	const char *name;
+sio_print(void *aux, const char *name)
 {
 	struct sio_attach_args *args = aux;
 
@@ -120,8 +114,7 @@ sio_print(aux, name)
 }
 
 int
-xsiointr(arg)
-	void *arg;
+xsiointr(void *arg)
 {
 	struct sio_softc *sc = arg;
 
@@ -130,7 +123,6 @@ xsiointr(arg)
 	return 1;
 }
 
-void nullintr(v)
-	int v;
+void nullintr(int v)
 {
 }

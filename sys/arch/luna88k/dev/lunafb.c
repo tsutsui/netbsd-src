@@ -169,9 +169,7 @@ int omfb_console;
 int omfb_cnattach(void);
 
 int
-omfbmatch(parent, cf, aux)
-	struct device *parent;
-	void *cf, *aux;
+omfbmatch(struct device *parent, void *cf, void *aux)
 {
 	struct mainbus_attach_args *ma = aux;
 
@@ -188,9 +186,7 @@ omfbmatch(parent, cf, aux)
 }
 
 void
-omfbattach(parent, self, args)
-	struct device *parent, *self;
-	void *args;
+omfbattach(struct device *parent, struct device *self, void *args)
 {
 	struct omfb_softc *sc = (struct omfb_softc *)self;
 	struct wsemuldisplaydev_attach_args waa;
@@ -222,7 +218,7 @@ omfbattach(parent, self, args)
 }
 
 /* EXPORT */ int
-omfb_cnattach()
+omfb_cnattach(void)
 {
 	struct om_hwdevconfig *dc = &omfb_console_dc;
 	struct rasops_info *ri = &dc->dc_ri;
@@ -236,12 +232,7 @@ omfb_cnattach()
 }
 
 int
-omfbioctl(v, cmd, data, flag, p)
-	void *v;
-	u_long cmd;
-	caddr_t data;
-	int flag;
-	struct proc *p;
+omfbioctl(void *v, u_long cmd, caddr_t data, int flag, struct proc *p)
 {
 	struct omfb_softc *sc = v;
 	struct om_hwdevconfig *dc = sc->sc_dc;
@@ -288,10 +279,7 @@ omfbioctl(v, cmd, data, flag, p)
  */
 
 paddr_t
-omfbmmap(v, offset, prot)
-	void *v;
-	off_t offset;
-	int prot;
+omfbmmap(void *v, off_t offset, int prot)
 {
 	struct omfb_softc *sc = v;
 
@@ -304,9 +292,7 @@ omfbmmap(v, offset, prot)
 }
 
 int
-omgetcmap(sc, p)
-	struct omfb_softc *sc;
-	struct wsdisplay_cmap *p;
+omgetcmap(struct omfb_softc *sc, struct wsdisplay_cmap *p)
 {
 	u_int index = p->index, count = p->count;
         unsigned int cmsize;
@@ -330,9 +316,7 @@ omgetcmap(sc, p)
 }
 
 int
-omsetcmap(sc, p)
-	struct omfb_softc *sc;
-	struct wsdisplay_cmap *p;
+omsetcmap(struct omfb_softc *sc, struct wsdisplay_cmap *p)
 {
 	u_int index = p->index, count = p->count;
         unsigned int cmsize, i;
@@ -374,9 +358,7 @@ omsetcmap(sc, p)
 }
 
 void
-omfb_getdevconfig(paddr, dc)
-	paddr_t paddr;
-	struct om_hwdevconfig *dc;
+omfb_getdevconfig(paddr_t paddr, struct om_hwdevconfig *dc)
 {
 	int bpp, i;
 	struct rasops_info *ri;
@@ -477,12 +459,8 @@ omfb_getdevconfig(paddr, dc)
 }
 
 int
-omfb_alloc_screen(v, type, cookiep, curxp, curyp, attrp)
-	void *v;
-	const struct wsscreen_descr *type;
-	void **cookiep;
-	int *curxp, *curyp;
-	long *attrp;
+omfb_alloc_screen(void *v, const struct wsscreen_descr *type, void **cookiep,
+    int *curxp, int *curyp, long *attrp)
 {
 	struct omfb_softc *sc = v;
 	struct rasops_info *ri = &sc->sc_dc->dc_ri;
@@ -499,9 +477,7 @@ omfb_alloc_screen(v, type, cookiep, curxp, curyp, attrp)
 }
 
 void
-omfb_free_screen(v, cookie)
-	void *v;
-	void *cookie;
+omfb_free_screen(void *v, void *cookie)
 {
 	struct omfb_softc *sc = v;
 
@@ -509,12 +485,8 @@ omfb_free_screen(v, cookie)
 }
 
 int
-omfb_show_screen(v, cookie, waitok, cb, cbarg)
-	void *v;
-	void *cookie;
-	int waitok;
-	void (*cb)(void *, int, int);
-	void *cbarg;
+omfb_show_screen(void *v, void *cookie, int waitok,
+    void (*cb)(void *, int, int), void *cbarg)
 {
 	return 0;
 }

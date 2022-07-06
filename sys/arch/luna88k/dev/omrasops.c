@@ -75,11 +75,7 @@ void	om_eraserows(void *, int, int, long);
  * Blit a character at the specified co-ordinates.
  */
 void
-om_putchar(cookie, row, startcol, uc, attr)
-	void *cookie;
-	int row, startcol;
-	u_int uc;
-	long attr;
+om_putchar(void *cookie, int row, int startcol, u_int uc, long attr)
 {
 	struct rasops_info *ri = cookie;
 	caddr_t p;
@@ -137,10 +133,7 @@ om_putchar(cookie, row, startcol, uc, attr)
 }
 
 void
-om_erasecols(cookie, row, startcol, ncols, attr)
-	void *cookie;
-	int row, startcol, ncols;
-	long attr;
+om_erasecols(void *cookie, int row, int startcol, int ncols, long attr)
 {
         struct rasops_info *ri = cookie;
         caddr_t p;
@@ -189,10 +182,7 @@ om_erasecols(cookie, row, startcol, ncols, attr)
 }
 
 void
-om_eraserows(cookie, startrow, nrows, attr)
-	void *cookie;
-	int startrow, nrows;
-	long attr;
+om_eraserows(void *cookie, int startrow, int nrows, long attr)
 {
 	struct rasops_info *ri = cookie;
 	caddr_t p, q;
@@ -226,9 +216,7 @@ om_eraserows(cookie, startrow, nrows, attr)
 }
 
 void
-om_copyrows(cookie, srcrow, dstrow, nrows)
-	void *cookie;
-	int srcrow, dstrow, nrows;
+om_copyrows(void *cookie, int srcrow, int dstrow, int nrows)
 {
         struct rasops_info *ri = cookie;
         caddr_t p, q;
@@ -267,9 +255,7 @@ om_copyrows(cookie, srcrow, dstrow, nrows)
 }
 
 void
-om_copycols(cookie, startrow, srccol, dstcol, ncols)
-	void *cookie;
-	int startrow, srccol, dstcol, ncols;
+om_copycols(void *cookie, int startrow, int srccol, int dstcol, int ncols)
 {
 	struct rasops_info *ri = cookie;
 	caddr_t sp, dp, basep;
@@ -365,9 +351,7 @@ om_copycols(cookie, startrow, srccol, dstcol, ncols)
  * Position|{enable|disable} the cursor at the specified location.
  */
 void
-om_cursor(cookie, on, row, col)
-	void *cookie;
-	int on, row, col;
+om_cursor(void *cookie, int on, int, row, int, col)
 {
 	struct rasops_info *ri = cookie;
 	caddr_t p;

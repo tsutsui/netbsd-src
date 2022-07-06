@@ -71,7 +71,7 @@ struct device *bootdv;	/* set by device drivers (if found) */
  * called at boot time, configure all devices on the system.
  */
 void
-cpu_configure()
+cpu_configure(void)
 {
 
 	if (config_rootfound("mainbus", "mainbus") == 0)

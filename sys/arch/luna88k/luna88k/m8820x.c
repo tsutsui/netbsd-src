@@ -96,7 +96,7 @@
  * This routine sets up the CPU/CMMU configuration.
  */
 void
-m8820x_setup_board_config()
+m8820x_setup_board_config(void)
 {
 	struct m8820x_cmmu *cmmu;
 	u_int num;
@@ -155,7 +155,7 @@ m8820x_setup_board_config()
 #define ILLADDRESS	0x3ffffff0 	/* any faulty address for luna88k2 */
 
 cpuid_t
-m8820x_cpu_number()
+m8820x_cpu_number(void)
 {
 	u_int cmmu;
 	u_int i;
