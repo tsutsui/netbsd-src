@@ -53,6 +53,8 @@
 #include <luna88k/dev/sioreg.h>
 #include <luna88k/dev/siovar.h>
 
+#include "ioconf.h"
+
 static const u_int8_t ch1_regs[6] = {
 	WR0_RSTINT,				/* Reset E/S Interrupt */
 	WR1_RXALLS,				/* Rx per char, No Tx */
@@ -120,26 +122,21 @@ const struct wsmouse_accessops omms_accessops = {
 
 void wsintr(int);
 
-int  wsmatch(struct device *, void *, void *);
+int  wsmatch(struct device *, struct cfdata *, void *);
 void wsattach(struct device *, struct device *, void *);
-int  ws_submatch_kbd(struct device *, void *, void *);
+int  ws_submatch_kbd(struct device *, struct cfdata *, void *);
 #if NWSMOUSE > 0
-int  ws_submatch_mouse(struct device *, void *, void *);
+int  ws_submatch_mouse(struct device *, struct cfdata *, void *);
 #endif
 
-const struct cfattach ws_ca = {
-	sizeof(struct ws_softc), wsmatch, wsattach
-};
-
-struct cfdriver ws_cd = {
-        NULL, "ws", DV_TTY
-};
+CFATTACH_DECL(ws, sizeof(struct ws_softc),
+    wsmatch, wsattach, NULL, NULL);
 
 extern int  syscngetc(dev_t);
 extern void syscnputc(dev_t, int);
 
 int
-wsmatch(struct device *parent, void *match, void *aux)
+wsmatch(struct device *parent, struct cfdata *match, void *aux)
 {
 	struct sio_attach_args *args = aux;
 
@@ -191,25 +188,25 @@ wsattach(struct device *parent, struct device *self, void *aux)
 }
 
 int
-ws_submatch_kbd(struct device *parent, void *match, *aux)
+ws_submatch_kbd(struct device *parent, struct cfdata *match, void *aux)
 {
 	struct cfdata *cf = match;
 
-        if (strcmp(cf->cf_driver->cd_name, "wskbd"))
+        if (strcmp(cf->cf_name, "wskbd"))
                 return (0);
-        return ((*cf->cf_attach->ca_match)(parent, cf, aux));
+        return (config_match(parent, cf, aux));
 }
 
 #if NWSMOUSE > 0
 
 int
-ws_submatch_mouse(struct device *parent, void *match, void *aux)
+ws_submatch_mouse(struct device *parent, struct cfdata *match, void *aux)
 {
 	struct cfdata *cf = match;
 
-        if (strcmp(cf->cf_driver->cd_name, "wsmouse"))
+        if (strcmp(cf->cf_name, "wsmouse"))
                 return (0);
-        return ((*cf->cf_attach->ca_match)(parent, cf, aux));
+        return (config_match(parent, cf, aux));
 }
 
 #endif
@@ -261,8 +258,7 @@ wsintr(int chan)
 				sc->dy = (signed char)code;
 				if (sc->sc_wsmousedev != NULL)
 					wsmouse_input(sc->sc_wsmousedev,
-					    sc->buttons, sc->dx, sc->dy, 0, 0,
-					    WSMOUSE_INPUT_DELTA);
+					    sc->buttons, sc->dx, sc->dy, 0, 0);
 				sc->sc_msreport = 0;
 			}
 #else
@@ -492,7 +488,7 @@ omms_ioctl(void *v, u_long cmd, caddr_t data, int flag, struct proc *p)
 
 	switch (cmd) {
 	case WSMOUSEIO_GTYPE:
-		*(u_int *)data = WSMOUSE_TYPE_LUNA;
+		*(u_int *)data = 0x19991005; /* XXX */;
 		return 0;
 	}
 

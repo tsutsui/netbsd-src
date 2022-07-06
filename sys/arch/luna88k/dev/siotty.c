@@ -54,6 +54,8 @@
 #include <luna88k/dev/sioreg.h>
 #include <luna88k/dev/siovar.h>
 
+#include "ioconf.h"
+
 #define	TIOCM_BREAK 01000 /* non standard use */
 
 static const u_int8_t ch0_regs[6] = {
@@ -80,25 +82,34 @@ struct siotty_softc {
 	u_int8_t	sc_wr[6];
 };
 
-cdev_decl(sio);
+#include "siotty.h"
 void siostart(struct tty *);
 int  sioparam(struct tty *, struct termios *);
 void siottyintr(int);
 int  siomctl(struct siotty_softc *, int, int);
 
-int  siotty_match(struct device *, void *, void *);
+int  siotty_match(struct device *, struct cfdata *, void *);
 void siotty_attach(struct device *, struct device *, void *);
 
-const struct cfattach siotty_ca = {
-	sizeof(struct siotty_softc), siotty_match, siotty_attach
-};
+CFATTACH_DECL(siotty, sizeof(struct siotty_softc),
+    siotty_match, siotty_attach, NULL, NULL);
 
-struct cfdriver siotty_cd = {
-        NULL, "siotty", DV_TTY
+dev_type_open(sioopen);
+dev_type_close(sioclose);
+dev_type_read(sioread);
+dev_type_write(siowrite);
+dev_type_ioctl(sioioctl);
+dev_type_stop(siostop);
+dev_type_tty(siotty);
+dev_type_poll(siopoll);
+
+const struct cdevsw siotty_cdevsw = {
+	sioopen, sioclose, sioread, siowrite, sioioctl,
+	siostop, siotty, siopoll, nommap, ttykqfilter, D_TTY
 };
 
 int 
-siotty_match(struct device *parent, void *cf, void *aux)
+siotty_match(struct device *parent, struct cfdata *cf, void *aux)
 {
 	struct sio_attach_args *args = aux;
 
@@ -173,20 +184,14 @@ siottyintr(int chan)
 				return;
 			}
 #endif
-/*
 			(*tp->t_linesw->l_rint)(code, tp);
-*/
-			(*linesw[tp->t_line].l_rint)(code, tp);
 		} while ((rr = getsiocsr(sio)) & RR_RXRDY);
 	}
 	if (rr & RR_TXRDY) {
 		sio->sio_cmd = WR0_RSTPEND;
 		if (tp != NULL) {
 			tp->t_state &= ~(TS_BUSY|TS_FLUSH);
-/*
 			(*tp->t_linesw->l_start)(tp);
-*/
-			(*linesw[tp->t_line].l_start)(tp);
 		}
 	}
 }
@@ -220,7 +225,7 @@ out:
 	splx(s);
 }
 
-int
+void
 siostop(struct tty *tp, int flag)
 {
 	int s;
@@ -233,7 +238,6 @@ siostop(struct tty *tp, int flag)
 		tp->t_state |= TS_FLUSH;
         }
         splx(s);
-	return (0);
 }
 
 int
@@ -386,13 +390,10 @@ sioopen(dev_t dev, int flag, int mode, struct proc *p)
 #endif
 	}
 
-	error = ttyopen(dev, tp);
+	error = ttyopen(tp, 0, (flag & O_NONBLOCK));
 	if (error > 0)
 		return error;
-/*
 	return (*tp->t_linesw->l_open)(dev, tp);
-*/
-	return (*linesw[tp->t_line].l_open)(dev, tp);
 }
  
 int
@@ -402,10 +403,7 @@ sioclose(dev_t dev, int flag, int mode, struct proc *p)
 	struct tty *tp = sc->sc_tty;
 	int s;
 
-/*
 	(*tp->t_linesw->l_close)(tp, flag);
-*/
-	(*linesw[tp->t_line].l_close)(tp, flag);
 
 	s = spltty();
 	siomctl(sc, TIOCM_BREAK, DMBIC);
@@ -427,10 +425,7 @@ sioread(dev_t dev, struct uio *uio, int flag)
 	struct siotty_softc *sc = siotty_cd.cd_devs[minor(dev)];
 	struct tty *tp = sc->sc_tty;
  
-/*
 	return (*tp->t_linesw->l_read)(tp, uio, flag);
-*/
-	return (*linesw[tp->t_line].l_read)(tp, uio, flag);
 }
  
 int
@@ -439,26 +434,17 @@ siowrite(dev_t dev, struct uio *uio, int flag)
 	struct siotty_softc *sc = siotty_cd.cd_devs[minor(dev)];
 	struct tty *tp = sc->sc_tty;
  
-/*
 	return (*tp->t_linesw->l_write)(tp, uio, flag);
-*/
-	return (*linesw[tp->t_line].l_write)(tp, uio, flag);
 }
 
-#if 0
 int
-sioselect(dev_t dev, int events, struct proc *p)
+siopoll(dev_t dev, int events, struct proc *p)
 {
 	struct siotty_softc *sc = siotty_cd.cd_devs[minor(dev)];
 	struct tty *tp = sc->sc_tty;
  
-/*
 	return ((*tp->t_linesw->l_poll)(tp, events, p));
-*/
-	return ((*linesw[tp->t_line].l_select)(tp, events, p));
-
 }
-#endif
 
 int
 sioioctl(dev_t dev, u_long cmd, caddr_t data, int flag, struct proc *p)
@@ -467,10 +453,7 @@ sioioctl(dev_t dev, u_long cmd, caddr_t data, int flag, struct proc *p)
 	struct tty *tp = sc->sc_tty;
 	int error;
 
-/*
 	error = (*tp->t_linesw->l_ioctl)(tp, cmd, data, flag, p);
-*/
-	error = (*linesw[tp->t_line].l_ioctl)(tp, cmd, data, flag, p);
 	if (error >= 0)
 		return error;
 
@@ -505,7 +488,7 @@ sioioctl(dev_t dev, u_long cmd, caddr_t data, int flag, struct proc *p)
 		siomctl(sc, *(int *)data, DMBIC);
 		break;
 	case TIOCSFLAGS: /* Instruct how serial port behaves */
-		error = suser(p, 0);
+		error = suser(p->p_ucred, &p->p_acflag);
 		if (error != 0)
 			return EPERM;
 		sc->sc_flags = *(int *)data;
@@ -514,10 +497,7 @@ sioioctl(dev_t dev, u_long cmd, caddr_t data, int flag, struct proc *p)
 		*(int *)data = sc->sc_flags;
 		break;
 	default:
-/*
 		return EPASSTHROUGH;
-*/
-		return ENOTTY;
 	}
 	return 0;
 }
@@ -559,14 +539,16 @@ int  syscngetc(dev_t);
 void syscnputc(dev_t, int);
 
 struct consdev syscons = {
-	NULL,
-	NULL,
-	syscngetc,
-	syscnputc,
-	nullcnpollc,
-	NULL,
-	NODEV,
-	CN_REMOTE,
+	.cn_probe  = NULL,
+	.cn_init  = NULL,
+	.cn_getc  = syscngetc,
+	.cn_putc  = syscnputc,
+	.cn_pollc = nullcnpollc,
+	.cn_bell  = NULL,
+	.cn_halt  = NULL,
+	.cn_flush = NULL,
+	.cn_dev   = NODEV,
+	.cn_pri   = CN_REMOTE,
 };
 
 /* EXPORT */ void
@@ -579,8 +561,7 @@ syscnattach(int channel)
 	struct sioreg *sio;
 	sio = (struct sioreg *)0x51000000 + channel;
 
-/*	syscons.cn_dev = makedev(7, channel); */
-	syscons.cn_dev = makedev(12, channel);
+	syscons.cn_dev = makedev(cdevsw_lookup_major(&siotty_cdevsw), channel);
 	cn_tab = &syscons;
 
 #if 0

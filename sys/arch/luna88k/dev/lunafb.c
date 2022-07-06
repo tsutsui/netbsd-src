@@ -58,6 +58,8 @@
 #include <machine/cpu.h>
 #include <machine/autoconf.h>
 
+#include "ioconf.h"
+
 struct bt454 {
 	u_int8_t bt_addr;		/* map address register */
 	u_int8_t bt_cmap;		/* colormap data register */
@@ -152,16 +154,11 @@ const struct wsdisplay_accessops omfb_accessops = {
 	NULL	/* burner */
 };
 
-int  omfbmatch(struct device *, void *, void *);
+int  omfbmatch(struct device *, struct cfdata *, void *);
 void omfbattach(struct device *, struct device *, void *);
 
-const struct cfattach fb_ca = {
-	sizeof(struct omfb_softc), omfbmatch, omfbattach
-};
-
-struct cfdriver fb_cd = {
-        NULL, "fb", DV_DULL
-};
+CFATTACH_DECL(fb, sizeof(struct omfb_softc),
+    omfbmatch, omfbattach, NULL, NULL);
 
 extern int hwplanebits;	/* hardware plane bits; retrieved at boot */
 
@@ -169,7 +166,7 @@ int omfb_console;
 int omfb_cnattach(void);
 
 int
-omfbmatch(struct device *parent, void *cf, void *aux)
+omfbmatch(struct device *parent, struct cfdata *cf, void *aux)
 {
 	struct mainbus_attach_args *ma = aux;
 
@@ -212,7 +209,6 @@ omfbattach(struct device *parent, struct device *self, void *args)
 	waa.scrdata = &omfb_screenlist;
 	waa.accessops = &omfb_accessops;
 	waa.accesscookie = sc;
-	waa.defaultscreens = 0;
 
 	config_found(self, &waa, wsemuldisplaydevprint);
 }
@@ -225,7 +221,7 @@ omfb_cnattach(void)
 	long defattr;
 
 	omfb_getdevconfig(OMFB_FB_WADDR, dc);
-	ri->ri_ops.alloc_attr(ri, 0, 0, 0, &defattr);
+	ri->ri_ops.allocattr(ri, 0, 0, 0, &defattr);
 	wsdisplay_cnattach(&omfb_stdscreen, ri, 0, 0, defattr);
 	omfb_console = 1;
 	return (0);
@@ -471,7 +467,7 @@ omfb_alloc_screen(void *v, const struct wsscreen_descr *type, void **cookiep,
 	*cookiep = ri;
 	*curxp = 0;
 	*curyp = 0;
-	ri->ri_ops.alloc_attr(ri, 0, 0, 0, attrp);
+	ri->ri_ops.allocattr(ri, 0, 0, 0, attrp);
 	sc->nscreens++;
 	return (0);
 }

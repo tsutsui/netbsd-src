@@ -40,12 +40,15 @@
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/device.h>
+#include <sys/proc.h>
+#include <sys/conf.h>
 #include <sys/ioctl.h>
 #include <sys/fcntl.h>
 
 #include <machine/autoconf.h>
-#include <machine/conf.h>
 #include <machine/lcd.h>
+
+#include "ioconf.h"
 
 #define PIO1_MODE_OUTPUT	0x84
 #define PIO1_MODE_INPUT		0x94
@@ -81,21 +84,34 @@ struct pio {
 };
 
 /* Autoconf stuff */
-int  lcd_match(struct device *, void *, void *);
+int  lcd_match(struct device *, struct cfdata *, void *);
 void lcd_attach(struct device *, struct device *, void *);
+
+dev_type_open(lcdopen);
+dev_type_close(lcdclose);
+dev_type_write(lcdwrite);
+dev_type_ioctl(lcdioctl);
+
+const struct cdevsw lcd_cdevsw = {
+	.d_open     = lcdopen,
+	.d_close    = lcdclose,
+	.d_read     = noread,
+	.d_write    = lcdwrite,
+	.d_ioctl    = lcdioctl,
+	.d_stop     = nostop,
+	.d_tty      = notty,
+	.d_poll     = nopoll,
+	.d_mmap     = nommap,
+	.d_kqfilter = nokqfilter,
+};
 
 struct lcd_softc {
 	struct device sc_dev;
 	int sc_opened;
 };
 
-struct cfattach lcd_ca = {
-	sizeof(struct lcd_softc), lcd_match, lcd_attach
-};
-
-struct cfdriver lcd_cd = {
-	NULL, "lcd", DV_DULL, 0
-};
+CFATTACH_DECL(lcd, sizeof(struct lcd_softc),
+    lcd_match, lcd_attach, NULL, NULL);
 
 /* Internal prototypes */
 void lcdbusywait(void);
@@ -113,7 +129,7 @@ static const char lcd_boot_message2[] = "   SX-9100/DT   ";
  * Autoconf functions
  */
 int
-lcd_match(struct device *parent, void *cf, void *aux)
+lcd_match(struct device *parent, struct cfdata *cf, void *aux)
 {
 	struct mainbus_attach_args *ma = aux;
 

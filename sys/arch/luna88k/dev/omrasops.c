@@ -81,17 +81,16 @@ om_putchar(void *cookie, int row, int startcol, u_int uc, long attr)
 	caddr_t p;
 	int scanspan, startx, height, width, align, y;
 	u_int32_t lmask, rmask, glyph, inverse;
-	int i, fg, bg;
+	int i;
 	u_int8_t *fb;
 
 	scanspan = ri->ri_stride;
 	y = ri->ri_font->fontheight * row;
 	startx = ri->ri_font->fontwidth * startcol;
 	height = ri->ri_font->fontheight;
-	fb = ri->ri_font->data +
+	fb = (uint8_t *)ri->ri_font->data +
 	    (uc - ri->ri_font->firstchar) * ri->ri_fontscale;
-	ri->ri_ops.unpack_attr(cookie, attr, &fg, &bg, NULL);
-	inverse = (bg != 0) ? ALL1BITS : ALL0BITS;
+	inverse = ((attr & 0x00000001) != 0) ? ALL1BITS : ALL0BITS;
 
 	p = (caddr_t)ri->ri_bits + y * scanspan + ((startx / 32) * 4);
 	align = startx & ALIGNMASK;
@@ -345,13 +344,14 @@ om_copycols(void *cookie, int startrow, int srccol, int dstcol, int ncols)
 
     hardluckalignment:
 	/* alignments painfully disagree */
+	return;
 }
 
 /*
  * Position|{enable|disable} the cursor at the specified location.
  */
 void
-om_cursor(void *cookie, int on, int, row, int, col)
+om_cursor(void *cookie, int on, int row, int col)
 {
 	struct rasops_info *ri = cookie;
 	caddr_t p;

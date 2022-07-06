@@ -51,6 +51,8 @@
 #include <luna88k/luna88k/clockvar.h>
 #include <luna88k/dev/timekeeper.h>
 
+#include "ioconf.h"
+
 #define	MK_YEAR0	1970	/* year offset of MK */
 #define	DS_YEAR0	1990	/* year offset of DS */
 
@@ -66,16 +68,11 @@ struct timekeeper_softc {
 #define FROMBCD(x)      (((x) >> 4) * 10 + ((x) & 0xf))
 #define TOBCD(x)        (((x) / 10 * 16) + ((x) % 10))
 
-int  clock_match(struct device *, void *, void *);
+int  clock_match(struct device *, struct cfdata *, void *);
 void clock_attach(struct device *, struct device *, void *);
 
-struct cfattach clock_ca = {
-	sizeof (struct timekeeper_softc), clock_match, clock_attach
-};
-
-struct cfdriver clock_cd = {
-        NULL, "clock", DV_DULL
-};
+CFATTACH_DECL(clock, sizeof(struct timekeeper_softc),
+    clock_match, clock_attach, NULL, NULL);
 
 void mkclock_get(struct device *, time_t, struct clock_ymdhms *);
 void mkclock_set(struct device *, struct clock_ymdhms *);
@@ -91,7 +88,7 @@ const struct clockfns dsclock_clockfns = {
 };
 
 int
-clock_match(struct device *parent, void *match, void *aux)
+clock_match(struct device *parent, struct cfdata *match, void *aux)
 {
 	struct mainbus_attach_args *ma = aux;
 
@@ -190,14 +187,14 @@ mkclock_set(struct device *dev, struct clock_ymdhms *dt)
 }
 
 #define _DS_GET(off, data) \
-	do { *chiptime = (off); (u_int8_t)(data) = (*chipdata); } while (0)
+	do { *chiptime = (off); (data) = (*chipdata); } while (0)
 #define _DS_SET(off, data) \
 	do { *chiptime = (off); *chipdata = (u_int8_t)(data); } while (0)
 #define _DS_GET_BCD(off, data) \
 	do { \
 		u_int8_t c; \
 		*chiptime = (off); \
-		c = *chipdata; (u_int8_t)(data) = FROMBCD(c); \
+		c = *chipdata; (data) = FROMBCD(c); \
 	} while (0)
 #define _DS_SET_BCD(off, data) \
 	do { \
@@ -213,7 +210,7 @@ dsclock_get(struct device *dev, time_t base, struct clock_ymdhms *dt)
 {
 	struct timekeeper_softc *sc = (void *)dev;
 	volatile u_int8_t *chiptime = (void *)sc->sc_clock;
-	volatile u_int8_t *chipdata = (void *)(sc->sc_clock + 1);
+	volatile u_int8_t *chipdata = (u_int8_t *)sc->sc_clock + 1;
 	int s;
 	u_int8_t c;
 
@@ -256,7 +253,7 @@ dsclock_set(struct device *dev, struct clock_ymdhms *dt)
 {
 	struct timekeeper_softc *sc = (void *)dev;
 	volatile u_int8_t *chiptime = (void *)sc->sc_clock;
-	volatile u_int8_t *chipdata = (void *)(sc->sc_clock + 1);
+	volatile u_int8_t *chipdata = (u_int8_t *)sc->sc_clock + 1;
 	int s;
 	u_int8_t c;
 
