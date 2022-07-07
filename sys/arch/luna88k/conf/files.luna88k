@@ -73,5 +73,6 @@ file	arch/luna88k/luna88k/isr.c
 file	arch/luna88k/luna88k/machdep.c
 file	arch/luna88k/luna88k/mem.c
 file	arch/luna88k/luna88k/pmap_table.c
+file	dev/cons.c
 
 include "arch/luna88k/conf/majors.luna88k"
