@@ -66,7 +66,6 @@ include "dev/scsipi/files.scsipi"
 file	arch/luna88k/luna88k/clock.c
 
 file	arch/luna88k/luna88k/autoconf.c
-file	arch/luna88k/luna88k/conf.c
 file	arch/luna88k/luna88k/m8820x.c
 file	arch/luna88k/luna88k/disksubr.c
 file	arch/luna88k/luna88k/eh.S
