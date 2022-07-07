@@ -177,7 +177,51 @@ readdisklabel(dev_t dev, void (*strat)(struct buf *),
 	return "no disk label";
 }
 
+/*
+ * Check new disk label for sensibility
+ * before setting it.
+ */
+int
+setdisklabel(olp, nlp, openmask, clp)
+	struct disklabel *olp, *nlp;
+	u_long openmask;
+	struct cpu_disklabel *clp;
+{
+	struct partition *opp, *npp;
+	int i;
 
+	/* sanity clause */
+	if ((nlp->d_secpercyl == 0) || (nlp->d_secsize == 0) ||
+	    (nlp->d_secsize % DEV_BSIZE) != 0)
+		return (EINVAL);
+
+	/* special case to allow disklabel to be invalidated */
+	if (nlp->d_magic == 0xffffffff) {
+		*olp = *nlp;
+		return (0);
+	}
+
+	if (nlp->d_magic != DISKMAGIC ||
+	    nlp->d_magic2 != DISKMAGIC ||
+	    dkcksum(nlp) != 0)
+		return (EINVAL);
+
+	while (openmask != 0) {
+		i = ffs(openmask) - 1;
+		openmask &= ~(1 << i);
+		if (nlp->d_npartitions <= i)
+			return (EBUSY);
+		opp = &olp->d_partitions[i];
+		npp = &nlp->d_partitions[i];
+		if (npp->p_offset != opp->p_offset ||
+		    npp->p_size < opp->p_size)
+			return (EBUSY);
+	}
+
+	/* We did not modify the new label, so the checksum is OK. */
+	*olp = *nlp;
+	return (0);
+}
 
 /*
  * Write disk label back to device after modification.
@@ -214,6 +258,60 @@ writedisklabel(dev_t dev, void (*strat)(struct buf *),
 	brelse(bp);
 
 	return (error);
+}
+
+/*
+ * Determine the size of the transfer, and make sure it is
+ * within the boundaries of the partition. Adjust transfer
+ * if needed, and signal errors or early completion.
+ */
+int
+bounds_check_with_label(dk, bp, wlabel)
+	struct disk *dk;
+	struct buf *bp;
+	int wlabel;
+{
+	struct disklabel *lp = dk->dk_label;
+	struct partition *p;
+	int sz, maxsz;
+
+	p = lp->d_partitions + DISKPART(bp->b_dev);
+	maxsz = p->p_size;
+	sz = (bp->b_bcount + DEV_BSIZE - 1) >> DEV_BSHIFT;
+
+	/* overwriting disk label ? */
+	/* XXX should also protect bootstrap in first 8K */
+	/* XXX PR#2598: labelsect is always sector zero. */
+	if (((bp->b_blkno + p->p_offset) <= LABELSECTOR) &&
+	    ((bp->b_flags & B_READ) == 0) && (wlabel == 0))
+	{
+		bp->b_error = EROFS;
+		goto bad;
+	}
+
+	/* beyond partition? */
+	if (bp->b_blkno < 0 || bp->b_blkno + sz > maxsz) {
+		/* if exactly at end of disk, return an EOF */
+		if (bp->b_blkno == maxsz) {
+			bp->b_resid = bp->b_bcount;
+			return (0);
+		}
+		/* or truncate if part of it fits */
+		sz = maxsz - bp->b_blkno;
+		if (sz <= 0) {
+			bp->b_error = EINVAL;
+			goto bad;
+		}
+		bp->b_bcount = sz << DEV_BSHIFT;
+	}
+
+	/* calculate cylinder for disksort to order transfers with */
+	bp->b_cylinder = (bp->b_blkno + p->p_offset) / lp->d_secpercyl;
+	return (1);
+
+bad:
+	bp->b_flags |= B_ERROR;
+	return (-1);
 }
 
 /************************************************************************
