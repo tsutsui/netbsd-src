@@ -91,7 +91,7 @@ exit_program(int argc, char *argv[])
 static const char helpmsg[] =
 	"commands are:\n"
 	"boot [device(unit,part)filename]\n"
-	" (ex. \"boot sd(0,0)bsd\", \"boot le(0,0)obsd\" etc.)\n"
+	" (ex. \"boot sd(0,0)netbsd\", \"boot le(0,0)onetbsd\" etc.)\n"
 	"help\n"
 	"exit\n"
 ;

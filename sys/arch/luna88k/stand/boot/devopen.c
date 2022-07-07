@@ -184,7 +184,7 @@ make_device(const char *str, int *devp, int *unitp, int *partp, char **fname)
 	*partp = part;
 	cp++;
 	if (*cp == '\0')
-		*fname = "bsd";
+		*fname = "netbsd";
 	else
 		*fname = (char *)cp;	/* XXX */
 #ifdef DEBUG

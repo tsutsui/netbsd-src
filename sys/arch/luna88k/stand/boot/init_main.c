@@ -116,7 +116,6 @@ static const char *nvram_by_symbol(char *);
 int cpuspeed;	/* for DELAY() macro */
 int machtype;
 char default_file[64];
-char upgrade_file[64];
 
 uint16_t dipswitch = 0;
 int nplane;
@@ -219,14 +218,7 @@ main(void)
 	nvv = nvram_by_symbol("boot_device");
 
 	snprintf(default_file, sizeof(default_file),
-	    "%s(%d,%d)%s", nvv != NULL ? nvv : "sd", unit, part, "bsd");
-	snprintf(upgrade_file, sizeof(upgrade_file),
-	    "%s(%d,%d)%s", nvv != NULL ? nvv : "sd", unit, part, "bsd.upgrade");
-
-	if (exist(upgrade_file)) {
-		strlcpy(default_file, upgrade_file, sizeof(default_file));
-		printf("upgrade detected: switching to %s\n", default_file);
-	}
+	    "%s(%d,%d)%s", nvv != NULL ? nvv : "sd", unit, part, "netbsd");
 
 	/* auto-boot? (SW1) */
 	if ((dipswitch & 0x8000) != 0) {
