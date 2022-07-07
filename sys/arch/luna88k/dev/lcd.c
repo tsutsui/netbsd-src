@@ -122,7 +122,7 @@ void greeting(void);
 
 /* Internal variables */
 				     /* "1234567890123456" */
-static const char lcd_boot_message1[] = "OpenBSD/luna88k ";
+static const char lcd_boot_message1[] = " NetBSD/luna88k ";
 static const char lcd_boot_message2[] = "   SX-9100/DT   ";
 
 /*
