@@ -143,7 +143,7 @@ ASLOCAL(main_start)
 	or	r2, r2, lo16(_C_LABEL(edata))
 	or.u	r4, r0, hi16(_C_LABEL(end))
 	or	r4, r4, lo16(_C_LABEL(end))
-	bsr.n	_bzero		/* bzero(edata, end-edata) */
+	bsr.n	_C_LABEL(bzero)		/* bzero(edata, end-edata) */
 	 subu	r3, r4, r2
 
 	/*
@@ -210,19 +210,19 @@ ASLOCAL(main_init)
 	ld.bu	r12, r11, lo16(0x49000004)	/* dipsw-2 (from portB) */
 	or	r10, r10, r12
 
-	or.u	r11, r0,  hi16(_dipswitch)
-	st.h	r10, r11, lo16(_dipswitch)
+	or.u	r11, r0,  hi16(_C_LABEL(dipswitch))
+	st.h	r10, r11, lo16(_C_LABEL(dipswitch))
 
 	bb1	14, r10, 1f			/* XXX: if dipsw-1:2 is on, */
 	or	r10, r0, r0			/* XXX: console is ttya */
-	or.u	r11, r0, hi16(_sysconsole)
-	st	r10, r11, lo16(_sysconsole)
+	or.u	r11, r0, hi16(_C_LABEL(sysconsole))
+	st	r10, r11, lo16(_C_LABEL(sysconsole))
 
 1:
 	/* read frame buffer depth from ROM work area */
 	ld	r10, r0,  lo16(0x00001114)	/* frame buffer depth */
-	or.u	r11, r0,  hi16(_hwplanebits)
-	st	r10, r11, lo16(_hwplanebits)
+	or.u	r11, r0,  hi16(_C_LABEL(hwplanebits))
+	st	r10, r11, lo16(_C_LABEL(hwplanebits))
 
 	or	r10,  r0, 0x84			/* initialize pio1 */
 	or.u	r11,  r0, hi16(0x4d00000c)
@@ -333,8 +333,8 @@ GLOBAL(cpu_boot_secondary_processors)
  */
 
 GLOBAL(delay)
-	or.u	r3, r0, hi16(_cpuspeed)
-	ld	r3, r3, lo16(_cpuspeed)
+	or.u	r3, r0, hi16(_C_LABEL(cpuspeed))
+	ld	r3, r3, lo16(_C_LABEL(cpuspeed))
 	mul	r4, r2, r3
 	subu	r4, r4, 4	/* overhead of these instructions */
 
