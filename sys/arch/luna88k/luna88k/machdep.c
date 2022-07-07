@@ -67,8 +67,11 @@
 #include <sys/conf.h>
 #include <sys/malloc.h>
 #include <sys/mount.h>
+#include <sys/mbuf.h>
 #include <sys/msgbuf.h>
+#include <sys/sa.h>
 #include <sys/syscallargs.h>
+#include <sys/ksyms.h>
 #ifdef SYSVMSG
 #include <sys/msg.h>
 #endif
@@ -110,8 +113,10 @@ void	dumpsys(void);
 int	getcpuspeed(void);
 u_int	getipl(void);
 void	identifycpu(void);
+int	cpu_dumpsize(void);
+u_long	cpu_dump_mempagecnt(void);
+int	cpu_dump(dev_type_dump((*dump)), daddr_t *blknop);
 void	luna88k_bootstrap(void);
-void	savectx(struct pcb *);
 void	secondary_main(void);
 void	secondary_pre_main(void);
 void	setlevel(unsigned int);
@@ -181,21 +186,8 @@ vaddr_t obiova;
 int physmem;	  /* available physical memory, in pages */
 
 struct vm_map *exec_map = NULL;
+struct vm_map *mb_map = NULL;
 struct vm_map *phys_map = NULL;
-
-/*
- * Declare these as initialized data so we can patch them.
- */
-#ifndef BUFCACHEPERCENT
-#define BUFCACHEPERCENT 5
-#endif
-
-#ifdef	BUFPAGES
-int bufpages = BUFPAGES;
-#else
-int bufpages = 0;
-#endif
-int bufcachepercent = BUFCACHEPERCENT;
 
 /*
  * Info for CTL_HW
@@ -246,7 +238,9 @@ struct consdev romttycons = {
 	romttycnputc,
 	nullcnpollc,
 	NULL,
-	makedev(14, 0),
+	NULL,
+	NULL,
+	makedev(7, 0),
 	CN_NORMAL,
 };
 
@@ -266,9 +260,14 @@ consinit(void)
                 ws_cnattach();
         }
 
+#if NKSYMS || defined(DDB) || defined(LKM)
+	{
+		extern int end;
+
+		ksyms_init(*(int *)&end, ((int *)&end) + 1, esym);
+	}
+#endif
 #if defined(DDB)
-	db_machine_init();
-	ddb_init();
 	if (boothowto & RB_KDB)
 		Debugger();
 #endif
@@ -352,6 +351,7 @@ identifycpu(void)
 void
 cpu_startup(void)
 {
+	char pbuf[9];
 	caddr_t v;
 	int sz, i;
 	vaddr_t minaddr, maxaddr;
@@ -381,7 +381,8 @@ cpu_startup(void)
 	 */
 	printf(version);
 	identifycpu();
-	printf("real mem  = %d\n", ctob(physmem));
+	format_bytes(pbuf, sizeof(pbuf), ctob(physmem));
+	printf("total memory = %s\n", pbuf);
 
 	/*
 	 * Check front DIP switch setting
@@ -402,7 +403,7 @@ cpu_startup(void)
 
 	/* Check DIP switch 1 - 4 */
 	if ((0x1000 & dipswitch) == 0) {
-		boothowto |= RB_CONFIG;
+		boothowto |= RB_USERCONF;
 	}
 
 	/*
@@ -459,19 +460,6 @@ cpu_startup(void)
 		panic("obiova %lx: OBIO not free", obiova);
 
 	/*
-	 * Determine how many buffers to allocate.
-	 * We allocate bufcachepercent% of memory for buffer space.
-	 */
-	if (bufpages == 0)
-		bufpages = physmem * bufcachepercent / 100;
-
-	/* Restrict to at most 25% filled kvm */
-	if (bufpages >
-	    (VM_MAX_KERNEL_ADDRESS-VM_MIN_KERNEL_ADDRESS) / PAGE_SIZE / 4) 
-		bufpages = (VM_MAX_KERNEL_ADDRESS-VM_MIN_KERNEL_ADDRESS) /
-		    PAGE_SIZE / 4;
-
-	/*
 	 * Allocate a submap for exec arguments.  This map effectively
 	 * limits the number of processes exec'ing at any time.
 	 */
@@ -485,28 +473,19 @@ cpu_startup(void)
 	phys_map = uvm_km_suballoc(kernel_map, &minaddr, &maxaddr,
 	    VM_PHYS_SIZE, 0, FALSE, NULL);
 
-	printf("avail mem = %ld (%d pages)\n", ptoa(uvmexp.free), uvmexp.free);
-
 	/*
-	 * Set up buffers, so they can be used to read disk labels.
+	 * Finally, allocate mbuf cluster submap.
 	 */
-	bufinit();
+	mb_map = uvm_km_suballoc(kernel_map, &minaddr, &maxaddr,
+	    nmbclusters * mclbytes, VM_MAP_INTRSAFE, FALSE, NULL);
+
+	format_bytes(pbuf, sizeof(pbuf), ptoa(uvmexp.free));
+	printf("avail memory = %s\n", pbuf);
 
 	/*
 	 * Initialize the autovectored interrupt list.
 	 */
 	isrinit();
-
-	/*
-	 * Configure the system.
-	 */
-	if (boothowto & RB_CONFIG) {
-#ifdef BOOT_CONFIG
-		user_config();
-#else
-		printf("kernel does not support -c; continuing..\n");
-#endif
-	}
 }
 
 /*
@@ -535,18 +514,16 @@ allocsys(caddr_t v)
 	return v;
 }
 
-__dead void
-boot(int howto)
+void
+cpu_reboot(int howto, char *bootstr)
 {
 	/* take a snapshot before clobbering any registers */
-	if (curproc && curproc->p_addr)
-		savectx(curpcb);
+	if (curlwp && curlwp->l_addr)
+		savectx(&curlwp->l_addr->u_pcb.kernel_state);
 
 	/* If system is cold, just halt. */
 	if (cold) {
-		/* (Unless the user explicitly asked for reboot.) */
-		if ((howto & RB_USERREQ) == 0)
-			howto |= RB_HALT;
+		howto |= RB_HALT;
 		goto haltsys;
 	}
 
@@ -558,10 +535,7 @@ boot(int howto)
 		 * will be out of synch; adjust it now unless
 		 * the system was sitting in ddb.
 		 */
-		if ((howto & RB_TIMEBAD) == 0)
-			resettodr();
-		else
-			printf("WARNING: not updating battery clock\n");
+		resettodr();
 	}
 
 	/* Disable interrupts. */
@@ -593,10 +567,34 @@ haltsys:
 	/*NOTREACHED*/
 }
 
-unsigned dumpmag = 0x8fca0101;	 /* magic number for savecore */
+u_int32_t dumpmag = 0x8fca0101;	 /* magic number for savecore */
 int   dumpsize = 0;	/* also for savecore */
 long  dumplo = 0;
-cpu_kcore_hdr_t cpu_kcore_hdr;
+
+/*
+ * cpu_dumpsize: calculate the size of machine-dependent crash dump header.
+ *               Returns size in disk blocks.
+ */
+
+#define CHDRSIZE (ALIGN(sizeof(kcore_seg_t)) + ALIGN(sizeof(cpu_kcore_hdr_t)))
+#define MDHDRSIZE roundup(CHDRSIZE, dbtob(1))
+
+int
+cpu_dumpsize(void)
+{
+
+	return btodb(MDHDRSIZE);
+}
+
+/*
+ * cpu_dump_mempagecnt: calculate size of RAM (in pages) to be dumped.
+ */
+u_long
+cpu_dump_mempagecnt(void)
+{
+
+	return physmem;
+}
 
 /*
  * This is called by configure to set dumplo and dumpsize.
@@ -606,22 +604,24 @@ cpu_kcore_hdr_t cpu_kcore_hdr;
  * reduce the chance that swapping trashes it.
  */
 void
-dumpconf(void)
+cpu_dumpconf(void)
 {
+	const struct bdevsw *bdev;
 	int nblks;	/* size of dump area */
 
-	if (dumpdev == NODEV ||
-	    (nblks = (bdevsw[major(dumpdev)].d_psize)(dumpdev)) == 0)
-		return;
+	if (dumpdev == NODEV)
+		goto bad;
+
+	bdev = bdevsw_lookup(dumpdev);
+	if (bdev == NULL)
+		panic("dumpconf: bad dumpdev=0x%x", dumpdev);
+
+	if (bdev->d_psize == NULL)
+		goto bad;
+
+	nblks = (*bdev->d_psize)(dumpdev);
 	if (nblks <= ctod(1))
-		return;
-
-	dumpsize = physmem;
-
-	/* luna88k only uses a single segment. */
-	cpu_kcore_hdr.ram_segs[0].start = 0;
-	cpu_kcore_hdr.ram_segs[0].size = ctob(physmem);
-	cpu_kcore_hdr.cputype = cputyp;
+		goto bad;
 
 	/*
 	 * Don't dump on the first block
@@ -630,12 +630,54 @@ dumpconf(void)
 	if (dumplo < ctod(1))
 		dumplo = ctod(1);
 
+	/* Make dump fit in available space. */
+	if (dumpsize > dtoc(nblks - (dumplo + cpu_dumpsize())))
+		dumpsize = dtoc(nblks - (dumplo + cpu_dumpsize()));
+
+	/* dumpsize is in page units, and doesn't include headers. */
+	dumpsize = cpu_dump_mempagecnt();
+
 	/* Put dump at end of partition, and make it fit. */
-	if (dumpsize + 1 > dtoc(nblks - dumplo))
-		dumpsize = dtoc(nblks - dumplo) - 1;
-	if (dumplo < nblks - ctod(dumpsize) - 1)
-		dumplo = nblks - ctod(dumpsize) - 1;
+	if (dumplo < (nblks - (ctod(dumpsize) + cpu_dumpsize())))
+		dumplo = nblks - (ctod(dumpsize) + cpu_dumpsize());
+
+	return;
+
+ bad:
+	dumpsize = 0;
 }
+
+int
+cpu_dump(dev_type_dump((*dump)), daddr_t *blknop)
+{
+	u_int8_t buf[MDHDRSIZE]; 
+	cpu_kcore_hdr_t *chdr;
+	kcore_seg_t *kseg;
+	int error;
+
+	memset(buf, 0, sizeof buf);
+	kseg = (kcore_seg_t *)buf;
+	chdr = (cpu_kcore_hdr_t *)&buf[ALIGN(sizeof(kcore_seg_t))];
+
+	/* Create the segment header. */
+	CORE_SETMAGIC(*kseg, KCORE_MAGIC, MID_MACHINE, CORE_CPU);
+	kseg->c_size = MDHDRSIZE - ALIGN(sizeof(kcore_seg_t));
+
+	/*
+	 * Add the machine-dependent header info.
+	 */
+	chdr->cputype = cputyp;
+	/* luna88k only uses a single segment. */
+	chdr->ram_segs[0].start = 0;
+	chdr->ram_segs[0].size = ctob(physmem);
+
+	error = (*dump)(dumpdev, *blknop, (caddr_t)buf, sizeof(buf));
+	*blknop += btodb(sizeof(buf));
+
+	return error;
+}
+
+struct pcb dumppcb;
 
 /*
  * Doadump comes here after turning off memory management and
@@ -645,85 +687,79 @@ dumpconf(void)
 void
 dumpsys(void)
 {
-	int maj;
+	const struct bdevsw *bdev;
+	u_long totalbytesleft, i, n;
+	paddr_t maddr;
 	int psize;
-	daddr64_t blkno;	/* current block to write */
-				/* dump routine */
-	int (*dump)(dev_t, daddr64_t, caddr_t, size_t);
-	int pg;			/* page being dumped */
-	paddr_t maddr;		/* PA being dumped */
-	int error;		/* error code from (*dump)() */
-	kcore_seg_t *kseg_p;
-	cpu_kcore_hdr_t *chdr_p;
-	char dump_hdr[dbtob(1)];	/* XXX assume hdr fits in 1 block */
+	daddr_t blkno;
+	int (*dump) __P((dev_t, daddr_t, caddr_t, size_t));
+	int error;
 
-	extern int msgbufmapped;
+	/* Save registers. */
+	savectx(&dumppcb.pcb_sf);
 
-	msgbufmapped = 0;
-
-	/* Make sure dump device is valid. */
 	if (dumpdev == NODEV)
 		return;
-	if (dumpsize == 0) {
-		dumpconf();
-		if (dumpsize == 0)
-			return;
-	}
-	maj = major(dumpdev);
-	if (dumplo < 0) {
-		printf("\ndump to dev %u,%u not possible\n", maj,
+	bdev = bdevsw_lookup(dumpdev);
+	if (bdev == NULL || bdev->d_psize == NULL)
+		return;
+
+	/*
+	 * For dumps during autoconfiguration,
+	 * if dump device has already configured...
+	 */
+	if (dumpsize == 0)
+		cpu_dumpconf();
+	if (dumplo <= 0) {
+		printf("\ndump to dev %u,%u not possible\n", major(dumpdev),
 		    minor(dumpdev));
 		return;
 	}
-	dump = bdevsw[maj].d_dump;
-	blkno = dumplo;
-
-	printf("\ndumping to dev %u,%u offset %ld\n", maj,
+	printf("\ndumping to dev %u,%u offset %ld\n", major(dumpdev),
 	    minor(dumpdev), dumplo);
 
-	/* Setup the dump header */
-	kseg_p = (kcore_seg_t *)dump_hdr;
-	chdr_p = (cpu_kcore_hdr_t *)&dump_hdr[ALIGN(sizeof(*kseg_p))];
-	bzero(dump_hdr, sizeof(dump_hdr));
-
-	CORE_SETMAGIC(*kseg_p, KCORE_MAGIC, MID_MACHINE, CORE_CPU);
-	kseg_p->c_size = dbtob(1) - ALIGN(sizeof(*kseg_p));
-	*chdr_p = cpu_kcore_hdr;
-
+	psize = (*bdev->d_psize)(dumpdev);
 	printf("dump ");
-	psize = (*bdevsw[maj].d_psize)(dumpdev);
 	if (psize == -1) {
 		printf("area unavailable\n");
 		return;
 	}
 
-	/* Dump the header. */
-	error = (*dump)(dumpdev, blkno++, (caddr_t)dump_hdr, dbtob(1));
-	if (error != 0)
-		goto abort;
+	/* XXX should purge all outstanding keystrokes. */
 
+	dump = bdev->d_dump;
+	blkno = dumplo;
+
+	if ((error = cpu_dump(dump, &blkno)) != 0)
+		goto err;
+
+	totalbytesleft = ptoa(dumpsize);
 	maddr = (paddr_t)0;
-	for (pg = 0; pg < dumpsize; pg++) {
-#define NPGMB	(1024 * 1024 / PAGE_SIZE)
-		/* print out how many MBs we have dumped */
-		if (pg != 0 && (pg % NPGMB) == 0)
-			printf("%d ", pg / NPGMB);
-#undef NPGMB
+
+	for (i = 0; i < totalbytesleft; i += n, totalbytesleft -= n) {
+
+		/* Print out how many MBs we have left to go. */
+		if ((totalbytesleft % (1024*1024)) == 0)
+			printf("%ld ", totalbytesleft / (1024 * 1024));
+
+		/* Limit size for next transfer. */
+		n = totalbytesleft - i;
+		if (n > PAGE_SIZE)
+			n = PAGE_SIZE;
+
 		pmap_enter(pmap_kernel(), (vaddr_t)vmmap, maddr,
 		    VM_PROT_READ, VM_PROT_READ|PMAP_WIRED);
+		pmap_update(pmap_kernel());
 
-		error = (*dump)(dumpdev, blkno, vmmap, PAGE_SIZE);
-		if (error == 0) {
-			maddr += PAGE_SIZE;
-			blkno += btodb(PAGE_SIZE);
-		} else
-			break;
+		error = (*dump)(dumpdev, blkno, vmmap, n);
+		if (error)
+			goto err;
+		maddr += n;
+		blkno += btodb(n);
 	}
-abort:
+
+ err:
 	switch (error) {
-	case 0:
-		printf("succeeded\n");
-		break;
 
 	case ENXIO:
 		printf("device bad\n");
@@ -745,10 +781,15 @@ abort:
 		printf("aborted from console\n");
 		break;
 
+	case 0:
+		printf("succeeded\n");
+		break;
+
 	default:
 		printf("error %d\n", error);
 		break;
 	}
+	printf("\n\n");
 }
 
 #ifdef MULTIPROCESSOR
@@ -766,6 +807,9 @@ secondary_pre_main(void)
 
 	set_cpu_number(cmmu_cpu_number());
 	ci = curcpu();
+	ci->ci_curlwp = &lwp0;
+
+	splhigh();
 
 	/*
 	 * Setup CMMUs and translation tables (shared with the master cpu).
@@ -793,9 +837,10 @@ secondary_main(void)
 	struct cpu_info *ci = curcpu();
 
 	cpu_configuration_print(0);
-	ncpus++;
+	__cpu_simple_unlock(&cpu_mutex);
 
 	microuptime(&ci->ci_schedstate.spc_runtime);
+	ci->ci_curlwp = NULL;
 
 	/*
 	 * Upon return, the secondary cpu bootstrap code in locore will
@@ -896,7 +941,7 @@ cpu_exec_aout_makecmds(struct proc *p, struct exec_package *epp)
 }
 
 int
-sys_sysarch(struct proc *p, void *v, register_t *retval)
+sys_sysarch(struct lwp *l, void *v, register_t *retval)
 {
 #if 0
 	struct sys_sysarch_args	/* {
@@ -911,29 +956,19 @@ sys_sysarch(struct proc *p, void *v, register_t *retval)
 /*
  * machine dependent system variables.
  */
-
-int
-cpu_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp, void *newp,
-    size_t newlen, struct proc *p)
+SYSCTL_SETUP(sysctl_machdep_setup, "sysctl machdep subtree setup")
 {
-	dev_t consdev;
+	sysctl_createv(clog, 0, NULL, NULL,
+		       CTLFLAG_PERMANENT,
+		       CTLTYPE_NODE, "machdep", NULL,
+		       NULL, 0, NULL, 0,
+		       CTL_MACHDEP, CTL_EOL);
 
-	/* all sysctl names are this level are terminal */
-	if (namelen != 1)
-		return (ENOTDIR); /* overloaded */
-
-	switch (name[0]) {
-	case CPU_CONSDEV:
-		if (cn_tab != NULL)
-			consdev = cn_tab->cn_dev;
-		else
-			consdev = NODEV;
-		return (sysctl_rdstruct(oldp, oldlenp, newp, &consdev,
-		    sizeof consdev));
-	default:
-		return (EOPNOTSUPP);
-	}
-	/*NOTREACHED*/
+	sysctl_createv(clog, 0, NULL, NULL,
+		       CTLFLAG_PERMANENT,
+		       CTLTYPE_STRUCT, "console_device", NULL,
+		       sysctl_consdev, 0, NULL, sizeof(dev_t),
+		       CTL_MACHDEP, CPU_CONSDEV, CTL_EOL);
 }
 
 /*
@@ -977,7 +1012,9 @@ luna88k_bootstrap(void)
 	master_cpu = cmmu_init();
 	set_cpu_number(master_cpu);
 
+#if 0
 	m88100_apply_patches();
+#endif
 
 	/*
 	 * Now that set_cpu_number() set us with a valid cpu_info pointer,
@@ -985,8 +1022,7 @@ luna88k_bootstrap(void)
 	 * fault handler to behave properly [except for badaddr() faults,
 	 * which can be taken care of without a valid curcpu()].
 	 */
-	proc0.p_addr = proc0paddr;
-	curproc = &proc0;
+	lwp0.l_addr = proc0paddr;
 	curpcb = &proc0paddr->u_pcb;
 
 	avail_start = first_addr;
