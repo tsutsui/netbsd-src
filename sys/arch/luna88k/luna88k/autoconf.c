@@ -1,3 +1,4 @@
+/*	$NetBSD$	*/
 /*	$OpenBSD: autoconf.c,v 1.11 2007/06/01 19:25:10 deraadt Exp $	*/
 /*
  * Copyright (c) 1998 Steve Murphree, Jr.
@@ -33,24 +34,14 @@
  */
 #include <sys/param.h>
 #include <sys/systm.h>
-#include <sys/buf.h>
-#include <sys/dkstat.h>
-#include <sys/reboot.h>
 #include <sys/conf.h>
 #include <sys/device.h>
-#include <sys/disklabel.h>
-#include <sys/kernel.h>
 
 #include <machine/asm_macro.h>   /* enable/disable interrupts */
 #include <machine/autoconf.h>
-#include <machine/cpu.h>
-#include <machine/disklabel.h>
-#include <machine/vmparam.h>
 
-#include <scsi/scsi_all.h>
-#include <scsi/scsiconf.h>
-
-#include <dev/cons.h>
+#include <dev/scsipi/scsi_all.h>
+#include <dev/scsipi/scsiconf.h>
 
 /*
  * The following several variables are related to
@@ -58,14 +49,7 @@
  * the machine.
  */
 
-void	dumpconf(void);
 void	get_autoboot_device(void);
-
-int cold = 1;   /* 1 if still booting */
-
-void *bootaddr;
-int bootpart;
-struct device *bootdv;	/* set by device drivers (if found) */
 
 /*
  * called at boot time, configure all devices on the system.
@@ -85,16 +69,15 @@ cpu_configure(void)
 	 */
 	set_psr(get_psr() & ~PSR_IND);
 	spl0();
-	cold = 0;
 }
 
 void
-diskconf(void)
+cpu_rootconf(void)
 {
+
 	printf("boot device: %s\n",
-	    (bootdv) ? bootdv->dv_xname : "<unknown>");
-	setroot(bootdv, 0, RB_USERREQ);
-	dumpconf();
+	    (booted_device) ? booted_device->dv_xname : "<unknown>");
+	setroot(booted_device, booted_partition);
 }
 
 /*
@@ -156,24 +139,17 @@ device_register(struct device *dev, void *aux)
          */
         if (strncmp("sd", dev->dv_xname, 2) == 0 ||
             strncmp("cd", dev->dv_xname, 2) == 0) {
-		struct scsi_attach_args *sa = aux;
+		struct scsipibus_attach_args *sa = aux;
 		struct device *spcsc;
 
 		spcsc = dev->dv_parent->dv_parent;
 
                 if (strncmp(autoboot.cont, spcsc->dv_xname, 4) == 0 &&
-		    sa->sa_sc_link->target == autoboot.targ &&
-		    sa->sa_sc_link->lun == 0) {
-                        bootdv = dev;
-			bootpart = autoboot.part;
+		    sa->sa_periph->periph_target == autoboot.targ &&
+		    sa->sa_periph->periph_lun == 0) {
+                        booted_device = dev;
+			booted_partition = autoboot.part;
                         return;
                 }
         }
 }
-
-struct nam2blk nam2blk[] = {
-	{ "sd",		4 },
-	{ "st",		5 },
-	{ "rd",		7 },
-	{ NULL,		-1 }
-};

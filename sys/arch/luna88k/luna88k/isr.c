@@ -150,7 +150,7 @@ isrdispatch_autovec(int ipl)
 {
 	struct isr_autovec *isr;
 	isr_autovec_list_t *list;
-	int rc, handled = 0;
+	int handled = 0;
 	static int straycount, unexpected;
 
 #ifdef DIAGNOSTIC
@@ -172,10 +172,7 @@ isrdispatch_autovec(int ipl)
 
 	/* Give all the handlers a chance. */
 	LIST_FOREACH(isr, list, isr_link) {
-		rc = (*isr->isr_func)(isr->isr_arg);
-		if (rc != 0)
-			isr->isr_count.ec_count++;
-		handled |= rc;
+		handled |= (*isr->isr_func)(isr->isr_arg);
 	}
 
 	if (handled)

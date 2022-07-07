@@ -111,37 +111,29 @@ int disklabel_bsd_to_om(struct disklabel *, char *);
  *
  * Returns null on success and an error string on failure.
  */
-char *
+const char *
 readdisklabel(dev_t dev, void (*strat)(struct buf *),
-    struct disklabel *lp, struct cpu_disklabel *clp, int spoofonly)
+    struct disklabel *lp, struct cpu_disklabel *clp)
 {
 	struct buf *bp = NULL;
 	struct disklabel *dlp;
 	struct sun_disklabel *slp;
-	char *msg = NULL;
 	int error, i;
 
 	/* minimal requirements for archetypal disk label */
 	if (lp->d_secsize < DEV_BSIZE)
 		lp->d_secsize = DEV_BSIZE;
-	if (DL_GETDSIZE(lp) == 0)
-		DL_SETDSIZE(lp, MAXDISKSIZE);
-	if (lp->d_secpercyl == 0) {
-		msg = "invalid geometry";
-		goto done;
+	if (lp->d_secperunit == 0) {
+		lp->d_secperunit = 0x1fffffff;
 	}
 	lp->d_npartitions = RAW_PART + 1;
 	for (i = 0; i < RAW_PART; i++) {
-		DL_SETPSIZE(&lp->d_partitions[i], 0);
-		DL_SETPOFFSET(&lp->d_partitions[i], 0);
+		lp->d_partitions[i].p_size = 0;
+		lp->d_partitions[i].p_offset = 0;
 	}
-	if (DL_GETPSIZE(&lp->d_partitions[i]) == 0)
-		DL_SETPSIZE(&lp->d_partitions[i], DL_GETDSIZE(lp));
-	DL_SETPOFFSET(&lp->d_partitions[i], 0);
-
-        /* don't read the on-disk label if we are in spoofed-only mode */
-	if (spoofonly)
-		goto done;
+	if (lp->d_partitions[i].p_size == 0)
+		lp->d_partitions[i].p_size = lp->d_secperunit;
+	lp->d_partitions[i].p_offset = 0;
 
 	/* obtain buffer to probe drive with */
 	bp = geteblk((int)lp->d_secsize);
@@ -151,7 +143,7 @@ readdisklabel(dev_t dev, void (*strat)(struct buf *),
 	bp->b_blkno = LABELSECTOR;
 	bp->b_cylinder = 0;
 	bp->b_bcount = lp->d_secsize;
-	bp->b_flags = B_BUSY | B_READ;
+	bp->b_flags |= B_READ;
 	(*strat)(bp);
 
 	/* if successful, locate disk label within block and validate */
@@ -160,54 +152,29 @@ readdisklabel(dev_t dev, void (*strat)(struct buf *),
 		/* Save the whole block in case it has info we need. */
 		bcopy(bp->b_data, clp->cd_block, sizeof(clp->cd_block));
 	}
+	brelse(bp);
 	if (error) {
-		msg = "disk label read error";
-		goto done;
+		return "disk label read error";
 	}
-
-#if defined(CD9660)
-	if (iso_disklabelspoof(dev, strat, lp) == 0) {
-		msg = NULL;
-		goto done;
-	}
-#endif
-#if defined(UDF)
-	if (udf_disklabelspoof(dev, strat, lp) == 0) {
-		msg = NULL;
-		goto done;
-	}
-#endif
 
 	/* Check for a BSD disk label first. */
 	dlp = (struct disklabel *)(clp->cd_block + LABELOFFSET);
 	if (dlp->d_magic == DISKMAGIC && dlp->d_magic2 == DISKMAGIC) {
 		if (dkcksum(dlp) == 0) {
-			DL_SETDSIZE(dlp, DL_GETDSIZE(lp));
 			*lp = *dlp;	/* struct assignment */
-			msg = NULL;
-			goto done;
+			return NULL;
 		}
-		printf("BSD disk label corrupted");
+		printf("NetBSD disk label corrupted");
 	}
 
 	/* Check for a UniOS/ISI disk label. */
 	slp = (struct sun_disklabel *)clp->cd_block;
 	if (slp->sl_magic == SUN_DKMAGIC) {
-		msg = disklabel_om_to_bsd(clp->cd_block, lp);
-		goto done;
+		return disklabel_om_to_bsd(clp->cd_block, lp);
 	}
 
 	memset(clp->cd_block, 0, sizeof(clp->cd_block));
-	msg = "no disk label";
-
-done:
-	if (bp) {
-		bp->b_flags = B_INVAL | B_AGE | B_READ;
-		brelse(bp);
-	}
-	disklabeltokernlabel(lp);
-	return (msg);
-
+	return "no disk label";
 }
 
 
@@ -309,14 +276,12 @@ disklabel_om_to_bsd(char *cp, struct disklabel *lp)
 
 	secpercyl = sl->sl_nsectors * sl->sl_ntracks;
 	lp->d_secpercyl  = secpercyl;
-	if (DL_GETDSIZE(lp) == 0)
-		DL_SETDSIZE(lp, (daddr64_t)secpercyl * sl->sl_ncylinders);
+	lp->d_secperunit = secpercyl * sl->sl_ncylinders;
 
 	lp->d_sparespercyl = 0;				/* no way to know */
 	lp->d_acylinders   = sl->sl_acylinders;
 	lp->d_rpm          = sl->sl_rpm;		/* UniOS - (empty) */
 	lp->d_interleave   = sl->sl_interleave;		/* UniOS - ndisk */
-	lp->d_version	   = 1;
 
 	if (sl->sl_rpm == 0) {
 		/* UniOS label has blkoffset, not cyloffset */
@@ -330,9 +295,9 @@ disklabel_om_to_bsd(char *cp, struct disklabel *lp)
 	for (i = 0; i < 8; i++) {
 		spp = &sl->sl_part[i];
 		npp = &lp->d_partitions[i];
-		DL_SETPOFFSET(npp, spp->sdkp_cyloffset * secpercyl);
-		DL_SETPSIZE(npp, spp->sdkp_nsectors);
-		if (DL_GETPSIZE(npp) == 0)
+		npp->p_offset = spp->sdkp_cyloffset * secpercyl;
+		npp->p_size = spp->sdkp_nsectors;
+		if (npp->p_size == 0)
 			npp->p_fstype = FS_UNUSED;
 		else {
 			/* Partition has non-zero size.  Set type, etc. */
@@ -346,8 +311,8 @@ disklabel_om_to_bsd(char *cp, struct disklabel *lp)
 			 * XXX: (Should remove that code from newfs...)
 			 */
 			if (npp->p_fstype == FS_BSDFFS) {
-				npp->p_fragblock =
-				   DISKLABELV1_FFS_FRAGBLOCK(1024, 8);
+				npp->p_fsize = 1024;
+				npp->p_frag = 8;
 				npp->p_cpg = 16;
 			}
 		}
@@ -358,7 +323,7 @@ disklabel_om_to_bsd(char *cp, struct disklabel *lp)
 	 * UniOS rootfs sits on part c which don't begin at sect 0,
 	 * and impossible to mount.  Thus, make it usable as part b.
 	 */
-	if (sl->sl_rpm == 0 && DL_GETPOFFSET(&lp->d_partitions[2]) != 0) {
+	if (sl->sl_rpm == 0 && lp->d_partitions[2].p_offset != 0) {
 		lp->d_partitions[1] = lp->d_partitions[2];
 		lp->d_partitions[1].p_fstype = FS_BSDFFS;
 	}
@@ -405,8 +370,8 @@ disklabel_bsd_to_om(struct disklabel *lp, char *cp)
 		spp = &sl->sl_part[i];
 		npp = &lp->d_partitions[i];
 
-		spp->sdkp_cyloffset = DL_GETPOFFSET(npp);	/* UniOS */
-		spp->sdkp_nsectors = DL_GETPSIZE(npp);
+		spp->sdkp_cyloffset = npp->p_offset;	/* UniOS */
+		spp->sdkp_nsectors = npp->p_size;
 	}
 	sl->sl_magic = SUN_DKMAGIC;
 

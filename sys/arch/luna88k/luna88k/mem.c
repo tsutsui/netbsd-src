@@ -42,41 +42,26 @@
 
 #include <sys/param.h>
 #include <sys/buf.h>
+#include <sys/conf.h>
 #include <sys/systm.h>
 #include <sys/uio.h>
 #include <sys/malloc.h>
 
 #include <machine/board.h>
-#include <machine/conf.h>
 
 #include <uvm/uvm_extern.h>
 
+dev_type_read(mmrw);
+dev_type_ioctl(mmioctl);
+dev_type_mmap(mmmmap);
+
+const struct cdevsw mem_cdevsw = {
+	nullopen, nullclose, mmrw, mmrw, mmioctl,
+	nostop, notty, nopoll, mmmmap, nokqfilter,
+};
+
 caddr_t zeropage;
 extern vaddr_t last_addr;
-
-/*ARGSUSED*/
-int
-mmopen(dev_t dev, int flag, int mode, struct proc *p)
-{
-
-	switch (minor(dev)) {
-		case 0:
-		case 1:
-		case 2:
-		case 12:
-			return (0);
-		default:
-			return (ENXIO);
-	}
-}
-
-/*ARGSUSED*/
-int
-mmclose(dev_t dev, int flag, int mode, struct proc *p)
-{
-
-	return (0);
-}
 
 /*ARGSUSED*/
 int
@@ -111,8 +96,7 @@ mmrw(dev_t dev, struct uio *uio, int flags)
 		}
 		switch (minor(dev)) {
 
-/* minor device 0 is physical memory */
-		case 0:
+		case DEV_MEM:
 			/* move one page at a time */
 			v = uio->uio_offset;
 			if (v > last_addr) {
@@ -132,8 +116,7 @@ mmrw(dev_t dev, struct uio *uio, int flags)
 			pmap_update(pmap_kernel());
 			continue;
 
-/* minor device 1 is kernel memory */
-		case 1:
+		case DEV_KMEM:
 			v = uio->uio_offset;
 			c = min(iov->iov_len, MAXPHYS);
 			if (!uvm_kernacc((caddr_t)v, c,
@@ -161,16 +144,14 @@ mmrw(dev_t dev, struct uio *uio, int flags)
 			error = uiomove((caddr_t)v, c, uio);
 			continue;
 
-/* minor device 2 is EOF/RATHOLE */
-		case 2:
+		case DEV_NULL:
 			if (uio->uio_rw == UIO_WRITE)
 				uio->uio_resid = 0;
 			return (0);
 
 /* should add vme bus so that we can do user level probes */
 
-/* minor device 12 (/dev/zero) is source of nulls on read, rathole on write */
-		case 12:
+		case DEV_ZERO:
 			if (uio->uio_rw == UIO_WRITE) {
 				c = iov->iov_len;
 				break;
@@ -189,7 +170,7 @@ mmrw(dev_t dev, struct uio *uio, int flags)
 		}
 		if (error)
 			break;
-		iov->iov_base += c;
+		iov->iov_base = (char *)iov->iov_base + c;
 		iov->iov_len -= c;
 		uio->uio_offset += c;
 		uio->uio_resid -= c;
@@ -207,11 +188,4 @@ paddr_t
 mmmmap(dev_t dev, off_t off, int prot)
 {
 	return (-1);
-}
-
-/*ARGSUSED*/
-int
-mmioctl(dev_t dev, u_long cmd, caddr_t data, int flags, struct proc *p)
-{
-	return (EOPNOTSUPP);
 }
