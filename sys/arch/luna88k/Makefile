@@ -1,34 +1,31 @@
-#	$OpenBSD: Makefile,v 1.5 2006/09/27 09:13:31 grange Exp $
+#	$NetBSD$
 
-S=${.CURDIR}/../..
-.include "$S/kern/Make.tags.inc"
+# Makefile for luna88k tags file
 
-NOPROG=
-NOMAN=
-NOOBJ=
+# Find where m88k source files are for inclusion in tags
+.include <../m88k/Makefile.inc>
 
-SUBDIR=
+TLUNA88K=	../luna88k/tags
+SLUNA88K=	../luna88k/luna88k/*.[ch] ../luna88k/include/*.h \
+		../luna88k/dev/*.[ch]
+ALUNA88K=	../luna88k/luna88k/*.[sS]
 
-TLUNA88K=	$S/arch/luna88k/tags
-SLUNA88K=	$S/arch/luna88k/luna88k/*.[ch] \
-		$S/arch/luna88k/dev/*.[ch] \
-		$S/arch/luna88k/include/*.h
-ALUNA88K=	$S/arch/luna88k/luna88k/*.[sS]
+# Directories in which to place tags links
+DLUNA88K=	dev include
 
-# Directories in which to place luna88k tags links
-DLUNA88K=	conf dev include luna88k
+.include "../../kern/Make.tags.inc"
 
 tags:
-	-ctags -wdtf ${TLUNA88K} ${COMM} ${SLUNA88K}
+	-ctags -wdtf ${TLUNA88K} ${SLUNA88K} ${COMM}
 	egrep "^ENTRY(.*)|^ALTENTRY(.*)" ${ALUNA88K} | \
-	    sed "s;\([^:]*\):\([^(]*\)(\([^, )]*\)\(.*\);\3	\1	/^\2(\3\4$$/;" \
-		>> ${TLUNA88K}
+	    sed "s;\([^:]*\):\([^(]*\)(\([^, )]*\)\(.*\);\3 \1 /^\2(\3\4$$/;" \
+	    >> ${TLUNA88K}
 	sort -o ${TLUNA88K} ${TLUNA88K}
 
 links:
 	-for i in ${DLUNA88K}; do \
-	    (cd $$i && rm -f tags; ln -s ${TLUNA88K} tags); done
+	    cd $$i && rm -f tags; ln -s ../tags tags; done
 
-obj:	_SUBDIRUSE
+SUBDIR=	compile include stand
 
-.include <bsd.prog.mk>
+.include <bsd.subdir.mk>
