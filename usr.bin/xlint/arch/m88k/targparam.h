@@ -45,7 +45,7 @@
 
 #define	PTRDIFF_IS_LONG		0
 #define	SIZEOF_IS_ULONG		0
-#define	INTPTR_IS_LONG		0
+#define	INTPTR_IS_LONG		1
 
 #define	FLOAT_SIZE		(4 * CHAR_BIT)
 #define	DOUBLE_SIZE		(8 * CHAR_BIT)
