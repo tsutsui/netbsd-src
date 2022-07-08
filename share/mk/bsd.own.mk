@@ -422,8 +422,11 @@ NOPIC=		# defined
 #
 # The m88k port is incomplete.
 #
-.if ${MACHINE_ARCH} == "m88k" && ${OBJECT_FMT} == "ELF"
+.if ${MACHINE_ARCH} == "m88k"
 NOPIC=		# defined
+MKGDB=		no
+# XXX tools/lint2 got signal 11 in lib/libkstream
+NOLINT=		# defined
 .endif
 
 #
