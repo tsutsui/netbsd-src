@@ -43,7 +43,6 @@ INCS=	ansi.h \
 	trap.h \
 	types.h \
 	userret.h \
-	va-m88k.h \
 	varargs.h \
 	vmparam.h \
 	wchar_limits.h
