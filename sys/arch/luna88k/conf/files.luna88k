@@ -76,4 +76,7 @@ file	arch/luna88k/luna88k/pmap_table.c
 file	arch/m88k/m88k/procfs_machdep.c			procfs
 file	dev/cons.c
 
+# memory disk
+file	dev/md_root.c					memory_disk_hooks
+
 include "arch/luna88k/conf/majors.luna88k"
