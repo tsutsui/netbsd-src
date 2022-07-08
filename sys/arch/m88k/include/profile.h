@@ -26,7 +26,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define	_MCOUNT_DECL static inline void _mcount
+#define	_MCOUNT_DECL static __inline void _mcount
 
 /*
  * On OpenBSD, calls to the function profiler save r2-r9 on stack. The
