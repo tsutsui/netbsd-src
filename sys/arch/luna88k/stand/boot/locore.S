@@ -79,6 +79,16 @@ ASLOCAL(main_start)
 	jmp	r2		/* park ourselves */
 
 1:
+	stcr	r0, SSBR	/* clear this for later */
+	stcr	r0, SR1		/* clear the CPU flags */
+
+	set	r11, r0,  1<PSR_SUPERVISOR_MODE_BIT>
+	set	r11, r11, 1<PSR_INTERRUPT_DISABLE_BIT>
+	set	r11, r11, 1<PSR_GRAPHICS_DISABLE_BIT>
+
+	stcr	r11, PSR
+	FLUSH_PIPELINE
+
 	/* clear BSS */
 	or.u	r2, r0, hi16(_C_LABEL(edata))
 	or	r2, r2, lo16(_C_LABEL(edata))
