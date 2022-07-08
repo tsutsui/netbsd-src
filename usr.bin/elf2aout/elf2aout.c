@@ -102,7 +102,7 @@ static int
 get_symtab_type(const char *name)
 {
 	size_t i;
-	for (i = 0; i < __arraycount(nv); i++) {
+	for (i = 0; i < (sizeof(nv) / sizeof(nv[0])); i++) {
 		if (strcmp(name, nv[i].n) == 0)
 			return nv[i].v;
 	}
@@ -133,8 +133,10 @@ get_mid(const Elf32_Ehdr *ex)
 		return MID_M68K;
 	case EM_88K:
 		return MID_M88K;
+#ifdef notyet
 	case EM_OR1K:
 		return MID_OR1K;
+#endif
 	case EM_MIPS:
 		if (ex->e_ident[EI_DATA] == ELFDATA2LSB)
 			return MID_PMAX;
@@ -147,8 +149,10 @@ get_mid(const Elf32_Ehdr *ex)
 		return MID_POWERPC64;
 		break;
 #endif
+#ifdef notyet
 	case EM_RISCV:
 		return MID_RISCV;
+#endif
 	case EM_SH:
 		return MID_SH3;
 	case EM_SPARC:
@@ -317,11 +321,13 @@ main(int argc, char **argv)
 		    ph[i].p_type == PT_PHDR || ph[i].p_type == PT_MIPS_REGINFO)
 			continue;
 		/* Section types we can't handle... */
+#ifdef notyet
 		if (ph[i].p_type == PT_TLS) {
 			if (debug)
 				warnx("Can't handle TLS section");
 			continue;
 		}
+#endif
 		if (ph[i].p_type != PT_LOAD)
 			errx(EXIT_FAILURE, "Program header %zd "
 			    "type %d can't be converted.", i, ph[i].p_type);
