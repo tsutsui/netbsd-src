@@ -55,7 +55,6 @@ INCS=	ansi.h \
         stdarg.h \
         trap.h \
         types.h \
-        va-m88k.h \
         varargs.h \
         vmparam.h \
 	wchar_limits.h
