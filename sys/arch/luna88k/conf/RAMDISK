@@ -4,7 +4,14 @@ include		"arch/luna88k/conf/std.luna88k"
 
 options 	INCLUDE_CONFIG_FILE	# embed config file in kernel binary
 
+makeoptions	COPTS="-Os"		# Optimize for space.
+
 maxusers	8			# estimated number of users
+
+options 	MEMORY_DISK_HOOKS
+options 	MEMORY_DISK_IS_ROOT	# Force root on ram-disk
+options 	MEMORY_DISK_SERVER=0	# no userspace memory disk support
+options 	MEMORY_DISK_ROOT_SIZE=4096	# 2.0 Megabytes
 
 # Processor type
 options 	M88100		# 88100 support; mandatory
