@@ -1,5 +1,5 @@
 # $NetBSD: ad.m88k,v 1.36 2004/05/08 21:53:23 kleink Exp $
-#./usr/bin/elf2aout				comp-sysutil-bin
+./usr/bin/elf2aout				comp-sysutil-bin
 ./usr/include/m88k				comp-c-include
 ./usr/include/m88k/ansi.h			comp-c-include
 ./usr/include/m88k/aout_machdep.h		comp-c-include
@@ -48,7 +48,6 @@
 ./usr/include/m88k/trap.h			comp-c-include
 ./usr/include/m88k/types.h			comp-c-include
 ./usr/include/m88k/userret.h			comp-c-include
-./usr/include/m88k/va-m88k.h			comp-c-include
 ./usr/include/m88k/varargs.h			comp-c-include
 ./usr/include/m88k/vmparam.h			comp-c-include
 ./usr/include/m88k/wchar_limits.h		comp-c-include
