@@ -62,8 +62,8 @@ void	dae_print(unsigned *);
 void	data_access_emulation(unsigned *);
 
 u_int32_t do_load_word(vaddr_t, int);
-u_int16_t do_load_half(vaddr_t, int);
-u_int8_t  do_load_byte(vaddr_t, int);
+u_int32_t do_load_half(vaddr_t, int);
+u_int32_t do_load_byte(vaddr_t, int);
 void      do_store_word(vaddr_t, u_int32_t, int);
 void      do_store_half(vaddr_t, u_int16_t, int);
 void      do_store_byte(vaddr_t, u_int8_t, int);
