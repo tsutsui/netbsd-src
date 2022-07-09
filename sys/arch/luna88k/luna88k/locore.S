@@ -57,6 +57,8 @@
  * rights to redistribute these changes.
  */
 
+#include "opt_ddb.h"
+
 #include "assym.h"
 #include "ksyms.h"
 
