@@ -57,6 +57,8 @@
  * rights to redistribute these changes.
  */
 
+#include "opt_ddb.h"
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/kernel.h>
