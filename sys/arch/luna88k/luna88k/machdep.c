@@ -1012,9 +1012,7 @@ luna88k_bootstrap(void)
 	master_cpu = cmmu_init();
 	set_cpu_number(master_cpu);
 
-#if 0
 	m88100_apply_patches();
-#endif
 
 	/*
 	 * Now that set_cpu_number() set us with a valid cpu_info pointer,
