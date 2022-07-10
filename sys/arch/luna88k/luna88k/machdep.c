@@ -108,7 +108,6 @@
 #include <ddb/db_output.h>		/* db_printf()		*/
 #endif /* DDB */
 
-caddr_t	allocsys(caddr_t);
 void	consinit(void);
 void	dumpconf(void);
 void	dumpsys(void);
@@ -354,8 +353,7 @@ void
 cpu_startup(void)
 {
 	char pbuf[9];
-	caddr_t v;
-	int sz, i;
+	int i;
 	vaddr_t minaddr, maxaddr;
 
 	/*
@@ -440,17 +438,6 @@ cpu_startup(void)
 #endif
 
 	/*
-	 * Find out how much space we need, allocate it,
-	 * and then give everything true virtual addresses.
-	 */
-	sz = (int)allocsys((caddr_t)0);
-
-	if ((v = (caddr_t)uvm_km_zalloc(kernel_map, round_page(sz))) == 0)
-		panic("startup: no room for tables");
-	if (allocsys(v) - v != sz)
-		panic("startup: table size inconsistency");
-
-	/*
 	 * Grab the OBIO space that we hardwired in pmap_bootstrap
 	 */
 	obiova = OBIO_START;
@@ -488,32 +475,6 @@ cpu_startup(void)
 	 * Initialize the autovectored interrupt list.
 	 */
 	isrinit();
-}
-
-/*
- * Allocate space for system data structures.  We are given
- * a starting virtual address and we return a final virtual
- * address; along the way we set each data structure pointer.
- *
- * We call allocsys() with 0 to find out how much space we want,
- * allocate that much and fill it with zeroes, and then call
- * allocsys() again with the correct base virtual address.
- */
-caddr_t
-allocsys(caddr_t v)
-{
-
-#define	valloc(name, type, num) \
-	    v = (caddr_t)(((name) = (type *)v) + (num))
-
-#ifdef SYSVMSG
-	valloc(msgpool, char, msginfo.msgmax);
-	valloc(msgmaps, struct msgmap, msginfo.msgseg);
-	valloc(msghdrs, struct msg, msginfo.msgtql);
-	valloc(msqids, struct msqid_ds, msginfo.msgmni);
-#endif
-
-	return v;
 }
 
 void
