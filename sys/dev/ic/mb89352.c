@@ -120,6 +120,10 @@ __KERNEL_RCSID(0, "$NetBSD: mb89352.c,v 1.38 2005/01/02 12:22:18 tsutsui Exp $")
 /* threshold length for DMA transfer */
 #define SPC_MIN_DMA_LEN	32
 
+#ifdef luna88k
+#define NO_MANUAL_XFER
+#endif
+
 #ifdef x68k	/* XXX it seems x68k SPC SCSI hardware has some quirks */
 #define NEED_DREQ_ON_HARDWARE_XFER
 #define NO_MANUAL_XFER
@@ -1993,6 +1997,7 @@ dophase:
 		SPC_ASSERT(sc->sc_nexus != NULL);
 		acb = sc->sc_nexus;
 
+#ifndef NO_MANUAL_XFER /* XXX */
 		if ((bus_space_read_1(iot, ioh, PSNS) & PSNS_ATN) != 0)
 			bus_space_write_1(iot, ioh, SCMD, SCMD_RST_ATN);
 		bus_space_write_1(iot, ioh, PCTL, PCTL_BFINT_ENAB | PH_STAT);
@@ -2003,6 +2008,9 @@ dophase:
 		while ((bus_space_read_1(iot, ioh, PSNS) & PSNS_REQ) != 0)
 			DELAY(1);	/* XXX needs timeout */
 		bus_space_write_1(iot, ioh, SCMD, SCMD_RST_ACK);
+#else
+		spc_datain_pio(sc, &acb->target_stat, 1);
+#endif
 
 		SPC_MISC(("target_stat=0x%02x  ", acb->target_stat));
 		sc->sc_prevphase = PH_STAT;
