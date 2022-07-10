@@ -61,8 +61,8 @@ options 	SYSCTL_INCLUDE_DESCR	# Include sysctl descriptions in kernel
 options 	DDB
 #options 	DDB_HISTORY_SIZE=100	# enable history editing in DDB
 #options 	SYMTAB_SPACE=72000	# place DDB symbols in data segment
-#options 	DEBUG			# extra kernel debugging support
-#options 	DIAGNOSTIC		# extra kernel sanity checking
+options 	DEBUG			# extra kernel debugging support
+options 	DIAGNOSTIC		# extra kernel sanity checking
 #options 	SCSIVERBOSE		# Verbose SCSI errors
 #options 	SCSIDEBUG
 #makeoptions	DEBUG="-g"		# compile full symbol table
