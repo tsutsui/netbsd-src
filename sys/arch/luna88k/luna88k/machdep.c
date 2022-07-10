@@ -306,7 +306,7 @@ size_memory(void)
 		/* if can't access, we've reached the end */
 		if (badaddr((vaddr_t)look, 4)) {
 #if defined(DEBUG)
-			printf("%x\n", look);
+			printf("%lx\n", (vaddr_t)look);
 #endif
 			look = (int *)((int)look - STRIDE);
 			break;
@@ -1034,7 +1034,7 @@ luna88k_bootstrap(void)
 	avail_end -= round_page(MSGBUFSIZE);
 
 #ifdef DEBUG
-	printf("LUNA88K boot: memory from 0x%x to 0x%x\n",
+	printf("LUNA88K boot: memory from 0x%lx to 0x%lx\n",
 	    avail_start, avail_end);
 #endif
 	pmap_bootstrap((vaddr_t)trunc_page((unsigned)&kernelstart));
