@@ -141,7 +141,7 @@ unsigned int *volatile int_mask_reg[] = {
 	(unsigned int *)INT_ST_MASK3
 };
 
-unsigned int luna88k_curspl[] = {0, 0, 0, 0};
+unsigned int luna88k_curspl[] = {IPL_HIGH, IPL_HIGH, IPL_HIGH, IPL_HIGH};
 
 unsigned int int_set_val[INT_LEVEL] = {
 	INT_SET_LV0,
