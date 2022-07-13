@@ -187,11 +187,15 @@ m88100_trap(unsigned type, struct trapframe *frame)
 	extern struct vm_map *kernel_map;
 
 	uvmexp.traps++;
-	if ((p = curproc) == NULL)
-		p = &proc0;
 
 	if ((l = curlwp) == NULL)
 		l = &lwp0;
+	p = l->l_proc;
+
+#ifdef DIAGNOSTIC
+	if (l->l_addr == NULL)
+		panic("trap: no pcb");
+#endif
 
 	if (USERMODE(frame->tf_epsr)) {
 		type += T_USER;
@@ -609,11 +613,10 @@ m88110_trap(unsigned type, struct trapframe *frame)
 	extern pt_entry_t *pmap_pte(pmap_t, vaddr_t);
 
 	uvmexp.traps++;
-	if ((p = curproc) == NULL)
-		p = &proc0;
 
 	if ((l = curlwp) == NULL)
 		l = &lwp0;
+	p = l->l_proc;
 
 	if (USERMODE(frame->tf_epsr)) {
 		type += T_USER;
@@ -1145,8 +1148,8 @@ m88100_syscall(register_t code, struct trapframe *tf)
 
 	uvmexp.syscalls++;
 
-	p = curproc;
 	l = curlwp;
+	p = l->l_proc;
 
 	callp = p->p_emul->e_sysent;
 	nsys  = p->p_emul->e_nsysent;
@@ -1297,8 +1300,8 @@ m88110_syscall(register_t code, struct trapframe *tf)
 
 	uvmexp.syscalls++;
 
-	p = curproc;
 	l = curlwp;
+	p = l->l_proc;
 
 	callp = p->p_emul->e_sysent;
 	nsys  = p->p_emul->e_nsysent;
@@ -1507,6 +1510,10 @@ ss_get_value(struct proc *p, vaddr_t addr, u_int *value)
 {
 	struct uio uio;
 	struct iovec iov;
+	struct lwp  *l;
+
+	if ((l = curlwp) == NULL)
+		l = &lwp0;
 
 	iov.iov_base = (caddr_t)value;
 	iov.iov_len = sizeof(u_int);
@@ -1516,8 +1523,8 @@ ss_get_value(struct proc *p, vaddr_t addr, u_int *value)
 	uio.uio_resid = sizeof(u_int);
 	uio.uio_segflg = UIO_SYSSPACE;
 	uio.uio_rw = UIO_READ;
-	uio.uio_procp = curproc;
-	return (process_domem(curproc, p, &uio));
+	uio.uio_procp = l->l_proc;
+	return (process_domem(l->l_proc, p, &uio));
 }
 
 int
@@ -1525,6 +1532,10 @@ ss_put_value(struct proc *p, vaddr_t addr, u_int value)
 {
 	struct uio uio;
 	struct iovec iov;
+	struct lwp  *l;
+
+	if ((l = curlwp) == NULL)
+		l = &lwp0;
 
 	iov.iov_base = (caddr_t)&value;
 	iov.iov_len = sizeof(u_int);
@@ -1534,8 +1545,8 @@ ss_put_value(struct proc *p, vaddr_t addr, u_int value)
 	uio.uio_resid = sizeof(u_int);
 	uio.uio_segflg = UIO_SYSSPACE;
 	uio.uio_rw = UIO_WRITE;
-	uio.uio_procp = curproc;
-	return (process_domem(curproc, p, &uio));
+	uio.uio_procp = l->l_proc;
+	return (process_domem(l->l_proc, p, &uio));
 }
 
 /*
@@ -1786,11 +1797,9 @@ cache_flush(struct trapframe *tf)
 	vaddr_t va;
 	vsize_t len, count;
 
-	if ((p = curproc) == NULL)
-		p = &proc0;
-
 	if ((l = curlwp) == NULL)
 		l = &lwp0;
+	p = l->l_proc;
 
 	l->l_md.md_tf = tf;
 
