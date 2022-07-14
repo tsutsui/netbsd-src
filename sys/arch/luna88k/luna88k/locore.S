@@ -63,6 +63,7 @@
 #include "ksyms.h"
 
 #include <machine/asm.h>
+#include <machine/board.h>
 #include <machine/m88100.h>
 #include <machine/param.h>
 #include <machine/psl.h>
@@ -203,13 +204,13 @@ ASLOCAL(main_init)
 
 	/* PIO stuff */
 	or	r10, r0, 0xb6			/* initialize pio 0 */
-	or.u	r11, r0,  hi16(0x4900000c)	/* 0x4900000c: PIO0 ctrl */
-	st.b	r10, r11, lo16(0x4900000c)
+	or.u	r11, r0,  hi16(OBIO_PIO0)	/* 0x4900000c: PIO0 ctrl */
+	st.b	r10, r11, lo16(OBIO_PIO0)
 
 	/* read dispswitch setting */
-	ld.bu	r10, r11, lo16(0x49000000)	/* dipsw-1 (from portA) */
+	ld.bu	r10, r11, lo16(OBIO_PIO0A)	/* dipsw-1 (from portA) */
 	mak	r10, r10, 0<8>			/* shift left 8 bit */
-	ld.bu	r12, r11, lo16(0x49000004)	/* dipsw-2 (from portB) */
+	ld.bu	r12, r11, lo16(OBIO_PIO0B)	/* dipsw-2 (from portB) */
 	or	r10, r10, r12
 
 	or.u	r11, r0,  hi16(_C_LABEL(dipswitch))
@@ -227,18 +228,18 @@ ASLOCAL(main_init)
 	st	r10, r11, lo16(_C_LABEL(hwplanebits))
 
 	or	r10,  r0, 0x84			/* initialize pio1 */
-	or.u	r11,  r0, hi16(0x4d00000c)
-	st.b	r10, r11, lo16(0x4d00000c)
+	or.u	r11,  r0, hi16(OBIO_PIO1)
+	st.b	r10, r11, lo16(OBIO_PIO1)
 	or	r10,  r0, 0x9			/* port c bit 1 on */
-	st.b	r10, r11, lo16(0x4d00000c)
+	st.b	r10, r11, lo16(OBIO_PIO1)
 
-	or.u	r10,  r0, hi16(0xe1000010)	/* clear scsi int */
-	ld.b	r11, r10, lo16(0xe1000010)
-	st.b	r11, r10, lo16(0xe1000010)
+	or.u	r10,  r0, hi16(SCSI_ADDR + 4 * 0x04)/* clear scsi int */
+	ld.b	r11, r10, lo16(SCSI_ADDR + 4 * 0x04)
+	st.b	r11, r10, lo16(SCSI_ADDR + 4 * 0x04)
 
 	/* write 0x41000000 to escape rom */
-	or.u	r2,  r0,  hi16(0x41000000)
-	st	r0,  r2,  lo16(0x41000000)
+	or.u	r2,  r0,  hi16(PROM_ADDR)
+	st	r0,  r2,  lo16(PROM_ADDR)
 
 	/*
 	 * luna88k_bootstrap(), among other things, clears proc0's u area.

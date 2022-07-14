@@ -49,6 +49,7 @@
 #include <sys/fcntl.h>
 #include <dev/cons.h>
 
+#include <machine/board.h>
 #include <machine/cpu.h>
 
 #include <luna88k/dev/sioreg.h>
@@ -559,7 +560,7 @@ syscnattach(int channel)
  * boot/reset/poweron.  ROM monitor emits one line message on CH.A.
  */
 	struct sioreg *sio;
-	sio = (struct sioreg *)0x51000000 + channel;
+	sio = (struct sioreg *)OBIO_SIO + channel;
 
 	syscons.cn_dev = makedev(cdevsw_lookup_major(&siotty_cdevsw), channel);
 	cn_tab = &syscons;
@@ -582,7 +583,7 @@ syscngetc(dev_t dev)
 	struct sioreg *sio;
 	int s, c;
 
-	sio = (struct sioreg *)0x51000000 + ((int)dev & 0x1);
+	sio = (struct sioreg *)OBIO_SIO + ((int)dev & 0x1);
 	s = splhigh();
 	while ((getsiocsr(sio) & RR_RXRDY) == 0)
 		;
@@ -598,7 +599,7 @@ syscnputc(dev_t dev, int c)
 	struct sioreg *sio;
 	int s;
 
-	sio = (struct sioreg *)0x51000000 + ((int)dev & 0x1);
+	sio = (struct sioreg *)OBIO_SIO + ((int)dev & 0x1);
 	s = splhigh();
 	while ((getsiocsr(sio) & RR_TXRDY) == 0)
 		;
