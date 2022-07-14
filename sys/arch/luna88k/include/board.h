@@ -1,4 +1,4 @@
-/*	$OpenBSD: board.h,v 1.7 2007/05/12 19:59:01 miod Exp $	*/
+/*	$OpenBSD: board.h,v 1.15 2017/11/03 06:55:08 aoyama Exp $	*/
 /*
  * Mach Operating System
  * Copyright (c) 1993-1991 Carnegie Mellon University
@@ -26,8 +26,8 @@
  * rights to redistribute these changes.
  */
 
-#ifndef __LUNA88K_BOARD_H__
-#define __LUNA88K_BOARD_H__
+#ifndef _MACHINE_BOARD_H_
+#define _MACHINE_BOARD_H_
 
 /*
  *      OMRON SX9100DT CPU board constants
@@ -44,35 +44,23 @@
 #else
 #define U(num)  num/**/U
 #endif
-#define UDEFINED
 
 /* machtype values */
 #define LUNA_88K	0x1
 #define LUNA_88K2	0x2
 
-#define	SYSV_BASE	U(0x00000000) 	/* system virtual base */
-#define VEQR_ADDR	U(0x00000000)
-
 #define OBIO_START	U(0x41000000)
 #define OBIO_SIZE	U(0xBf000000)
 
-#define OBIO1_BASE	U(0x41000000) 	/* on board i/o 1 base */
-#define OBIO1_SPACE	U(0x1f000000) 	/* on board i/o 1 space */
-#define OBIO2_BASE	U(0x61000000) 	/* on board i/o 2 base */
-#define OBIO2_SPACE	U(0x1f000000) 	/* on board i/o 2 space */
-#define OBIO3_BASE	U(0x80000000)	/* on board i/o 3 base */
-#define OBIO3_SPACE	U(0x80000000)	/* on board i/o 3 space */
-
-#define	MAXU_ADDR	U(0x40000000) 	/* size of user virtual space */
 #define MAXPHYSMEM	U(0x10000000) 	/* max physical memory */
 
 #define PROM_ADDR	U(0x41000000) 	/* PROM */
 #define PROM_SPACE	U(0x00040000) 
 #define NVRAM_ADDR	U(0x45000000) 	/* Non Volatile */
 #define NVRAM_SPACE	U(0x00001FDC) 
-#define	FUSE_ROM_ADDR	U(0x43000000) 	/* FUSE_ROM */
-#define	FUSE_ROM_SPACE	        1024
-#define	OBIO_CAL_CTL	U(0x45001FE0) 	/* calendar control register */
+#define FUSE_ROM_ADDR	U(0x43000000) 	/* FUSE_ROM */
+#define FUSE_ROM_SPACE	        1024
+#define OBIO_CAL_CTL	U(0x45001FE0) 	/* calendar control register */
 #define OBIO_CAL_SEC	U(0x45001FE4) 	/* seconds */
 #define OBIO_CAL_MIN	U(0x45001FE8) 	/* minutes */
 #define OBIO_CAL_HOUR	U(0x45001FEC) 	/* hours */
@@ -94,7 +82,7 @@
 #define OBIO_PIO1C	U(0x4D000008) 	/* PIO-1 port C*/
 #define OBIO_PIO1	U(0x4D00000C) 	/* PIO-1 control */
 #define OBIO_SIO	U(0x51000000) 	/* SIO */
-#define	OBIO_TAS	U(0x61000000) 	/* TAS register */
+#define OBIO_TAS	U(0x61000000) 	/* TAS register */
 #define OBIO_CLOCK0	U(0x63000000) 	/* system clock CPU 0 */
 #define OBIO_CLOCK1	U(0x63000004) 	/* system clock CPU 1 */
 #define OBIO_CLOCK2	U(0x63000008) 	/* system clock CPU 2 */
@@ -104,30 +92,25 @@
 #define INT_ST_MASK1	U(0x65000004) 	/* interrupt status register CPU 1 */
 #define INT_ST_MASK2	U(0x65000008) 	/* interrupt status register CPU 2 */
 #define INT_ST_MASK3	U(0x6500000C) 	/* interrupt status register CPU 3 */
-#define  INT_LEVEL	           8	/* # of intrrupt level + 1 */
+#define  INT_LEVEL	           8	/* # of interrupt level + 1 */
 #define  INT_SET_LV7	U(0x00000000) 	/* disable interrupts */
 #define  INT_SET_LV6	U(0x00000000) 	/* enable level 7 */
-#define  INT_SET_LV5	U(0x80000000) 	/* enable level 7-6 */
-#define  INT_SET_LV4	U(0xC0000000) 	/* enable level 7-5 */
-#define  INT_SET_LV3	U(0xE0000000) 	/* enable level 7-4 */
-#define  INT_SET_LV2	U(0xF0000000) 	/* enable level 7-3 */
-#define  INT_SET_LV1	U(0xF8000000) 	/* enable level 7-2 */
+#define  INT_SET_LV5	U(0x84000000) 	/* enable level 7-6 */
+#define  INT_SET_LV4	U(0xC4000000) 	/* enable level 7-5 */
+#define  INT_SET_LV3	U(0xE4000000) 	/* enable level 7-4 */
+#define  INT_SET_LV2	U(0xF4000000) 	/* enable level 7-3 */
+#define  INT_SET_LV1	U(0xFC000000) 	/* enable level 7-2 */
 #define  INT_SET_LV0	U(0xFC000000) 	/* enable interrupts */
 #define  INT_SLAVE_MASK	U(0x84000000) 	/* slave can only enable 6 and 1 */
-#define	 INT_CLOCK_MASK	0xBFFFFFFF 	/* mask clock */
 
-#define NON_MASKABLE_LEVEL 7		/* non-maskable-interrupt (abort) */
-#define	CLOCK_INT_LEVEL	6		/* clock interrupt level */
-#define SOFT_INT_LEVEL	1		/* software interrupt level */
 #define SOFT_INT0	U(0x69000000) 	/* software interrupt CPU 0 */
 #define SOFT_INT1	U(0x69000004) 	/* software interrupt CPU 1 */
 #define SOFT_INT2	U(0x69000008) 	/* software interrupt CPU 2 */
 #define SOFT_INT3	U(0x6900000C)	/* software interrupt CPU 3 */
-#define SOFT_INT_FLAG0	U(0x6B000000) 	/* sfotware interrupt flag CPU 0 */
-#define SOFT_INT_FLAG1	U(0x6B000000) 	/* sfotware interrupt flag CPU 1 */
-#define SOFT_INT_FLAG2	U(0x6B000000) 	/* sfotware interrupt flag CPU 2 */
-#define SOFT_INT_FLAG3	U(0x6B000000) 	/* sfotware interrupt flag CPU 3  */
-#define  SOFT_INT_BIT	31		/* software interrupt flag bit */
+#define SOFT_INT_FLAG0	U(0x6B000000) 	/* software interrupt flag CPU 0 */
+#define SOFT_INT_FLAG1	U(0x6B000000) 	/* software interrupt flag CPU 1 */
+#define SOFT_INT_FLAG2	U(0x6B000000) 	/* software interrupt flag CPU 2 */
+#define SOFT_INT_FLAG3	U(0x6B000000) 	/* software interrupt flag CPU 3  */
 #define RESET_CPU0	U(0x6D000000) 	/* reset CPU 0 */
 #define RESET_CPU1	U(0x6D000004) 	/* reset CPU 1 */
 #define RESET_CPU2	U(0x6D000008)	/* reset CPU 2 */
@@ -137,16 +120,15 @@
 #define TRI_PORT_RAM_SPACE	0x20000
 #define EXT_A_ADDR	U(0x81000000) 	/* extension board A */
 #define EXT_A_SPACE	U(0x02000000) 
-#define	EU_BASE		U(0x81fe0000) 	/* VME expand board */
 #define EXT_B_ADDR	U(0x83000000) 	/* extension board B */
 #define EXT_B_SPACE	U(0x01000000) 
-#define	PC_BASE		U(0x90000000) 	/* pc-98 extension board */
-#define	PC_SPACE	U(0x02000000) 
+#define PC_BASE		U(0x90000000) 	/* pc-98 extension board */
+#define PC_SPACE	U(0x02000000) 
 
 #define MROM_ADDR	U(0xA1000000) 	/* Mask ROM address */
 #define MROM_SPACE		0x400000
-#define	BMAP_START	U(0xB1000000) 	/* Bitmap start address */
-#define	BMAP_SPACE	(BMAP_END - BMAP_START)
+#define BMAP_START	U(0xB1000000) 	/* Bitmap start address */
+#define BMAP_SPACE	(BMAP_END - BMAP_START)
 #define BMAP_RFCNT	U(0xB1000000) 	/* RFCNT register */
 #define BMAP_BMSEL	U(0xB1040000) 	/* BMSEL register */
 #define BMAP_BMP	U(0xB1080000) 	/* common bitmap plane */
@@ -168,18 +150,15 @@
 #define BMAP_FN6	U(0xB1480000) 	/* bitmap function 6 */
 #define BMAP_FN7	U(0xB14C0000) 	/* bitmap function 7 */
 #define BMAP_END	U(0xB1500000) 
-#define BMAP_END24P     U(0xB1800000)   /* end of 24p framemem */
+#define BMAP_END24P	U(0xB1800000)	/* end of 24p framemem */
 #define BMAP_PALLET0	U(0xC0000000) 	/* color pallet */
 #define BMAP_PALLET1	U(0xC1000000) 	/* color pallet */
 #define BMAP_PALLET2	U(0xC1100000) 	/* color pallet */
 #define BOARD_CHECK_REG	U(0xD0000000) 	/* board check register */
-#define BMAP_CRTC	U(0xD1000000) 	/* CTRC-II */
-#define BMAP_IDENTROM   U(0xD1800000)   /* bitmap-board identify ROM */
+#define BMAP_CRTC	U(0xD1000000) 	/* CRTC-II */
+#define BMAP_IDENTROM	U(0xD1800000)	/* bitmap-board identify ROM */
 #define SCSI_ADDR	U(0xE1000000) 	/* SCSI address */
 #define LANCE_ADDR	U(0xF1000000) 	/* LANCE */
-#define	EXT_IACK_ADDR	0xFFFFFFF7 	/* IACK Space for Extended Board */
-
-#define	VDMA_STD(x)	((int)(x))
 
 #define CMMU_I0		U(0xFFF07000) 	/* CMMU instruction cpu 0 */
 #define CMMU_D0		U(0xFFF06000) 	/* CMMU data cpu 0 */
@@ -190,4 +169,4 @@
 #define CMMU_I3		U(0xFFF01000) 	/* CMMU instruction cpu 3 */
 #define CMMU_D3		U(0xFFF00000) 	/* CMMU data cpu 3 */
 
-#endif /* __LUNA88K_BOARD_H__ */
+#endif /* _MACHINE_BOARD_H_ */

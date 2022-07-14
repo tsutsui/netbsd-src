@@ -867,7 +867,7 @@ luna88k_ext_int(u_int v, struct trapframe *eframe)
 		set_psr(get_psr() & ~PSR_IND);
 
 		switch(cur_int) {
-		case CLOCK_INT_LEVEL:
+		case 6:
 			clockintr((void *)eframe);
 			break;
 		case 5:
