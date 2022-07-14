@@ -194,7 +194,8 @@ omfbattach(struct device *parent, struct device *self, void *args)
 	}
 	else {
 		sc->sc_dc = (struct om_hwdevconfig *)
-		    malloc(sizeof(struct om_hwdevconfig), M_DEVBUF, M_WAITOK);
+		    malloc(sizeof(struct om_hwdevconfig), M_DEVBUF,
+			M_WAITOK | M_ZERO);
 		omfb_getdevconfig(OMFB_FB_WADDR, sc->sc_dc);
 	}
 	printf(": %d x %d, %dbpp\n", sc->sc_dc->dc_wid, sc->sc_dc->dc_ht,
