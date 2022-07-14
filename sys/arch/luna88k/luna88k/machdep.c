@@ -255,11 +255,11 @@ consinit(void)
 	 * Initialize the console before we print anything out.
 	 */
 	if (sysconsole == 0) {
-                syscnattach(0);
-        } else {
-                omfb_cnattach();
-                ws_cnattach();
-        }
+		syscnattach(0);
+	} else {
+		omfb_cnattach();
+		ws_cnattach();
+	}
 
 #if NKSYMS || defined(DDB) || defined(LKM)
 	{
@@ -372,9 +372,9 @@ cpu_startup(void)
 		machtype = LUNA_88K2;
 	}
 
-        /* Determine the 'auto-boot' device from NVRAM data */
-        get_nvram_data();
-        get_autoboot_device();
+	/* Determine the 'auto-boot' device from NVRAM data */
+	get_nvram_data();
+	get_autoboot_device();
 
 	/*
 	 * Good {morning,afternoon,evening,night}.
@@ -1085,25 +1085,25 @@ romttycnputc(dev_t dev, int c)
 void
 microtime(register struct timeval *tvp)
 {
-        int s = splclock();
-        static struct timeval lasttime;
+	int s = splclock();
+	static struct timeval lasttime;
 
-        *tvp = time;
+	*tvp = time;
 #ifdef notdef
-        tvp->tv_usec += clkread();
-        while (tvp->tv_usec >= 1000000) {
-                tvp->tv_sec++;
-                tvp->tv_usec -= 1000000;
-        }
+	tvp->tv_usec += clkread();
+	while (tvp->tv_usec >= 1000000) {
+		tvp->tv_sec++;
+		tvp->tv_usec -= 1000000;
+	}
 #endif
-        if (tvp->tv_sec == lasttime.tv_sec &&
-            tvp->tv_usec <= lasttime.tv_usec &&
-            (tvp->tv_usec = lasttime.tv_usec + 1) >= 1000000) {
-                tvp->tv_sec++;
-                tvp->tv_usec -= 1000000;
-        }
-        lasttime = *tvp;
-        splx(s);
+	if (tvp->tv_sec == lasttime.tv_sec &&
+	    tvp->tv_usec <= lasttime.tv_usec &&
+	    (tvp->tv_usec = lasttime.tv_usec + 1) >= 1000000) {
+		tvp->tv_sec++;
+		tvp->tv_usec -= 1000000;
+	}
+	lasttime = *tvp;
+	splx(s);
 }
 
 /* powerdown */

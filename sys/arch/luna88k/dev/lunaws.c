@@ -199,9 +199,9 @@ ws_submatch_kbd(struct device *parent, struct cfdata *match, void *aux)
 {
 	struct cfdata *cf = match;
 
-        if (strcmp(cf->cf_name, "wskbd"))
-                return (0);
-        return (config_match(parent, cf, aux));
+	if (strcmp(cf->cf_name, "wskbd"))
+		return (0);
+	return (config_match(parent, cf, aux));
 }
 
 #if NWSMOUSE > 0
@@ -211,9 +211,9 @@ ws_submatch_mouse(struct device *parent, struct cfdata *match, void *aux)
 {
 	struct cfdata *cf = match;
 
-        if (strcmp(cf->cf_name, "wsmouse"))
-                return (0);
-        return (config_match(parent, cf, aux));
+	if (strcmp(cf->cf_name, "wsmouse"))
+		return (0);
+	return (config_match(parent, cf, aux));
 }
 
 #endif

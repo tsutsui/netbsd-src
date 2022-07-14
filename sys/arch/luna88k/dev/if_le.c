@@ -122,12 +122,12 @@ lerdcsr(struct lance_softc *sc, u_int16_t port)
 static int
 le_match(struct device *parent, struct cfdata *cf, void *aux)
 {
-        struct mainbus_attach_args *ma = aux;
+	struct mainbus_attach_args *ma = aux;
 
-        if (strcmp(ma->ma_name, le_cd.cd_name))
-                return (0);
+	if (strcmp(ma->ma_name, le_cd.cd_name))
+		return (0);
 
-        return (1);
+	return (1);
 }
 
 void
@@ -135,16 +135,16 @@ le_attach(struct device *parent, struct device *self, void *aux)
 {
 	struct le_softc *lesc = (struct le_softc *)self;
 	struct lance_softc *sc = &lesc->sc_am7990.lsc;
-        struct mainbus_attach_args *ma = aux;
+	struct mainbus_attach_args *ma = aux;
 
-        lesc->sc_r1 = (struct lereg1 *)ma->ma_addr;     /* LANCE */
+	lesc->sc_r1 = (struct lereg1 *)ma->ma_addr;	/* LANCE */
 
-        sc->sc_mem = (void *)0x71000000;                /* SRAM */
-        sc->sc_conf3 = LE_C3_BSWP;
-        sc->sc_addr = (u_long)sc->sc_mem & 0xffffff;
-        sc->sc_memsize = 64 * 1024;                     /* 64KB */
+	sc->sc_mem = (void *)0x71000000;		/* SRAM */
+	sc->sc_conf3 = LE_C3_BSWP;
+	sc->sc_addr = (u_long)sc->sc_mem & 0xffffff;
+	sc->sc_memsize = 64 * 1024;			/* 64KB */
 
-        myetheraddr(sc->sc_enaddr);
+	myetheraddr(sc->sc_enaddr);
 
 	sc->sc_copytodesc = lance_copytobuf_contig;
 	sc->sc_copyfromdesc = lance_copyfrombuf_contig;
@@ -159,7 +159,7 @@ le_attach(struct device *parent, struct device *self, void *aux)
 
 	am7990_config(&lesc->sc_am7990);
 
-        isrlink_autovec(am7990_intr, (void *)sc, ma->ma_ilvl, ISRPRI_NET,
+	isrlink_autovec(am7990_intr, (void *)sc, ma->ma_ilvl, ISRPRI_NET,
 	    self->dv_xname);
 }
 
@@ -180,7 +180,7 @@ extern char fuse_rom_data[];
 static void
 myetheraddr(u_int8_t *ether)
 {
-        unsigned i, loc;
+	unsigned i, loc;
 	volatile struct { u_int32_t ctl; } *ds1220;
 
 	switch (machtype) {

@@ -74,13 +74,13 @@
 
 struct pio {
 	volatile u_int8_t portA;
-        volatile unsigned : 24;
+	volatile unsigned : 24;
 	volatile u_int8_t portB;
-        volatile unsigned : 24;
+	volatile unsigned : 24;
 	volatile u_int8_t portC;
-        volatile unsigned : 24;
+	volatile unsigned : 24;
 	volatile u_int8_t cntrl;
-        volatile unsigned : 24;
+	volatile unsigned : 24;
 };
 
 /* Autoconf stuff */

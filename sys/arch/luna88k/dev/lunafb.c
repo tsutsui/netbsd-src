@@ -323,7 +323,7 @@ int
 omgetcmap(struct omfb_softc *sc, struct wsdisplay_cmap *p)
 {
 	u_int index = p->index, count = p->count;
-        unsigned int cmsize;
+	unsigned int cmsize;
 	int error;
 
 	cmsize = sc->sc_dc->dc_cmsize;
@@ -347,7 +347,7 @@ int
 omsetcmap(struct omfb_softc *sc, struct wsdisplay_cmap *p)
 {
 	u_int index = p->index, count = p->count;
-        unsigned int cmsize, i;
+	unsigned int cmsize, i;
 	int error;
 
 	cmsize = sc->sc_dc->dc_cmsize;

@@ -230,14 +230,14 @@ siostop(struct tty *tp, int flag)
 {
 	int s;
 
-        s = spltty();
-        if (TS_BUSY == (tp->t_state & (TS_BUSY|TS_TTSTOP))) {
-                /*
-                 * Device is transmitting; must stop it.
-                 */
+	s = spltty();
+	if (TS_BUSY == (tp->t_state & (TS_BUSY|TS_TTSTOP))) {
+		/*
+		 * Device is transmitting; must stop it.
+		 */
 		tp->t_state |= TS_FLUSH;
-        }
-        splx(s);
+	}
+	splx(s);
 }
 
 int
