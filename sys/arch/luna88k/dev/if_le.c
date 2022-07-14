@@ -139,7 +139,7 @@ le_attach(struct device *parent, struct device *self, void *aux)
 
 	lesc->sc_r1 = (struct lereg1 *)ma->ma_addr;	/* LANCE */
 
-	sc->sc_mem = (void *)0x71000000;		/* SRAM */
+	sc->sc_mem = (void *)(TRI_PORT_RAM + 0x10000);	/* SRAM */
 	sc->sc_conf3 = LE_C3_BSWP;
 	sc->sc_addr = (u_long)sc->sc_mem & 0xffffff;
 	sc->sc_memsize = 64 * 1024;			/* 64KB */
@@ -202,7 +202,7 @@ myetheraddr(u_int8_t *ether)
 		}
 		break;
 	case LUNA_88K2: 
-		ds1220 = (void *)0xF1000008;
+		ds1220 = (void *)(LANCE_ADDR + 8);
 		loc = 12;
 		for (i = 0; i < 6; i++) {
 			unsigned u, l, hex;

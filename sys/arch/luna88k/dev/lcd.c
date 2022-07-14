@@ -46,6 +46,7 @@
 #include <sys/fcntl.h>
 
 #include <machine/autoconf.h>
+#include <machine/board.h>
 #include <machine/lcd.h>
 
 #include "ioconf.h"
@@ -292,7 +293,7 @@ lcdioctl(dev_t dev, u_long cmd, caddr_t addr, int flag, struct proc *p)
 void
 lcdbusywait(void)
 {
-	struct pio *p1 = (struct pio *)0x4D000000;
+	struct pio *p1 = (struct pio *)OBIO_PIO1_BASE;
 	int msb, s;
 
 	s = splhigh();
@@ -313,7 +314,7 @@ lcdbusywait(void)
 void
 lcdput(int cc)
 {
-	struct pio *p1 = (struct pio *)0x4D000000;
+	struct pio *p1 = (struct pio *)OBIO_PIO1_BASE;
 	int s;
 
 	lcdbusywait();
@@ -330,7 +331,7 @@ lcdput(int cc)
 void
 lcdctrl(int cc)
 {
-	struct pio *p1 = (struct pio *)0x4D000000;
+	struct pio *p1 = (struct pio *)OBIO_PIO1_BASE;
 	int s;
 
 	lcdbusywait();
