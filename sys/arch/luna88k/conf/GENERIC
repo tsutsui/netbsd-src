@@ -63,6 +63,7 @@ options 	DDB
 #options 	SYMTAB_SPACE=72000	# place DDB symbols in data segment
 options 	DEBUG			# extra kernel debugging support
 options 	DIAGNOSTIC		# extra kernel sanity checking
+#options 	TRAPDEBUG		# extra trap handler debugging output
 #options 	SCSIVERBOSE		# Verbose SCSI errors
 #options 	SCSIDEBUG
 #makeoptions	DEBUG="-g"		# compile full symbol table
