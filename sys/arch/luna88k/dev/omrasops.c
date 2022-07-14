@@ -134,16 +134,16 @@ om_putchar(void *cookie, int row, int startcol, u_int uc, long attr)
 void
 om_erasecols(void *cookie, int row, int startcol, int ncols, long attr)
 {
-        struct rasops_info *ri = cookie;
-        u_int8_t *p;
-        int scanspan, startx, height, width, align, w, y;
-        u_int32_t lmask, rmask, fill;
+	struct rasops_info *ri = cookie;
+	u_int8_t *p;
+	int scanspan, startx, height, width, align, w, y;
+	u_int32_t lmask, rmask, fill;
 
-        scanspan = ri->ri_stride;
-        y = ri->ri_font->fontheight * row;
-        startx = ri->ri_font->fontwidth * startcol;
-        height = ri->ri_font->fontheight;
-        w = ri->ri_font->fontwidth * ncols;
+	scanspan = ri->ri_stride;
+	y = ri->ri_font->fontheight * row;
+	startx = ri->ri_font->fontwidth * startcol;
+	height = ri->ri_font->fontheight;
+	w = ri->ri_font->fontwidth * ncols;
 	fill = (attr != 0) ? ALL1BITS : ALL0BITS;
 
 	p = (u_int8_t *)ri->ri_bits + y * scanspan + ((startx / 32) * 4);
@@ -196,7 +196,7 @@ om_eraserows(void *cookie, int startrow, int nrows, long attr)
 
 	p = (u_int8_t *)ri->ri_bits + starty * scanspan;
 	width = w;
-        rmask = ALL1BITS << (-width & ALIGNMASK);
+	rmask = ALL1BITS << (-width & ALIGNMASK);
 	q = p;
 	while (height > 0) {
 		W(p) = fill;				/* always aligned */
@@ -217,11 +217,11 @@ om_eraserows(void *cookie, int startrow, int nrows, long attr)
 void
 om_copyrows(void *cookie, int srcrow, int dstrow, int nrows)
 {
-        struct rasops_info *ri = cookie;
-        u_int8_t *p, *q;
+	struct rasops_info *ri = cookie;
+	u_int8_t *p, *q;
 	int scanspan, offset, srcy, height, width, w;
-        u_int32_t rmask;
-        
+	u_int32_t rmask;
+
 	scanspan = ri->ri_stride;
 	height = ri->ri_font->fontheight * nrows;
 	offset = (dstrow - srcrow) * scanspan * ri->ri_font->fontheight;

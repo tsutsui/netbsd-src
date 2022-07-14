@@ -134,22 +134,22 @@ get_autoboot_device(void)
 void
 device_register(struct device *dev, void *aux)
 {
-        /*
-         * scsi: sd,cd  XXX: Can LUNA88K boot from CD-ROM?
-         */
-        if (strncmp("sd", dev->dv_xname, 2) == 0 ||
-            strncmp("cd", dev->dv_xname, 2) == 0) {
+	/*
+	 * scsi: sd,cd  XXX: Can LUNA88K boot from CD-ROM?
+	 */
+	if (strncmp("sd", dev->dv_xname, 2) == 0 ||
+	    strncmp("cd", dev->dv_xname, 2) == 0) {
 		struct scsipibus_attach_args *sa = aux;
 		struct device *spcsc;
 
 		spcsc = dev->dv_parent->dv_parent;
 
-                if (strncmp(autoboot.cont, spcsc->dv_xname, 4) == 0 &&
+		if (strncmp(autoboot.cont, spcsc->dv_xname, 4) == 0 &&
 		    sa->sa_periph->periph_target == autoboot.targ &&
 		    sa->sa_periph->periph_lun == 0) {
-                        booted_device = dev;
+			booted_device = dev;
 			booted_partition = autoboot.part;
-                        return;
-                }
-        }
+			return;
+		}
+	}
 }
