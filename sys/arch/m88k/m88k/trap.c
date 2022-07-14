@@ -250,7 +250,7 @@ m88100_trap(unsigned type, struct trapframe *frame)
 		 */
 #ifdef TRAPDEBUG
 		pbus_type = CMMU_PFSR_FAULT(frame->tf_ipfsr);
-		printf("Kernel Instruction fault #%d (%s) v = %#x, frame %#x cpu %p\n",
+		printf("Kernel Instruction fault #%d (%s) v = %#lx, frame %p cpu %p\n",
 		    pbus_type, pbus_exception_type[pbus_type],
 		    fault_addr, frame, frame->tf_cpu);
 #endif
@@ -286,7 +286,7 @@ m88100_trap(unsigned type, struct trapframe *frame)
 
 		pbus_type = CMMU_PFSR_FAULT(frame->tf_dpfsr);
 #ifdef TRAPDEBUG
-		printf("Kernel Data access fault #%d (%s) v = %#x, frame %#x cpu %p\n",
+		printf("Kernel Data access fault #%d (%s) v = %#lx, frame %p cpu %p\n",
 		    pbus_type, pbus_exception_type[pbus_type],
 		    fault_addr, frame, frame->tf_cpu);
 #endif
@@ -325,7 +325,7 @@ m88100_trap(unsigned type, struct trapframe *frame)
 			break;
 		}
 #ifdef TRAPDEBUG
-		printf("PBUS Fault %d (%s) va = %#x\n", pbus_type,
+		printf("PBUS Fault %d (%s) va = %#lx\n", pbus_type,
 		    pbus_exception_type[pbus_type], va);
 #endif
 		KERNEL_UNLOCK();
@@ -339,7 +339,7 @@ user_fault:
 		if (type == T_INSTFLT + T_USER) {
 			pbus_type = CMMU_PFSR_FAULT(frame->tf_ipfsr);
 #ifdef TRAPDEBUG
-			printf("User Instruction fault #%d (%s) v = %#x, frame %#x cpu %p\n",
+			printf("User Instruction fault #%d (%s) v = %#lx, frame %p cpu %p\n",
 			    pbus_type, pbus_exception_type[pbus_type],
 			    fault_addr, frame, frame->tf_cpu);
 #endif
@@ -347,7 +347,7 @@ user_fault:
 			fault_addr = frame->tf_dma0;
 			pbus_type = CMMU_PFSR_FAULT(frame->tf_dpfsr);
 #ifdef TRAPDEBUG
-			printf("User Data access fault #%d (%s) v = %#x, frame %#x cpu %p\n",
+			printf("User Data access fault #%d (%s) v = %#lx, frame %p cpu %p\n",
 			    pbus_type, pbus_exception_type[pbus_type],
 			    fault_addr, frame, frame->tf_cpu);
 #endif
@@ -436,7 +436,7 @@ user_fault:
 		break;
 	case T_MISALGNFLT+T_USER:
 #ifdef TRAPDEBUG
-			printf("User Misaligned Access fault v = %#x, frame %#x cpu %d\n",
+			printf("User Misaligned Access fault v = %#lx, frame %p cpu %p\n",
 			    fault_addr, frame, frame->tf_cpu);
 #endif
 		/* Fix any misaligned ld.d or st.d instructions */
