@@ -57,6 +57,9 @@ options 	SYSCTL_INCLUDE_DESCR	# Include sysctl descriptions in kernel
 # high disk I/O load. Use it with caution - it's not proven to be stable yet.
 #options 	NEW_BUFQ_STRATEGY
 
+# Pseudo-device
+pseudo-device	wsmux 2
+
 # Debugging options
 options 	DDB
 #options 	DDB_HISTORY_SIZE=100	# enable history editing in DDB
@@ -172,8 +175,8 @@ fb0		at mainbus0
 
 # Workstation Console attachments
 wsdisplay*	at fb?
-wskbd*		at ws? console ?
-wsmouse*	at ws?
+wskbd*		at ws? console ? mux 1
+wsmouse*	at ws? mux 0
 
 # SCSI bus support
 scsibus*	at spc?
