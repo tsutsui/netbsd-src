@@ -1,5 +1,4 @@
-/* $OpenBSD: siovar.h,v 1.1 2004/04/21 15:23:55 aoyama Exp $ */
-/* $NetBSD: siovar.h,v 1.1 2000/01/05 08:48:55 nisimura Exp $ */
+/* $NetBSD: siovar.h,v 1.9 2021/09/25 15:18:38 tsutsui Exp $ */
 
 /*-
  * Copyright (c) 2000 The NetBSD Foundation, Inc.
@@ -16,13 +15,6 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the NetBSD
- *	Foundation, Inc. and its contributors.
- * 4. Neither the name of The NetBSD Foundation nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
@@ -37,24 +29,78 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-struct sio_softc {
-	struct device scp_dev;
-	caddr_t scp_ctl;
-	void (*scp_intr[2])(int);
-};
-
 struct sio_attach_args {
 	int channel;
 	int hwflags;
 };
 
 struct sioreg {
-	volatile u_int8_t sio_data;
+	volatile uint8_t sio_data;
 	volatile unsigned : 24;
-	volatile u_int8_t sio_cmd;
+	volatile uint8_t sio_cmd;
 	volatile unsigned : 24;
 #define sio_stat sio_cmd
 };
 
-int  getsiocsr(struct sioreg *);
-void setsioreg(struct sioreg *, int, int);
+struct sio_softc {
+	struct device sc_dev;
+	struct sioreg *sc_ctl;
+	struct {
+		void (*ih_func)(void *);
+		void *ih_arg;
+	} sc_intrhand[2];
+};
+
+static inline uint16_t getsiocsr(struct sioreg *);
+static inline void setsioreg(struct sioreg *, int, int);
+
+static inline int siogetc(struct sioreg *);
+static inline void sioputc(struct sioreg *, int);
+
+static inline uint16_t
+getsiocsr(struct sioreg *sio)
+{
+	uint16_t val;
+
+	val = sio->sio_stat << 8;
+	sio->sio_cmd = RR1;
+	val |= sio->sio_stat;
+
+	return val;
+}
+
+static inline void
+setsioreg(struct sioreg *sio, int regno, int val)
+{
+
+	if (regno != WR0)
+		sio->sio_cmd = regno;
+	sio->sio_cmd = val;
+}
+
+static inline int
+siogetc(struct sioreg *sio)
+{
+	int s, c;
+
+	s = splhigh();
+	while ((getsiocsr(sio) & RR_RXRDY) == 0)
+		continue;
+	c = sio->sio_data;
+	splx(s);
+
+	return c;
+}
+
+static inline void
+sioputc(struct sioreg *sio, int c)
+{
+	int s;
+
+	s = splhigh();
+	while ((getsiocsr(sio) & RR_TXRDY) == 0)
+		continue;
+	sio->sio_cmd = WR0_RSTPEND;
+	sio->sio_data = c;
+	splx(s);
+}
