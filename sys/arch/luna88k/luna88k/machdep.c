@@ -96,6 +96,8 @@
 
 #include <luna88k/luna88k/isr.h>
 
+#include <luna88k/dev/siottyvar.h>
+
 #include <dev/cons.h>
 
 #include <uvm/uvm_extern.h>
@@ -209,9 +211,6 @@ int sysconsole = 1;		/* 0 = ttya, 1 = keyboard/mouse, used in dev/sio.c */
 u_int16_t dipswitch = 0;	/* set in locore.S */
 int hwplanebits;		/* set in locore.S */
 
-extern struct consdev syscons;	/* in dev/siotty.c */
-
-extern void syscnattach(int);	/* in dev/siotty.c */
 extern int omfb_cnattach(void);	/* in dev/lunafb.c */
 extern void ws_cnattach(void);	/* in dev/lunaws.c */
 
@@ -255,7 +254,8 @@ consinit(void)
 	 * Initialize the console before we print anything out.
 	 */
 	if (sysconsole == 0) {
-		syscnattach(0);
+		cn_tab = &siottycons;
+		(*cn_tab->cn_init)(cn_tab);
 	} else {
 		omfb_cnattach();
 		ws_cnattach();

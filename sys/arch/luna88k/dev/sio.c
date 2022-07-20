@@ -16,13 +16,6 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the NetBSD
- *	Foundation, Inc. and its contributors.
- * 4. Neither the name of The NetBSD Foundation nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
@@ -47,21 +40,22 @@
 #include <machine/autoconf.h>
 
 #include <luna88k/luna88k/isr.h>
+#include <luna88k/dev/sioreg.h>
 #include <luna88k/dev/siovar.h>
 
 #include "ioconf.h"
 
-int  sio_match(struct device *, struct cfdata *, void *);
-void sio_attach(struct device *, struct device *, void *);
-int  sio_print(void *, const char *);
+static int  sio_match(struct device *, struct cfdata *, void *);
+static void sio_attach(struct device *, struct device *, void *);
+static int  sio_print(void *, const char *);
 
 CFATTACH_DECL(sio, sizeof(struct sio_softc),
     sio_match, sio_attach, NULL, NULL);
 
-void nullintr(int);
-int xsiointr(void *);
+static void nullintr(void *);
+static int xsiointr(void *);
 
-int
+static int
 sio_match(struct device *parent, struct cfdata *cf, void *aux)
 {
 	struct mainbus_attach_args *ma = aux;
@@ -82,11 +76,11 @@ sio_attach(struct device *parent, struct device *self, void *aux)
 	int channel;
 	extern int sysconsole; /* console: 0 for ttya, 1 for desktop */
 
-	printf(": 7201a\n");
+	aprint_normal(": uPD7201A\n");
 
-	sc->scp_ctl = (caddr_t)ma->ma_addr;
-	sc->scp_intr[0] = sc->scp_intr[1] = nullintr;
+	sc->sc_ctl = (void *)ma->ma_addr;
 	for (channel = 0; channel < 2; channel++) {
+		sc->sc_intrhand[channel].ih_func = nullintr;
 		sio_args.channel = channel;
 		sio_args.hwflags = (channel == sysconsole);
 		config_found(self, (void *)&sio_args, sio_print);
@@ -102,10 +96,10 @@ sio_print(void *aux, const char *name)
 	struct sio_attach_args *args = aux;
 
 	if (name != NULL)
-		printf("%s: ", name);
+		aprint_normal("%s: ", name);
 
 	if (args->channel != -1)
-		printf(" channel %d", args->channel);
+		aprint_normal(" channel %d", args->channel);
 
 	return UNCONF;
 }
@@ -115,11 +109,15 @@ xsiointr(void *arg)
 {
 	struct sio_softc *sc = arg;
 
-	(*sc->scp_intr[0])(0); 	/* 0: ttya system serial port */
-	(*sc->scp_intr[1])(1);	/* 1: keyboard and mouse */
+	/* channel 0: ttya system serial port */
+	(*sc->sc_intrhand[0].ih_func)(sc->sc_intrhand[0].ih_arg);
+
+	/* channel 1: keyboard and mouse */
+	(*sc->sc_intrhand[1].ih_func)(sc->sc_intrhand[1].ih_arg);
+
 	return 1;
 }
 
-void nullintr(int v)
+void nullintr(void *arg)
 {
 }
