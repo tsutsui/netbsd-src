@@ -109,6 +109,10 @@
 #include <ddb/db_interface.h>
 #include <ddb/db_output.h>		/* db_printf()		*/
 #endif /* DDB */
+#if NKSYMS || defined(DDB) || defined(LKM)
+#define ELFSIZE 32
+#include <sys/exec_elf.h>
+#endif
 
 void	consinit(void);
 void	dumpconf(void);
@@ -198,8 +202,10 @@ struct vm_map *phys_map = NULL;
 char  machine[] = MACHINE;	 /* cpu "architecture" */
 char  cpu_model[120];
 
-#if defined(DDB) || NKSYMS > 0
+extern char *end;
+#if NKSYMS || defined(DDB) || defined(LKM)
 extern char *esym;
+static vsize_t symtab_size(vaddr_t);
 #endif
 
 int machtype = LUNA_88K;	/* may be overwritten in cpu_startup() */
@@ -262,17 +268,52 @@ consinit(void)
 	}
 
 #if NKSYMS || defined(DDB) || defined(LKM)
-	{
-		extern int end;
-
-		ksyms_init(*(int *)&end, ((int *)&end) + 1, esym);
-	}
+	ksyms_init(1, (void *)&end, esym);
 #endif
 #if defined(DDB)
 	if (boothowto & RB_KDB)
 		Debugger();
 #endif
 }
+
+#if NKSYMS || defined(DDB) || defined(LKM)
+/*
+ * Check and compute size of DDB symbols and strings.
+ */
+static vsize_t
+symtab_size(vaddr_t hdr)
+{
+	int i;
+	Elf_Ehdr *ehdr;
+	Elf_Shdr *shp;
+	vsize_t maxsym;
+
+	/*
+	 * Check the ELF headers.
+	 */
+
+	ehdr = (void *)hdr;
+	if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0) {
+		return 0;
+	}
+
+	/*
+	 * Find the end of the symbols and strings.
+	 */
+
+	maxsym = 0;
+	shp = (Elf_Shdr *)(hdr + ehdr->e_shoff);
+	for (i = 0; i < ehdr->e_shnum; i++) {
+		if (shp[i].sh_type != SHT_SYMTAB &&
+		    shp[i].sh_type != SHT_STRTAB) {
+			continue;
+		}
+		maxsym = MAX(maxsym, shp[i].sh_offset + shp[i].sh_size);
+	}
+
+	return maxsym;
+}
+#endif /* NKSYMS || defined(DDB) */
 
 /*
  * Figure out how much real memory is available.
@@ -944,11 +985,13 @@ luna88k_bootstrap(void)
 	extern int kernelstart;
 	extern struct consdev *cn_tab;
 	extern struct cmmu_p cmmu8820x;
-	extern char *end;
 #ifndef MULTIPROCESSOR
 	cpuid_t master_cpu;
 #endif
 	cpuid_t cpu;
+#if NKSYMS || defined(DDB) || defined(LKM)
+	vsize_t symsize;
+#endif
 	extern void m8820x_initialize_cpu(cpuid_t);
 	extern void m8820x_set_sapr(cpuid_t, apr_t);
 	extern void cpu_boot_secondary_processors(void);
@@ -967,7 +1010,15 @@ luna88k_bootstrap(void)
 	uvmexp.pagesize = PAGE_SIZE;
 	uvm_setpagesize();
 
-	first_addr = round_page((vaddr_t)&end);	/* XXX temp until symbols */
+	first_addr = (vaddr_t)&end;
+#if NKSYMS || defined(DDB) || defined(LKM)
+	symsize = symtab_size((vaddr_t)&end);
+	if (symsize > 0) {
+		first_addr += symsize;
+		esym = (void *)first_addr;
+	}
+#endif
+	first_addr = round_page(first_addr);
 	last_addr = size_memory();
 	physmem = btoc(last_addr);
 
