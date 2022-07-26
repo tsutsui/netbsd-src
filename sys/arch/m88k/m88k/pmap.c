@@ -108,6 +108,7 @@ vaddr_t virtual_avail, virtual_end;
 #define CD_ALL		0x0FFFFFC
 
 /* Use 'options PMAP_CON_DEBUG=CD_xxx' in config file. */
+//#define PMAP_CON_DEBUG (CD_ENT|CD_RM)
 #ifndef PMAP_CON_DEBUG
 #define PMAP_CON_DEBUG	0
 #endif
@@ -1704,7 +1705,8 @@ pmap_enter(pmap_t pmap, vaddr_t va, paddr_t pa, vm_prot_t prot, int flags)
 			pmap->pm_stats.wired_count--;
 	} else {
 		/* Remove old mapping from the PV list if necessary. */
-		pmap_remove_pte(pmap, va, pte);
+		if (PDT_VALID(pte))
+			pmap_remove_pte(pmap, va, pte);
 
 		if (pvl != NULL) {
 			/*
