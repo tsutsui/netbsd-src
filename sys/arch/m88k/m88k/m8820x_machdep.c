@@ -579,30 +579,32 @@ m8820x_flush_tlb(cpuid_t cpu, unsigned kernel, vaddr_t vaddr, u_int count)
 void
 m8820x_flush_cache(cpuid_t cpu, paddr_t pa, psize_t size)
 {
-	int s = splhigh();
-	CMMU_LOCK;
+	uint32_t psr;
+	psize_t count;
 
 	size = round_cache_line(pa + size) - trunc_cache_line(pa);
 	pa = trunc_cache_line(pa);
 
-	if (size > NBSG) {
-		m8820x_cmmu_set_reg(CMMU_SCR, CMMU_FLUSH_CACHE_CBI_ALL,
-		    MODE_ALL, cpu, ALL_CMMUS);
-	} else if (size <= MC88200_CACHE_LINE) {
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CBI_LINE,
-		    MODE_ALL /* | ADDR_VAL */, cpu, ALL_CMMUS, pa);
-	} else if (size <= PAGE_SIZE) {
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CBI_PAGE,
-		    MODE_ALL /* | ADDR_VAL */, cpu, ALL_CMMUS, pa);
-	} else {
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CBI_SEGMENT,
-		    MODE_ALL, cpu, ALL_CMMUS, pa);
+	psr = get_psr();
+	set_psr(psr | PSR_IND);
+	CMMU_LOCK;
+	while (size != 0) {
+		if ((pa & PAGE_MASK) == 0 && size >= PAGE_SIZE) {
+			m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CBI_PAGE,
+			    0, cpu, 0, pa);
+			count = PAGE_SIZE;
+		} else {
+			m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CBI_LINE,
+			    0, cpu, 0, pa);
+			count = MC88200_CACHE_LINE;
+		}
+		pa += count;
+		size -= count;
+		m8820x_cmmu_wait(cpu);
 	}
 
-	m8820x_cmmu_wait(cpu);
-
 	CMMU_UNLOCK;
-	splx(s);
+	set_psr(psr);
 }
 
 /*
@@ -611,36 +613,41 @@ m8820x_flush_cache(cpuid_t cpu, paddr_t pa, psize_t size)
 void
 m8820x_flush_inst_cache(cpuid_t cpu, paddr_t pa, psize_t size)
 {
-	int s = splhigh();
-	CMMU_LOCK;
+	uint32_t psr;
+	psize_t count;
 
 	size = round_cache_line(pa + size) - trunc_cache_line(pa);
 	pa = trunc_cache_line(pa);
 
-	if (size > NBSG) {
-		m8820x_cmmu_set_reg(CMMU_SCR, CMMU_FLUSH_CACHE_INV_ALL,
-		    MODE_VAL, cpu, INST_CMMU);
-	} else if (size <= MC88200_CACHE_LINE) {
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_LINE,
-		    MODE_VAL /* | ADDR_VAL */, cpu, INST_CMMU, pa);
-	} else if (size <= PAGE_SIZE) {
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_PAGE,
-		    MODE_VAL /* | ADDR_VAL */, cpu, INST_CMMU, pa);
-	} else {
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_SEGMENT,
-		    MODE_VAL, cpu, INST_CMMU, pa);
+	psr = get_psr();
+	set_psr(psr | PSR_IND);
+	CMMU_LOCK;
+	while (size != 0) {
+		if ((pa & PAGE_MASK) == 0 && size >= PAGE_SIZE) {
+			m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_PAGE,
+			    MODE_VAL, cpu, INST_CMMU, pa);
+			count = PAGE_SIZE;
+		} else {
+			m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_LINE,
+			    MODE_VAL, cpu, INST_CMMU, pa);
+			count = MC88200_CACHE_LINE;
+		}
+		pa += count;
+		size -= count;
+		m8820x_cmmu_wait(cpu);
 	}
 
-	m8820x_cmmu_wait(cpu);
-
 	CMMU_UNLOCK;
-	splx(s);
+	set_psr(psr);
 }
 
 void
 m8820x_flush_data_page(cpuid_t cpu, paddr_t pa)
 {
-	int s = splhigh();
+	uint32_t psr;
+
+	psr = get_psr();
+	set_psr(psr | PSR_IND);
 	CMMU_LOCK;
 
 	m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CBI_PAGE,
@@ -648,7 +655,7 @@ m8820x_flush_data_page(cpuid_t cpu, paddr_t pa)
 	m8820x_cmmu_wait(cpu);
 
 	CMMU_UNLOCK;
-	splx(s);
+	set_psr(psr);
 }
 
 /*
@@ -657,75 +664,92 @@ m8820x_flush_data_page(cpuid_t cpu, paddr_t pa)
 void
 m8820x_cmmu_sync_cache(paddr_t pa, psize_t size)
 {
-	int s = splhigh();
+	uint32_t psr;
+	psize_t count;
 	int cpu = cpu_number();
 
+	psr = get_psr();
+	set_psr(psr | PSR_IND);
 	CMMU_LOCK;
-
-	if (size <= MC88200_CACHE_LINE) {
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_LINE,
-		    MODE_VAL /* | ADDR_VAL */, cpu, INST_CMMU, pa);
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CB_LINE,
-		    MODE_VAL /* | ADDR_VAL */, cpu, DATA_CMMU, pa);
-	} else {
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_PAGE,
-		    MODE_VAL /* | ADDR_VAL */, cpu, INST_CMMU, pa);
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CB_PAGE,
-		    MODE_VAL /* | ADDR_VAL */, cpu, DATA_CMMU, pa);
+	while (size != 0) {
+		if ((pa & PAGE_MASK) == 0 && size >= PAGE_SIZE) {
+			m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CB_PAGE,
+			    MODE_VAL, cpu, DATA_CMMU, pa);
+			count = PAGE_SIZE;
+		} else {
+			m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CB_LINE,
+			    MODE_VAL, cpu, DATA_CMMU, pa);
+			count = MC88200_CACHE_LINE;
+		}
+		pa += count;
+		size -= count;
+		m8820x_cmmu_wait(cpu);
 	}
 
-	m8820x_cmmu_wait(cpu);
-
 	CMMU_UNLOCK;
-	splx(s);
+	set_psr(psr);
 }
 
 void
 m8820x_cmmu_sync_inval_cache(paddr_t pa, psize_t size)
 {
-	int s = splhigh();
+	uint32_t psr;
+	psize_t count;
 	int cpu = cpu_number();
 
+	psr = get_psr();
+	set_psr(psr | PSR_IND);
 	CMMU_LOCK;
-
-	if (size <= MC88200_CACHE_LINE) {
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_LINE,
-		    MODE_VAL /* | ADDR_VAL */, cpu, INST_CMMU, pa);
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CBI_LINE,
-		    MODE_VAL /* | ADDR_VAL */, cpu, DATA_CMMU, pa);
-	} else {
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_PAGE,
-		    MODE_VAL /* | ADDR_VAL */, cpu, INST_CMMU, pa);
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CBI_PAGE,
-		    MODE_VAL /* | ADDR_VAL */, cpu, DATA_CMMU, pa);
+	while (size != 0) {
+		if ((pa & PAGE_MASK) == 0 && size >= PAGE_SIZE) {
+			m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_PAGE,
+			    MODE_VAL, cpu, INST_CMMU, pa);
+			m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CBI_PAGE,
+			    MODE_VAL, cpu, DATA_CMMU, pa);
+			count = PAGE_SIZE;
+		} else {
+			m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_LINE,
+			    MODE_VAL, cpu, INST_CMMU, pa);
+			m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CBI_LINE,
+			    MODE_VAL, cpu, DATA_CMMU, pa);
+			count = MC88200_CACHE_LINE;
+		}
+		pa += count;
+		size -= count;
+		m8820x_cmmu_wait(cpu);
 	}
 
-	m8820x_cmmu_wait(cpu);
-
 	CMMU_UNLOCK;
-	splx(s);
+	set_psr(psr);
 }
 
 void
 m8820x_cmmu_inval_cache(paddr_t pa, psize_t size)
 {
-	int s = splhigh();
+	uint32_t psr;
+	psize_t count;
 	int cpu = cpu_number();
 
+	psr = get_psr();
+	set_psr(psr | PSR_IND);
 	CMMU_LOCK;
-
-	if (size <= MC88200_CACHE_LINE) {
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_LINE,
-		    MODE_ALL /* | ADDR_VAL */, cpu, ALL_CMMUS, pa);
-	} else {
-		m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_PAGE,
-		    MODE_ALL /* | ADDR_VAL */, cpu, ALL_CMMUS, pa);
+	while (size != 0) {
+		if ((pa & PAGE_MASK) == 0 && size >= PAGE_SIZE) {
+			m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_PAGE,
+			    MODE_ALL, cpu, ALL_CMMUS, pa);
+			count = PAGE_SIZE;
+		} else {
+			m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_INV_LINE,
+			    MODE_ALL, cpu, ALL_CMMUS, pa);
+			count = MC88200_CACHE_LINE;
+		}
+		pa += count;
+		size -= count;
+		m8820x_cmmu_wait(cpu);
 	}
 
-	m8820x_cmmu_wait(cpu);
-
 	CMMU_UNLOCK;
-	splx(s);
+	set_psr(psr);
 }
 
 void
