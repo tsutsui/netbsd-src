@@ -69,14 +69,19 @@
 	or r13,r0,__SYSCALLNAME(SYS_,x);				\
 	tb0 0, r0, 128
 
+/*
+ * The kernel side syscall implementation in sys/arch/m88k/m88k/trap.c
+ * adjusts return address on normal return to skip the following branch
+ * instruction to cerror, so no need to prepare special NOERROR() macro.
+ */
 #define	__SYSCALL__NOERROR(p,x,y)					\
 	__ENTRY(p,x);							\
 	__ALIAS(p,x);							\
-	__DO_SYSCALL(y)
+	__DO_SYSCALL(y);						\
+	br _C_LABEL(_cerror)
 
 #define	__SYSCALL(p,x,y)						\
-	__SYSCALL__NOERROR(p,x,y);					\
-	br _C_LABEL(_cerror)
+	__SYSCALL__NOERROR(p,x,y);
 
 /*
  * System calls entry points are really named _thread_sys_{syscall},
