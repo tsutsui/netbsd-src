@@ -431,10 +431,13 @@ m8820x_initialize_cpu(cpuid_t cpu)
 		 */
 		sctr = cmmu->cmmu_regs[CMMU_SCTR] &
 		    ~(CMMU_SCTR_PE | CMMU_SCTR_SE | CMMU_SCTR_PR);
-#ifdef MULTIPROCESSOR
-		if (max_cpus > 1)
-			sctr |= CMMU_SCTR_SE;
-#endif
+		/*
+		 * XXX
+		 * Enable snooping to keep coherency between
+		 * INST_CMMU and DATA_CMMU.
+		 * This is necessary at least on nono 0.4.1.
+		 */
+		sctr |= CMMU_SCTR_SE;
 		cmmu->cmmu_regs[CMMU_SCTR] = sctr;
 
 		cmmu->cmmu_regs[CMMU_SAPR] = cmmu->cmmu_regs[CMMU_UAPR] = apr;
