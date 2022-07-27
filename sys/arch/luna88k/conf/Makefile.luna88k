@@ -62,10 +62,8 @@ locore.o: ${LUNA88K}/luna88k/locore.S assym.h
 ##
 ## (5) link settings
 ##
-LINKFORMAT=     -n
+LINKFORMAT=     -N
 TEXTADDR?=      0x20000
-
-LINKFLAGS=	-N -Ttext 0x20000 -e start
 STRIPFLAGS=	-d
 
 ##
