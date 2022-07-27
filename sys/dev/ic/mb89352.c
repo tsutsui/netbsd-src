@@ -940,6 +940,7 @@ nextbyte:
 	 */
 	for (;;) {
 #ifdef NO_MANUAL_XFER /* XXX */
+		uint8_t intstat;
 		if (bus_space_read_1(iot, ioh, INTS) != 0) {
 			/*
 			 * Target left MESSAGE IN, probably because it
@@ -968,12 +969,18 @@ nextbyte:
 #else
 		bus_space_write_1(iot, ioh, SCMD, SCMD_XFR | SCMD_PROG_XFR);
 #endif
+		intstat = 0;
 		for (;;) {
 			if ((bus_space_read_1(iot, ioh, SSTS) &
 			    SSTS_DREG_EMPTY) == 0)
 				break;
-			if (bus_space_read_1(iot, ioh, INTS) != 0)
+			/*
+			 * We have to read INTS before checking SSTS to avoid
+			 * race between SSTS_DREG_EMPTY and INTS_CMD_DONE.
+			 */
+			if (intstat != 0)
 				goto out;
+			intstat = bus_space_read_1(iot, ioh, INTS);
 		}
 		msg = bus_space_read_1(iot, ioh, DREG);
 #else
