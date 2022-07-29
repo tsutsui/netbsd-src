@@ -293,9 +293,7 @@ vmapbuf(bp, len)
 	for (pg = atop(len); pg != 0; pg--) {
 		if (pmap_extract(pmap, (vaddr_t)addr, &pa) == FALSE)
 			panic("vmapbuf: null page frame");
-		pmap_enter(vm_map_pmap(phys_map), kva, pa,
-			   VM_PROT_READ | VM_PROT_WRITE,
-			   VM_PROT_READ | VM_PROT_WRITE | PMAP_WIRED);
+		pmap_kenter_pa(kva, pa, VM_PROT_READ | VM_PROT_WRITE);
 		addr += PAGE_SIZE;
 		kva += PAGE_SIZE;
 	}
@@ -323,8 +321,8 @@ vunmapbuf(bp, len)
 	addr = trunc_page((vaddr_t)bp->b_data);
 	off = (vaddr_t)bp->b_data & PGOFSET;
 	len = round_page(off + len);
-	pmap_remove(vm_map_pmap(phys_map), addr, addr + len);
-	pmap_update(vm_map_pmap(phys_map));
+	pmap_kremove(addr, len);
+	pmap_update(pmap_kernel());
 	uvm_km_free_wakeup(phys_map, addr, len);
 	bp->b_data = bp->b_saveaddr;
 	bp->b_saveaddr = 0;
