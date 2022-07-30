@@ -63,7 +63,7 @@ options 	COMPAT_BSDPTY	# /dev/[pt]ty?? ptys.
 # Filesystem options
 file-system	FFS		# ufs file system
 #file-system	LFS		# log-structured file system
-#file-system	NFS		# nfs client support
+file-system	NFS		# nfs client support
 file-system	MFS
 #file-system	CD9660		# ISO 9660 + Rock Ridge file system
 #file-system	MSDOSFS		# MS-DOS FAT file system
