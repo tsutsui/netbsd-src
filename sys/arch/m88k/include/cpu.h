@@ -202,7 +202,12 @@ struct clockframe {
 /*
  * CLKF_BASEPRI: True if we were at spl0 before the interrupt.
  */
+#if 0
+/* XXX: spllowersoftclock(9) could be problematic on m88k/trap.c etc. */
 #define CLKF_BASEPRI(framep)	((((struct trapframe *)(framep))->tf_epsr & PSR_IND) == 0)
+#else
+#define CLKF_BASEPRI(framep)	0
+#endif
 
 /*
  * LWP_PC: Find out the program counter for the given lwp.
