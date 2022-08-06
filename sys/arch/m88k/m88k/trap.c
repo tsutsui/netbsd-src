@@ -166,7 +166,7 @@ panictrap(int type, struct trapframe *frame)
 
 #ifdef M88100
 void
-m88100_trap(unsigned type, struct trapframe *frame)
+m88100_trap(u_int type, struct trapframe *frame)
 {
 	struct proc *p;
 	struct lwp  *l;
@@ -298,7 +298,7 @@ m88100_trap(unsigned type, struct trapframe *frame)
 			 * to drain the data unit pipe line and reset dmt0
 			 * so that trap won't get called again.
 			 */
-			data_access_emulation((unsigned *)frame);
+			data_access_emulation((u_int *)frame);
 			frame->tf_dpfsr = 0;
 			frame->tf_dmt0 = 0;
 			KERNEL_UNLOCK();
@@ -316,7 +316,7 @@ m88100_trap(unsigned type, struct trapframe *frame)
 				 * unit pipe line and reset dmt0 so that trap
 				 * won't get called again.
 				 */
-				data_access_emulation((unsigned *)frame);
+				data_access_emulation((u_int *)frame);
 				frame->tf_dpfsr = 0;
 				frame->tf_dmt0 = 0;
 				KERNEL_UNLOCK();
@@ -416,7 +416,7 @@ user_fault:
 			 	 * pipe line and reset dmt0 so that trap won't
 			 	 * get called again.
 			 	 */
-				data_access_emulation((unsigned *)frame);
+				data_access_emulation((u_int *)frame);
 				frame->tf_dpfsr = 0;
 				frame->tf_dmt0 = 0;
 			} else {
@@ -590,7 +590,7 @@ user_fault:
 
 #ifdef M88110
 void
-m88110_trap(unsigned type, struct trapframe *frame)
+m88110_trap(u_int type, struct trapframe *frame)
 {
 	struct proc *p;
 	struct lwp *l;
@@ -1646,8 +1646,8 @@ int
 process_sstep(struct lwp *l, int sstep)
 {
 	struct reg *sstf = USER_REGS(l);
-	unsigned pc, brpc;
-	unsigned instr;
+	vaddr_t pc, brpc;
+	u_int32_t instr;
 	int rc;
 
 	if (sstep == 0) {

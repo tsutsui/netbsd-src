@@ -141,13 +141,13 @@ int clockintr(void *);				/* in clock.c */
  * Points to the hardware interrupt status register for each CPU.
  */
 unsigned int *volatile int_mask_reg[] = {
-	(unsigned int *)INT_ST_MASK0,
-	(unsigned int *)INT_ST_MASK1,
-	(unsigned int *)INT_ST_MASK2,
-	(unsigned int *)INT_ST_MASK3
+	(u_int32_t *)INT_ST_MASK0,
+	(u_int32_t *)INT_ST_MASK1,
+	(u_int32_t *)INT_ST_MASK2,
+	(u_int32_t *)INT_ST_MASK3
 };
 
-unsigned int luna88k_curspl[] = {IPL_HIGH, IPL_HIGH, IPL_HIGH, IPL_HIGH};
+u_int luna88k_curspl[] = {IPL_HIGH, IPL_HIGH, IPL_HIGH, IPL_HIGH};
 
 unsigned int int_set_val[INT_LEVEL] = {
 	INT_SET_LV0,
@@ -163,11 +163,11 @@ unsigned int int_set_val[INT_LEVEL] = {
 /*
  * *clock_reg[CPU]
  */
-unsigned int *volatile clock_reg[] = {
-	(unsigned int *)OBIO_CLOCK0,
-	(unsigned int *)OBIO_CLOCK1,
-	(unsigned int *)OBIO_CLOCK2,
-	(unsigned int *)OBIO_CLOCK3
+u_int32_t *volatile clock_reg[] = {
+	(u_int32_t *)OBIO_CLOCK0,
+	(u_int32_t *)OBIO_CLOCK1,
+	(u_int32_t *)OBIO_CLOCK2,
+	(u_int32_t *)OBIO_CLOCK3
 };
 
 /*
@@ -365,7 +365,7 @@ size_memory(void)
 		*look = save;
 	}
 
-	return (trunc_page((unsigned)look));
+	return (trunc_page((vaddr_t)look));
 }
 
 int
@@ -863,8 +863,8 @@ void
 luna88k_ext_int(u_int v, struct trapframe *eframe)
 {
 	int cpu = cpu_number();
-	unsigned int cur_mask, cur_int;
-	unsigned int level, old_spl;
+	u_int32_t cur_mask, cur_int;
+	u_int level, old_spl;
 
 	cur_mask = *int_mask_reg[cpu];
 	old_spl = luna88k_curspl[cpu];
@@ -1049,7 +1049,7 @@ luna88k_bootstrap(void)
 	printf("LUNA88K boot: memory from 0x%lx to 0x%lx\n",
 	    avail_start, avail_end);
 #endif
-	pmap_bootstrap((vaddr_t)trunc_page((unsigned)&kernelstart));
+	pmap_bootstrap((vaddr_t)trunc_page((vaddr_t)&kernelstart));
 
 	/*
 	 * Tell the VM system about available physical memory.

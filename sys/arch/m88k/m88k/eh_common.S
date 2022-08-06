@@ -2444,7 +2444,7 @@ ASLOCAL(m88110_ignore_data_exception)
 #endif /* M88110 */
 
 /*
- * extern boolean_t badaddr(unsigned addr, unsigned len)
+ * extern boolean_t badaddr(vaddr_t addr, u_int len)
  *
  * Returns true (non-zero) if the given LEN bytes starting at ADDR are
  * not all currently accessible by the kernel.
