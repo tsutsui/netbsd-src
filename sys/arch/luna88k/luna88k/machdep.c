@@ -133,7 +133,7 @@ void powerdown(void);
 void get_fuse_rom_data(void);
 void get_nvram_data(void);
 char *nvram_by_symbol(char *);
-void get_autoboot_device(void);			/* in disksubr.c */
+void get_autoboot_device(void);			/* in autoconf.c */
 int clockintr(void *);				/* in clock.c */
 
 /*
@@ -335,19 +335,12 @@ size_memory(void)
 	 * count it up.
 	 */
 	max = (void *)MAXPHYSMEM;
-#if 0
-	for (look = (void *)Roundup(end, STRIDE); look < max;
-#else
 	for (look = (void *)first_addr; look < max;
-#endif
 	    look = (int *)((unsigned)look + STRIDE)) {
 		unsigned save;
 
 		/* if can't access, we've reached the end */
 		if (badaddr((vaddr_t)look, 4)) {
-#if defined(DEBUG)
-			printf("%lx\n", (vaddr_t)look);
-#endif
 			look = (int *)((int)look - STRIDE);
 			break;
 		}
