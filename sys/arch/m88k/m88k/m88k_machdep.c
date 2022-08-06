@@ -240,7 +240,7 @@ regdump(struct trapframe *f)
 		printf("dmt2 %x dmd2 %x dma2 %x\n",
 		    f->tf_dmt2, f->tf_dmd2, f->tf_dma2);
 		printf("fault type %d\n", (f->tf_dpfsr >> 16) & 0x7);
-		dae_print((unsigned *)f);
+		dae_print((u_int *)f);
 	}
 	if (CPU_IS88100 && longformat != 0) {
 		printf("fpsr %x fpcr %x epsr %x ssbr %x\n",
