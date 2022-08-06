@@ -336,6 +336,7 @@ GLOBAL(cpu_boot_secondary_processors)
  */
 
 GLOBAL(delay)
+	bcnd	eq0, r2, 2f
 	or.u	r3, r0, hi16(_C_LABEL(cpuspeed))
 	ld	r3, r3, lo16(_C_LABEL(cpuspeed))
 	mul	r4, r2, r3
@@ -345,7 +346,7 @@ GLOBAL(delay)
 1:
 	bcnd.n	gt0, r4, 1b
 	 subu	r4, r4, 2	/* two cycles per iteration */
-
+2:
 	jmp	r1
 
 /*****************************************************************************/
