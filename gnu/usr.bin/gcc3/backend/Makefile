@@ -55,6 +55,11 @@ NOGCCERROR=			# defined
 COPTS.reload1.c=		-O1
 .endif
 
+.if ${MACHINE_ARCH} == "m88k"
+# XXX m88k.md causes warning on 64 bit hosts:
+# insn-recog.c:1929: warning: this decimal constant is unsigned only in ISO C90
+CFLAGS+=	-std=gnu99
+.endif
 
 
 # Headers that host objects depend on (except gen*rtl*)
