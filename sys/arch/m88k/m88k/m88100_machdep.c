@@ -244,6 +244,12 @@ data_access_emulation(u_int *eframe)
 					v = do_xmem_byte(dmax, dmdx,
 					    dmtx & DMT_DAS);
 				}
+				DAE_DEBUG(
+					if (reg == 0)
+						printf("[no write to r0 done]\n");
+					else
+						printf("[r%d <- %08x]\n", reg, v);
+				);
 				if (reg != 0)
 					eframe[EF_R0 + reg] = v;
 			} else {
@@ -288,8 +294,6 @@ m88100_apply_patches()
 		((u_int32_t *)(do_store_word))[1] = 0xf400c401;
 		((u_int32_t *)(do_store_half))[1] = 0xf400c401;
 		((u_int32_t *)(do_store_byte))[1] = 0xf400c401;
-		((u_int32_t *)(do_xmem_word))[1] = 0xf400c401;
-		((u_int32_t *)(do_xmem_byte))[1] = 0xf400c401;
 	}
 #endif
 }
