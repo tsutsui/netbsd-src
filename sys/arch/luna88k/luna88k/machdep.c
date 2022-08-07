@@ -83,6 +83,7 @@
 #include <sys/extent.h>
 #include <sys/core.h>
 #include <sys/kcore.h>
+#include <sys/lock.h>
 
 #include <machine/asm.h>
 #include <machine/asm_macro.h>
@@ -124,8 +125,11 @@ int	cpu_dumpsize(void);
 u_long	cpu_dump_mempagecnt(void);
 int	cpu_dump(dev_type_dump((*dump)), daddr_t *blknop);
 void	luna88k_bootstrap(void);
+void	cpu_boot_secondary_processors(void);
+#ifdef MULTIPROCESSOR
 void	secondary_main(void);
 void	secondary_pre_main(void);
+#endif
 void	setlevel(unsigned int);
 
 vaddr_t size_memory(void);
@@ -195,6 +199,8 @@ int physmem;	  /* available physical memory, in pages */
 struct vm_map *exec_map = NULL;
 struct vm_map *mb_map = NULL;
 struct vm_map *phys_map = NULL;
+
+__cpu_simple_lock_t cpu_hatch_mutex = __SIMPLELOCK_UNLOCKED;
 
 /*
  * Info for CTL_HW
@@ -789,6 +795,17 @@ dumpsys(void)
 	printf("\n\n");
 }
 
+/*
+ * Release the cpu_hatch_mutex; secondary processors will now
+ * have their chance to initialize.
+ */
+void
+cpu_boot_secondary_processors(void)
+{
+
+	__cpu_simple_unlock(&cpu_hatch_mutex);
+}
+
 #ifdef MULTIPROCESSOR
 
 /*
@@ -838,12 +855,6 @@ secondary_main(void)
 
 	microuptime(&ci->ci_schedstate.spc_runtime);
 	ci->ci_curlwp = NULL;
-
-	/*
-	 * Upon return, the secondary cpu bootstrap code in locore will
-	 * enter the idle loop, waiting for some food to process on this
-	 * processor.
-	 */
 }
 
 #endif	/* MULTIPROCESSOR */
@@ -987,7 +998,6 @@ luna88k_bootstrap(void)
 #endif
 	extern void m8820x_initialize_cpu(cpuid_t);
 	extern void m8820x_set_sapr(cpuid_t, apr_t);
-	extern void cpu_boot_secondary_processors(void);
 
 	cmmu = &cmmu8820x;
 
