@@ -161,7 +161,7 @@ ASLOCAL(main_start)
 	or	r2, r0, lo16(1000)
 3:
 	subu	r2, r2, 1
-	bcnd	eq0, r2, 3b
+	bcnd	ne0, r2, 3b
 	br	1b			/* looks clear -- try to grab */
 4:
 	/* now try to grab the master_mpu prize */
