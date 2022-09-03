@@ -1,4 +1,4 @@
-/*	$OpenBSD: machdep.c,v 1.44 2007/06/06 17:15:12 deraadt Exp $	*/
+/*	$OpenBSD: machdep.c,v 1.48 2007/11/14 23:12:45 miod Exp $	*/
 /*
  * Copyright (c) 1998, 1999, 2000, 2001 Steve Murphree, Jr.
  * Copyright (c) 1996 Nivas Madhur
@@ -1028,6 +1028,7 @@ luna88k_bootstrap(void)
 	setup_board_config();
 	master_cpu = cmmu_init();
 	set_cpu_number(master_cpu);
+	SET(curcpu()->ci_flags, CIF_ALIVE | CIF_PRIMARY);
 
 	m88100_apply_patches();
 
@@ -1072,8 +1073,6 @@ luna88k_bootstrap(void)
 	 */
 	for (cpu = 0; cpu < max_cpus; cpu++) {
 		if (cpu == master_cpu)
-			continue;
-		if (m88k_cpus[cpu].ci_alive == 0)
 			continue;
 		m8820x_initialize_cpu(cpu);
 		cmmu_set_sapr(cpu, kernel_pmap->pm_apr);

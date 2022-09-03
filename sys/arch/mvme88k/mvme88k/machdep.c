@@ -699,6 +699,7 @@ secondary_main(void)
 
 	microuptime(&ci->ci_schedstate.spc_runtime);
 	ci->ci_curlwp = NULL;
+	SET(ci->ci_flags, CIF_ALIVE);
 
 	/*
 	 * Upon return, the secondary cpu bootstrap code in locore will
@@ -927,6 +928,7 @@ mvme_bootstrap(void)
 	setup_board_config();
 	master_cpu = cmmu_init();
 	set_cpu_number(master_cpu);
+	SET(curcpu()->ci_flags, CIF_ALIVE | CIF_PRIMARY);
 
 	/*
 	 * Now that set_cpu_number() set us with a valid cpu_info pointer,

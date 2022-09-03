@@ -72,7 +72,6 @@ define	P_MD_ASTPENDING		offsetof(struct proc, p_md.md_astpending)
 struct	cpu_info
 member	CI_CURLWP	ci_curlwp
 member	CI_CURPCB	ci_curpcb
-member	CI_PRIMARY	ci_primary
 member	CI_PFSR_I0	ci_pfsr_i0
 member	CI_PFSR_I1	ci_pfsr_i1
 member	CI_PFSR_D0	ci_pfsr_d0
