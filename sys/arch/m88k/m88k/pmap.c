@@ -2410,8 +2410,8 @@ unsetbit_Retry:
 			invalidate_pte(pte);
 			*pte = opte ^ bit;
 			flush_atc_entry(pmap, va);
-		} else
 			rv = TRUE;
+		}
 next:
 		PMAP_UNLOCK(pmap);
 	}
