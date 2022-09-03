@@ -179,11 +179,6 @@ struct systrace_replace {
 #ifdef _KERNEL
 #include <sys/namei.h>
 
-/* XXX: these shouldn't be here. */
-#define SET(t, f)	((t) |= (f))
-#define	ISSET(t, f)	((t) & (f))
-#define	CLR(t, f)	((t) &= ~(f))
-
 struct fsystrace {
 	struct lock lock;
 	struct selinfo si;

@@ -64,11 +64,6 @@ __KERNEL_RCSID(0, "$NetBSD: tty_pty.c,v 1.83 2005/02/26 21:34:55 perry Exp $");
 #define	DEFAULT_NPTYS		16	/* default number of initial ptys */
 #define DEFAULT_MAXPTYS		992	/* default maximum number of ptys */
 
-/* Macros to clear/set/test flags. */
-#define	SET(t, f)	(t) |= (f)
-#define	CLR(t, f)	(t) &= ~((unsigned)(f))
-#define	ISSET(t, f)	((t) & (f))
-
 #define BUFSIZ 100		/* Chunk size iomoved to/from user */
 
 struct	pt_softc {

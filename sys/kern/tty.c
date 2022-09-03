@@ -162,11 +162,6 @@ unsigned char const char_type[] = {
 #undef	TB
 #undef	VT
 
-/* Macros to clear/set/test flags. */
-#define	SET(t, f)	(t) |= (f)
-#define	CLR(t, f)	(t) &= ~((unsigned)(f))
-#define	ISSET(t, f)	((t) & (f))
-
 struct simplelock ttylist_slock = SIMPLELOCK_INITIALIZER;
 struct ttylist_head ttylist = TAILQ_HEAD_INITIALIZER(ttylist);
 int tty_count;

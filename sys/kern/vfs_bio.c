@@ -137,11 +137,6 @@ int count_lock_queue(void); /* XXX */
 static int checkfreelist(struct buf *, struct bqueue *);
 #endif
 
-/* Macros to clear/set/test flags. */
-#define	SET(t, f)	(t) |= (f)
-#define	CLR(t, f)	(t) &= ~(f)
-#define	ISSET(t, f)	((t) & (f))
-
 /*
  * Definitions for the buffer hash lists.
  */
