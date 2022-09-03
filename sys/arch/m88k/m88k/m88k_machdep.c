@@ -294,11 +294,8 @@ set_cpu_number(cpuid_t number)
 	if (number == master_cpu)
 #endif
 	{
-		ci->ci_primary = 1;
 		ci->ci_idle_pcb = &idle_u;
 	}
-
-	ci->ci_alive = 1;
 }
 
 /*

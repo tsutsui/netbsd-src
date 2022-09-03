@@ -88,7 +88,9 @@ extern u_int max_cpus;
 struct cpu_info {
 	struct cpu_data ci_data;		/* MI per-cpu data */
 
-	u_int	ci_alive;			/* nonzero if CPU present */
+	u_int	ci_flags;
+#define	CIF_ALIVE		0x01		/* cpu initialized */
+#define	CIF_PRIMARY		0x02		/* primary cpu */
 
 	struct lwp *ci_curlwp;			/* current thread... */
 	struct pcb *ci_curpcb;			/* ...and its pcb */
@@ -104,10 +106,18 @@ struct cpu_info {
 
 	u_int	ci_intrdepth;			/* interrupt depth */
 
-	volatile int ci_ddb_state;		/* ddb status */
+	int ci_ddb_state;			/* ddb status */
 #define	CI_DDB_RUNNING	0
 #define	CI_DDB_ENTERDDB	1
 #define	CI_DDB_INDDB	2
+#define	CI_DDB_PAUSE	3
+
+	int ci_ipi;				/* pending ipis */
+#define	CI_IPI_NOTIFY		0x00000001
+#define	CI_IPI_HARDCLOCK	0x00000002
+#define	CI_IPI_STATCLOCK	0x00000004
+#define	CI_IPI_DDB		0x00000008
+	int	ci_softintr;			/* pending soft interrupts */
 };
 
 extern cpuid_t master_cpu;
@@ -116,7 +126,7 @@ extern struct cpu_info m88k_cpus[MAX_CPUS];
 #define	CPU_INFO_ITERATOR	cpuid_t
 #define	CPU_INFO_FOREACH(cii, ci) \
 	for ((cii) = 0; (cii) < MAX_CPUS; (cii)++) \
-		if (((ci) = &m88k_cpus[cii])->ci_alive != 0)
+		if (((ci) = &m88k_cpus[cii])->ci_flags & CIF_ALIVE)
 #define	CPU_INFO_UNIT(ci)	((ci)->ci_cpuid)
 
 #if defined(MULTIPROCESSOR)
@@ -129,7 +139,7 @@ extern struct cpu_info m88k_cpus[MAX_CPUS];
 	cpuptr;								\
 })
 
-#define	CPU_IS_PRIMARY(ci)	((ci)->ci_primary != 0)
+#define	CPU_IS_PRIMARY(ci)	((ci)->ci_flags & CIF_PRIMARY)
 
 void	cpu_boot_secondary_processors(void);
 
