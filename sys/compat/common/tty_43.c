@@ -84,11 +84,6 @@ static const int compatspcodes[] = {
 	1800, 2400, 4800, 9600, 19200, 38400, 57600, 115200
 };
 
-/* Macros to clear/set/test flags. */
-#define	SET(t, f)	(t) |= (f)
-#define	CLR(t, f)	(t) &= ~(f)
-#define	ISSET(t, f)	((t) & (f))
-
 int ttcompatgetflags __P((struct tty *));
 void ttcompatsetflags __P((struct tty *, struct termios *));
 void ttcompatsetlflags __P((struct tty *, struct termios *));

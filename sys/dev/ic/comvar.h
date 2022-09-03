@@ -154,11 +154,6 @@ struct com_softc {
 #endif
 };
 
-/* Macros to clear/set/test flags. */
-#define SET(t, f)	(t) |= (f)
-#define CLR(t, f)	(t) &= ~(f)
-#define ISSET(t, f)	((t) & (f))
-
 int comprobe1(bus_space_tag_t, bus_space_handle_t);
 int comintr(void *);
 void com_attach_subr(struct com_softc *);

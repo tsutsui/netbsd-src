@@ -69,11 +69,6 @@ __KERNEL_RCSID(0, "$NetBSD: irframe_tty.c,v 1.28 2005/02/27 00:27:17 perry Exp $
 #include <dev/ir/irdaio.h>
 #include <dev/ir/irframevar.h>
 
-/* Macros to clear/set/test flags. */
-#define	SET(t, f)	(t) |= (f)
-#define	CLR(t, f)	(t) &= ~(f)
-#define	ISSET(t, f)	((t) & (f))
-
 #ifdef IRFRAMET_DEBUG
 #define DPRINTF(x)	if (irframetdebug) printf x
 #define Static

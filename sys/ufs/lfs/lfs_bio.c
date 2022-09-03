@@ -87,11 +87,6 @@ __KERNEL_RCSID(0, "$NetBSD: lfs_bio.c,v 1.81.2.1 2005/05/07 11:21:30 tron Exp $"
 
 #include <uvm/uvm.h>
 
-/* Macros to clear/set/test flags. */
-# define	SET(t, f)	(t) |= (f)
-# define	CLR(t, f)	(t) &= ~(f)
-# define	ISSET(t, f)	((t) & (f))
-
 /*
  * LFS block write function.
  *
