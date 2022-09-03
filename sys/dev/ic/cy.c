@@ -39,11 +39,6 @@ __KERNEL_RCSID(0, "$NetBSD: cy.c,v 1.37 2005/02/27 00:27:01 perry Exp $");
 #include <dev/ic/cyreg.h>
 #include <dev/ic/cyvar.h>
 
-/* Macros to clear/set/test flags. */
-#define	SET(t, f)	(t) |= (f)
-#define	CLR(t, f)	(t) &= ~(f)
-#define	ISSET(t, f)	((t) & (f))
-
 int	cyparam(struct tty *, struct termios *);
 void	cystart(struct tty *);
 void	cy_poll(void *);

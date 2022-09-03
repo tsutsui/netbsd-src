@@ -126,11 +126,6 @@ static const vfs_namemap_t signames[] = {
 
 int procfs_control __P((struct proc *, struct lwp *, int, int));
 
-/* Macros to clear/set/test flags. */
-#define	SET(t, f)	(t) |= (f)
-#define	CLR(t, f)	(t) &= ~(f)
-#define	ISSET(t, f)	((t) & (f))
-
 int
 procfs_control(curp, l, op, sig)
 	struct proc *curp;

@@ -209,11 +209,6 @@ const struct cdevsw cz_cdevsw = {
 	czttystop, czttytty, czttypoll, nommap, ttykqfilter, D_TTY
 };
 
-/* Macros to clear/set/test flags. */
-#define SET(t, f)       (t) |= (f)
-#define CLR(t, f)       (t) &= ~(f)
-#define ISSET(t, f)     ((t) & (f))
-
 /*
  * Macros to read and write the PLX.
  */

@@ -185,11 +185,6 @@ static void wsdisplaystart(struct tty *);
 static int wsdisplayparam(struct tty *, struct termios *);
 
 
-/* Internal macros, functions, and variables. */
-#define	SET(t, f)	(t) |= (f)
-#define	CLR(t, f)	(t) &= ~(f)
-#define	ISSET(t, f)	((t) & (f))
-
 #define	WSDISPLAYUNIT(dev)	(minor(dev) >> 8)
 #define	WSDISPLAYSCREEN(dev)	(minor(dev) & 0xff)
 #define ISWSDISPLAYSTAT(dev)	(WSDISPLAYSCREEN(dev) == 254)

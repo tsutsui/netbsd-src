@@ -38,11 +38,6 @@
  */
 
 
-/* Macros to clear/set/test flags. */
-#define SET(t, f)       (t) |= (f)
-#define CLR(t, f)       (t) &= ~(f)
-#define ISSET(t, f)     ((t) & (f))
-
 /* just for ucom_attach_args, not in the config namespace */
 #define UCOM_UNK_PORTNO (-1)
 
