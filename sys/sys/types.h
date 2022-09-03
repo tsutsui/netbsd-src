@@ -396,6 +396,12 @@ struct	uio;
 
 #endif /* _XOPEN_SOURCE_EXTENDED || _XOPEN_SOURCE >= 500 || _NETBSD_SOURCE */
 
+#ifdef _KERNEL
+#define SET(t, f)	((t) |= (f))
+#define	ISSET(t, f)	((t) & (f))
+#define	CLR(t, f)	((t) &= ~(f))
+#endif
+
 #if !defined(_KERNEL) && !defined(_STANDALONE)
 #if (_POSIX_C_SOURCE - 0L) >= 199506L || (_XOPEN_SOURCE - 0) >= 500 || \
     defined(_NETBSD_SOURCE)

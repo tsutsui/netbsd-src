@@ -109,11 +109,6 @@ __KERNEL_RCSID(0, "$NetBSD: sys_process.c,v 1.95.2.3 2006/11/11 21:40:19 bouyer 
 
 #include <machine/reg.h>
 
-/* Macros to clear/set/test flags. */
-#define	SET(t, f)	(t) |= (f)
-#define	CLR(t, f)	(t) &= ~(f)
-#define	ISSET(t, f)	((t) & (f))
-
 /*
  * Process debugging system call.
  */
