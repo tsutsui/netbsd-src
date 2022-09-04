@@ -89,11 +89,7 @@ static int 	clmpcc_modem_control(struct clmpcc_chan *, int, int);
 /*
  * These should be in a header file somewhere...
  */
-#define	ISSET(v, f)	(((v) & (f)) != 0)
 #define	ISCLR(v, f)	(((v) & (f)) == 0)
-#define SET(v, f)	(v) |= (f)
-#define CLR(v, f)	(v) &= ~(f)
-
 
 extern struct cfdriver clmpcc_cd;
 

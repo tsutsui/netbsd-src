@@ -114,8 +114,6 @@ static u_long	kfs_ihash;	/* size of hash table - 1 */
 static struct lock kfs_hashlock;
 static struct simplelock kfs_hash_slock;
 
-#define	ISSET(t, f)	((t) & (f))
-
 /*
  * allocate a kfsnode/vnode pair.  the vnode is
  * referenced, and locked.

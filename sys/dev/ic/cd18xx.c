@@ -124,11 +124,6 @@ __KERNEL_RCSID(0, "$NetBSD: cd18xx.c,v 1.10 2005/02/27 00:27:01 perry Exp $");
  * some helpers
  */
 
-/* macros to clear/set/test flags. */
-#define SET(t, f)	(t) |= (f)
-#define CLR(t, f)	(t) &= ~(f)
-#define ISSET(t, f)	((t) & (f))
-
 static void	cdtty_attach(struct cd18xx_softc *, int);
 
 static __inline void cd18xx_rint(struct cd18xx_softc *, int *);
