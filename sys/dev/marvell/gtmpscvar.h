@@ -127,11 +127,6 @@ typedef struct gtmpsc_softc {
 	unsigned int cnt_tx_to_sdma;
 } gtmpsc_softc_t;
 
-/* Macros to clear/set/test flags. */
-#define	SET(t, f)       (t) |= (f)
-#define	CLR(t, f)       (t) &= ~(f)
-#define	ISSET(t, f)     ((t) & (f))
-
 /* Make receiver interrupt 8 times a second */
 #define	GTMPSC_MAXIDLE(baudrate)  ((baudrate) / (10 * 8)) /* There are 10 bits
 							   in a frame */

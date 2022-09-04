@@ -194,13 +194,6 @@ struct mbpp_softc {
 	struct mbpp_port ms_port[MAGMA_MAX_BPP];
 };
 
-/*
- * useful macros
- */
-#define SET(t, f)	((t) |= (f))
-#define CLR(t, f)	((t) &= ~(f))
-#define ISSET(t, f)	((t) & (f))
-
 /* internal function prototypes */
 
 int cd1400_compute_baud(speed_t, int, int *, int *);

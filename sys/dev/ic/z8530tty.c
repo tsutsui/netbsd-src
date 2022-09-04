@@ -242,11 +242,6 @@ struct zstty_softc {
 	pps_params_t ppsparam;
 };
 
-/* Macros to clear/set/test flags. */
-#define SET(t, f)	(t) |= (f)
-#define CLR(t, f)	(t) &= ~(f)
-#define ISSET(t, f)	((t) & (f))
-
 /* Definition of the driver for autoconfig. */
 static int	zstty_match(struct device *, struct cfdata *, void *);
 static void	zstty_attach(struct device *, struct device *, void *);

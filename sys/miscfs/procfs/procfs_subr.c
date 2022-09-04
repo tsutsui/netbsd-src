@@ -99,8 +99,6 @@ u_long	pfs_ihash;	/* size of hash table - 1 */
 struct lock pfs_hashlock;
 struct simplelock pfs_hash_slock;
 
-#define	ISSET(t, f)	((t) & (f))
-
 /*
  * allocate a pfsnode/vnode pair.  the vnode is
  * referenced, and locked.

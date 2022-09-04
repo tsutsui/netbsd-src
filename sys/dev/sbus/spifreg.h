@@ -381,13 +381,6 @@
 #define	STTY_RBUF_SIZE		(2 * 512)
 
 /*
- * useful macros
- */
-#define	SET(t, f)	((t) |= (f))
-#define	CLR(t, f)	((t) &= ~(f))
-#define	ISSET(t, f)	((t) & (f))
-
-/*
  * internal function prototypes
  */
 int	spif_match(struct device *, struct cfdata *, void *);
