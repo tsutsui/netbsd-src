@@ -91,6 +91,7 @@ X11FLAGS.OS_DEFINES=	-DDDXOSINIT -DSERVER_LOCK -DDDXOSFATALERROR \
 .if !(${MACHINE} == "acorn32"	|| \
     (${MACHINE} == "alpha"  && ${X11FLAVOUR} != "Xorg")	|| \
     ${MACHINE} == "amiga"	|| \
+    ${MACHINE} == "arc"		|| \
     ${MACHINE} == "pmax"	|| \
     ${MACHINE} == "sun3"	|| \
     ${MACHINE} == "vax")

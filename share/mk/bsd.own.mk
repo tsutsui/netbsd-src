@@ -997,6 +997,7 @@ ${var}?=no
     ${MACHINE} == "acorn32"	|| \
     ${MACHINE} == "alpha"	|| \
     ${MACHINE} == "amiga"	|| \
+    ${MACHINE} == "arc"		|| \
     ${MACHINE} == "mac68k"	|| \
     ${MACHINE} == "pmax"	|| \
     ${MACHINE} == "sun3"
