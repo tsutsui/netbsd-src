@@ -26,5 +26,9 @@ DPADD=	${DPADD.dix} ${DPADD.hw/netbsd/alpha} ${DPADD.os} \
 	${DPADD.GL/glx} ${LDADD.GL/GLcore} ${LIBXAU} ${LIBXDMCP} \
 	${LIBZ} ${LIBM}
 
+.if ${MACHINE} == "arc"
+SYMLINKS=	${X11BINDIR}/${PROG} ${X11BINDIR}/X
+.endif
+
 .include <bsd.x11.mk>
 .include <bsd.prog.mk>

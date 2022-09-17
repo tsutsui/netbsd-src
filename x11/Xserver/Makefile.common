@@ -13,6 +13,10 @@ XSERVER_X68K=		yes
 XSERVER_XALPHANETBSD=	yes
 .endif
 
+.if ${MACHINE} == "arc"
+XSERVER_XALPHANETBSD=	yes
+.endif
+
 .if ${MACHINE} == "amiga"
 XSERVER_XAMIGA=		yes
 XSERVER_HAS_AFB=	yes

@@ -24,6 +24,7 @@ CPPFLAGS+=	-I${X11SRCDIR.xc}/programs/Xserver/include \
     ${MACHINE_ARCH} == "alpha" || \
     ${MACHINE_ARCH} == "sparc64" || \
     ${MACHINE} == "acorn32" || \
+    ${MACHINE} == "arc" || \
     ${MACHINE} == "pmax" || \
     ${MACHINE} == "sun3" || \
     ${MACHINE} == "dreamcast" || \
