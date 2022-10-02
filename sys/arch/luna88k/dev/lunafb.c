@@ -74,6 +74,8 @@ struct bt458 {
 #define	OMFB_RFCNT	BMAP_RFCNT	/* video h-origin/v-origin */
 #define	OMFB_FB_PLANESIZE  0x40000	/* size of 1 plane, 2048 / 8 * 1024 */
 #define	OMFB_RAMDAC	BMAP_PALLET2	/* Bt454/Bt458 RAMDAC */
+#define	OMFB_FB_WADDR	(BMAP_BMP + 8)	/* common bitmap plane */
+#define	OMFB_FB_RADDR	(BMAP_BMAP0 + 8)/* bitmap plane #0 */
 
 #define	OMFB_SIZE	(BMAP_FN0 - BMAP_BMP + PAGE_SIZE)
 
@@ -172,6 +174,9 @@ CFATTACH_DECL(fb, sizeof(struct omfb_softc),
 
 /* hardware plane bits; retrieved at boot, will be updated in omfbmatch() */
 extern int hwplanebits;
+
+int hwplanecount;	/* for omrasops */
+int hwplanemask;	/* for omrasops */
 
 static int omfb_console;
 int  omfb_cnattach(void);
@@ -478,8 +483,10 @@ omfb_getdevconfig(paddr_t paddr, struct om_hwdevconfig *dc)
 			if (*max != 0x5a5a5a5a)
 				break;
 			*max = save;
+			hwplanemask |= (1U << i);
 		}
 		hwplanebits = i;	/* should be 1, 4, or 8 */
+		hwplanecount = i;
 
 		dc->dc_depth_checked = 1;
 	}
