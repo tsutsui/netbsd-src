@@ -82,7 +82,7 @@ static int	omrasops_init(struct rasops_info *, int, int);
 #ifdef luna68k
 /*
  * macros to handle unaligned bit copy ops.
- * See src/sys/dev/rasops/rasops_mask.h for MI version.
+ * See src/sys/dev/rasops/rasops_masks.h for MI version.
  * Also refer src/sys/arch/hp300/dev/maskbits.h.
  * (which was implemented for ancient src/sys/arch/hp300/dev/grf_hy.c)
  */
@@ -99,7 +99,7 @@ static int	omrasops_init(struct rasops_info *, int, int);
 	asm("bfins %3,%0{%1:%2}"					\
 	    : "+o" (*(uint32_t *)(pdst))				\
 	    : "di" (x), "di" (w), "d" (src)				\
-	    : "memory" );
+	    : "memory" )
 
 #define	GETBITS(psrc, x, w, dst)	FASTGETBITS(psrc, x, w, dst)
 #define	PUTBITS(src, x, w, pdst)	FASTPUTBITS(src, x, w, pdst)
@@ -634,7 +634,7 @@ om1_copycols(void *cookie, int startrow, int srccol, int dstcol, int ncols)
 
 	lmask = (db == 0) ? 0 : ALL1BITS >> db;
 	eb = (db + w) & ALIGNMASK;
-	rmask = (eb == 0) ? 0 : ALL1BITS << (32 - eb); 
+	rmask = (eb == 0) ? 0 : ALL1BITS << (32 - eb);
 	lnum = (32 - db) & ALIGNMASK;
 	rnum = (dstx + w) & ALIGNMASK;
 
@@ -770,7 +770,7 @@ om4_copycols(void *cookie, int startrow, int srccol, int dstcol, int ncols)
 
 	lmask = (db == 0) ? 0 : ALL1BITS >> db;
 	eb = (db + w) & ALIGNMASK;
-	rmask = (eb == 0) ? 0 : ALL1BITS << (32 - eb); 
+	rmask = (eb == 0) ? 0 : ALL1BITS << (32 - eb);
 	lnum = (32 - db) & ALIGNMASK;
 	rnum = (dstx + w) & ALIGNMASK;
 
