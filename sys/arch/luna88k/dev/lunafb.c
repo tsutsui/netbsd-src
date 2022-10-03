@@ -517,7 +517,7 @@ omfb_getdevconfig(paddr_t paddr, struct om_hwdevconfig *dc)
 	ri = &dc->dc_ri;
 	ri->ri_width = dc->dc_wid;
 	ri->ri_height = dc->dc_ht;
-	ri->ri_depth = 1;	/* since planes are independently addressed */
+	ri->ri_depth = dc->dc_depth;
 	ri->ri_stride = dc->dc_rowbytes;
 	ri->ri_bits = (void *)dc->dc_videobase;
 	ri->ri_flg = RI_CENTER;
