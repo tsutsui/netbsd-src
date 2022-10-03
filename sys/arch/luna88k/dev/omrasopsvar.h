@@ -34,9 +34,7 @@
 #define OMFB_STRIDE		(2048/8)	/* stride [byte] */
 
 /* TODO: should be improved... */
-#define omfb_planecount hwplanecount
 extern int hwplanemask;
-extern int hwplanecount;
 
 /*
  * ROP function

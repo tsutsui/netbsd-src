@@ -175,7 +175,6 @@ CFATTACH_DECL(fb, sizeof(struct omfb_softc),
 /* hardware plane bits; retrieved at boot, will be updated in omfbmatch() */
 extern int hwplanebits;
 
-int hwplanecount;	/* for omrasops */
 int hwplanemask;	/* for omrasops */
 
 static int omfb_console;
@@ -486,7 +485,6 @@ omfb_getdevconfig(paddr_t paddr, struct om_hwdevconfig *dc)
 			hwplanemask |= (1U << i);
 		}
 		hwplanebits = i;	/* should be 1, 4, or 8 */
-		hwplanecount = i;
 
 		dc->dc_depth_checked = 1;
 	}
