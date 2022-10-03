@@ -751,13 +751,14 @@ om_rascopy_single(int planecount, uint8_t *dst, uint8_t *src,
 #else
 		wh--;	/* to match to asm side */
 		for (h = height_m1; h >= 0; h--) {
+			uint32_t *s32 = (uint32_t *)src;
+			uint32_t *d32 = (uint32_t *)dst;
 			for (w = wh; w >= 0; w--) {
-				memcpy(dst, src, 8);
-				src += 8;
-				dst += 8;
+				*d32++ = *s32++;
+				*d32++ = *s32++;
 			}
-			src += step8;
-			dst += step8;
+			src = (uint8_t *)s32 + step8;
+			dst = (uint8_t *)d32 + step8;
 		}
 #endif
 
@@ -792,7 +793,7 @@ om_rascopy_single(int planecount, uint8_t *dst, uint8_t *src,
 		);
 #else
 		for (h = height_m1; h >= 0; h--) {
-			memcpy(dst, src, 4);
+			*(uint32_t *)dst = *(uint32_t *)src;
 			dst += step;
 			src += step;
 		}
@@ -841,7 +842,7 @@ om_rascopy_single(int planecount, uint8_t *dst, uint8_t *src,
 	);
 #else
 	for (h = height_m1; h >= 0; h--) {
-		memcpy(dst, src, 4);
+		*(uint32_t *)dst = *(uint32_t *)src;
 		dst += step;
 		src += step;
 	}
@@ -964,29 +965,29 @@ om4_rascopy_multi(uint8_t *dst0, uint8_t *src0, int16_t width, int16_t height)
 		wh--;	/* to match to asm side */
 		for (h = height_m1; h >= 0; h--) {
 			for (w = wh; w >= 0; w--) {
-				memcpy(dst0, src0, 4);
+				*(uint32_t *)dst0 = *(uint32_t *)src0;
 				dst0 += 4;
 				src0 += OMFB_PLANEOFFS;
-				memcpy(dst1, src0, 4);
+				*(uint32_t *)dst1 = *(uint32_t *)src0;
 				dst1 += 4;
 				src0 += OMFB_PLANEOFFS;
-				memcpy(dst2, src0, 4);
+				*(uint32_t *)dst2 = *(uint32_t *)src0;
 				dst2 += 4;
 				src0 += OMFB_PLANEOFFS;
-				memcpy(dst3, src0, 4);
+				*(uint32_t *)dst3 = *(uint32_t *)src0;
 				dst3 += 4;
 				src0 += 4;
 
-				memcpy(dst3, src0, 4);
+				*(uint32_t *)dst3 = *(uint32_t *)src0;
 				dst3 += 4;
 				src0 -= OMFB_PLANEOFFS;
-				memcpy(dst2, src0, 4);
+				*(uint32_t *)dst2 = *(uint32_t *)src0;
 				dst2 += 4;
 				src0 -= OMFB_PLANEOFFS;
-				memcpy(dst1, src0, 4);
+				*(uint32_t *)dst1 = *(uint32_t *)src0;
 				dst1 += 4;
 				src0 -= OMFB_PLANEOFFS;
-				memcpy(dst0, src0, 4);
+				*(uint32_t *)dst0 = *(uint32_t *)src0;
 				dst0 += 4;
 				src0 += 4;
 			}
@@ -1050,13 +1051,13 @@ om4_rascopy_multi(uint8_t *dst0, uint8_t *src0, int16_t width, int16_t height)
 		);
 #else
 		for (h = height_m1; h >= 0; h--) {
-			memcpy(dst0, src0, 4);
+			*(uint32_t *)dst0 = *(uint32_t *)src0;
 			src0 += OMFB_PLANEOFFS;
-			memcpy(dst1, src0, 4);
+			*(uint32_t *)dst1 = *(uint32_t *)src0;
 			src0 += OMFB_PLANEOFFS;
-			memcpy(dst2, src0, 4);
+			*(uint32_t *)dst2 = *(uint32_t *)src0;
 			src0 += OMFB_PLANEOFFS;
-			memcpy(dst3, src0, 4);
+			*(uint32_t *)dst3 = *(uint32_t *)src0;
 			src0 += rewind;
 
 			dst0 += step;
@@ -1122,13 +1123,13 @@ om4_rascopy_multi(uint8_t *dst0, uint8_t *src0, int16_t width, int16_t height)
 	);
 #else
 	for (h = height_m1; h >= 0; h--) {
-		memcpy(dst0, src0, 4);
+		*(uint32_t *)dst0 = *(uint32_t *)src0;
 		src0 += OMFB_PLANEOFFS;
-		memcpy(dst1, src0, 4);
+		*(uint32_t *)dst1 = *(uint32_t *)src0;
 		src0 += OMFB_PLANEOFFS;
-		memcpy(dst2, src0, 4);
+		*(uint32_t *)dst2 = *(uint32_t *)src0;
 		src0 += OMFB_PLANEOFFS;
-		memcpy(dst3, src0, 4);
+		*(uint32_t *)dst3 = *(uint32_t *)src0;
 		src0 += rewind;
 
 		dst0 += step;
