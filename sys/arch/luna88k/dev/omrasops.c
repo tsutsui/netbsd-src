@@ -83,7 +83,7 @@ static inline uint32_t
 __builtin_clz(uint32_t val)
 {
 	__asm__ __volatile__ ("ff1 %0, %0" : "=r" (val) : "0" (val));
-	return 32 - val;
+	return 31 - val;
 }
 #else
 #error __builtin_clz() is not available
