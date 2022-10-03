@@ -63,7 +63,7 @@ __KERNEL_RCSID(0, "$NetBSD: omrasops.c,v 1.21 2019/07/31 02:09:02 rin Exp $");
 #include <arch/luna88k/dev/omrasopsvar.h>
 
 #ifdef luna68k
-#define USE_M68K_ASM   1
+#define USE_M68K_ASM	1
 #endif
 
 /* To provide optimization conditions to compilers */
