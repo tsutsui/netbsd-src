@@ -129,7 +129,8 @@ static int	omrasops_init(struct rasops_info *, int, int);
  * This number of elements is derived from howmany(1024, fontheight = 24).
  * But it is currently initialized with row = 34, so it is used only up to 34.
  */
-static rowattr_t rowattr[43];
+#define OMRASOPS_MAX_ROWS	43
+static rowattr_t rowattr[OMRASOPS_MAX_ROWS];
 
 #define	ALL1BITS	(~0U)
 #define	ALL0BITS	(0U)
@@ -1834,6 +1835,8 @@ omrasops_init(struct rasops_info *ri, int wantrows, int wantcols)
 {
 	int wsfcookie, bpp;
 
+	if (wantrows > OMRASOPS_MAX_ROWS)
+		wantrows = OMRASOPS_MAX_ROWS;
 	if (wantrows == 0)
 		wantrows = 34;
 	if (wantrows < 10)
