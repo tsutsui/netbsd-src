@@ -36,7 +36,7 @@ attach ws at sio
 file arch/luna88k/dev/lunaws.c				ws
 file arch/luna88k/dev/omkbdmap.c			ws
 
-device fb: wsemuldisplaydev, rasops1
+device fb: wsemuldisplaydev
 attach fb at mainbus
 file arch/luna88k/dev/lunafb.c				fb
 file arch/luna88k/dev/omrasops.c			fb
