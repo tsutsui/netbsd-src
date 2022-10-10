@@ -51,6 +51,8 @@ __KERNEL_RCSID(0, "$NetBSD: omrasops.c,v 1.21 2019/07/31 02:09:02 rin Exp $");
  * by one.
  */
 
+#include "rasops_glue.h"
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/device.h>
@@ -186,9 +188,14 @@ static rowattr_t rowattr[OMRASOPS_MAX_ROWS];
 #define	GETFONTBITS(psrc, x, w, dst)	FASTGETBITS(psrc, x, w, dst)
 #else
 #include <dev/rasops/rasops_masks.h>
+#if (NRASOPS1 + NRASOPS2 + NRASOPS4) == 0
+#include <dev/rasops/rasops_masks.c>
+#endif
+
 #define	GETFONTBITS(psrc, x, w, dst)	do {				\
 	(dst) = getbits_unaligned(psrc, x, w);				\
 	} while (0)
+
 static uint32_t
 getbits_unaligned(uint8_t *psrc, int start, int width)
 {
