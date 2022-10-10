@@ -69,13 +69,16 @@ __KERNEL_RCSID(0, "$NetBSD: omrasops.c,v 1.21 2019/07/31 02:09:02 rin Exp $");
 #endif
 
 /* To provide optimization conditions to compilers */
-#if defined(__GNUC__) && __GNUC__ >= 4
+#if defined(__GNUC__)
+#if __GNUC__ >= 4
 #define ASSUME(cond)	if (!(cond)) __unreachable()
+#endif
 #elif defined(__clang__)
 #if __has_builtin(__builtin_assume)
 #define ASSUME(cond)	__builtin_assume(cond)
 #endif
-#else
+#endif
+#if !defined(ASSUME)
 #define ASSUME(cond)	(void)(cond)
 #endif
 
