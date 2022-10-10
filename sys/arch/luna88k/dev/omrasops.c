@@ -78,6 +78,9 @@ __KERNEL_RCSID(0, "$NetBSD: omrasops.c,v 1.21 2019/07/31 02:09:02 rin Exp $");
 #endif
 
 #if defined(__GNUC__) && __GNUC__ < 4
+#define bool	boolean_t
+#define true	TRUE
+#define false	FALSE
 #if defined(__m88k__)
 static inline uint32_t
 __builtin_clz(uint32_t val)
@@ -276,14 +279,14 @@ om_set_rowattr(int row, uint8_t fg, uint8_t bg)
 		/* From the initial (erased) state, */
 		if (rowattr[row].fg != fg && rowattr[row].bg != bg) {
 			/* if both are changed at once, it's multi color */
-			rowattr[row].ismulti = TRUE;
+			rowattr[row].ismulti = true;
 		} else {
 			/* otherwise, it's single color */
 			rowattr[row].fg = fg;
 			rowattr[row].bg = bg;
 		}
 	} else {
-		rowattr[row].ismulti = TRUE;
+		rowattr[row].ismulti = true;
 	}
 }
 
@@ -292,7 +295,7 @@ om_reset_rowattr(int row, uint8_t bg)
 {
 
 	/* Setting fg equal to bg means 'reset' or 'erased'. */
-	rowattr[row].ismulti = FALSE;
+	rowattr[row].ismulti = false;
 	rowattr[row].bg = bg;
 	rowattr[row].fg = bg;
 }
@@ -1222,7 +1225,7 @@ om4_copyrows(void *cookie, int srcrow, int dstrow, int nrows)
 	srcplane = 0;
 	while (nrows > 0) {
 		r = 1;
-		if (rowattr[srcrow].ismulti == FALSE &&
+		if (rowattr[srcrow].ismulti == false &&
 		    rowattr[srcrow].fg == rowattr[srcrow].bg &&
 		    rowattr[srcrow].all == rowattr[dstrow].all) {
 			goto skip;
@@ -1326,7 +1329,7 @@ om1_copycols(void *cookie, int startrow, int srccol, int dstcol, int ncols)
 	int scanspan, height, w, y, srcx, dstx;
 	int sb, eb, db, sboff, full, cnt, lnum, rnum;
 	uint32_t lmask, rmask, tmp;
-	uint8_t sbover;
+	bool sbover;
 
 	scanspan = ri->ri_stride;
 	y = ri->ri_font->fontheight * startrow;
@@ -1459,7 +1462,7 @@ om4_copycols(void *cookie, int startrow, int srccol, int dstcol, int ncols)
 	int scanspan, height, w, y, srcx, dstx;
 	int sb, eb, db, sboff, full, cnt, lnum, rnum;
 	uint32_t lmask, rmask, tmp;
-	uint8_t sbover;
+	bool sbover;
 
 	scanspan = ri->ri_stride;
 	y = ri->ri_font->fontheight * startrow;
