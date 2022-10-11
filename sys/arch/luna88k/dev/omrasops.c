@@ -199,7 +199,7 @@ static rowattr_t rowattr[OMRASOPS_MAX_ROWS];
 	(dst) = getbits_unaligned(psrc, x, w);				\
 	} while (0)
 
-static uint32_t
+static inline uint32_t
 getbits_unaligned(uint8_t *psrc, int start, int width)
 {
 	uint32_t dw;
@@ -208,10 +208,10 @@ getbits_unaligned(uint8_t *psrc, int start, int width)
 	/* XXX assume WSDISPLAY_FONTORDER_L2R bit order */
 	len = 32 - start;
 	if (len >= width) {
-		dw  = MBR(be32dec(psrc), len - width);
+		dw  = be32dec(psrc) >> (len - width);
 	} else {
-		dw  = MBL(be32dec(psrc), width - len);
-		dw |= MBR(be32dec(&psrc[4]), 32 - (width - len));
+		dw  = be32dec(psrc) << (width - len);
+		dw |= be32dec(&psrc[4]) >> (32 - (width - len));
 	}
 	return dw;
 }
