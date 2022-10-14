@@ -997,7 +997,6 @@ luna88k_bootstrap(void)
 	vsize_t symsize;
 #endif
 	extern void m8820x_initialize_cpu(cpuid_t);
-	extern void m8820x_set_sapr(cpuid_t, apr_t);
 
 	cmmu = &cmmu8820x;
 
@@ -1075,7 +1074,7 @@ luna88k_bootstrap(void)
 		if (cpu == master_cpu)
 			continue;
 		m8820x_initialize_cpu(cpu);
-		cmmu_set_sapr(cpu, kernel_pmap->pm_apr);
+		cmmu_set_sapr(kernel_pmap->pm_apr);
 	}
 	/* Release the cpu_mutex */
 	cpu_boot_secondary_processors();
