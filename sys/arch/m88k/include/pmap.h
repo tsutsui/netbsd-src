@@ -70,6 +70,7 @@ void	pmap_bootstrap_cpu(cpuid_t);
 void	pmap_cache_ctrl(pmap_t, vaddr_t, vaddr_t, u_int);
 void	pmap_proc_iflush(struct proc *, vaddr_t, vsize_t);
 #define pmap_unuse_final(p)		/* nothing */
+int	pmap_set_modify(pmap_t, vaddr_t);
 boolean_t pmap_unsetbit(struct vm_page *, int);
 
 /*
