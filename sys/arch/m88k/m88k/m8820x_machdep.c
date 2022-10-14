@@ -97,12 +97,11 @@
 cpuid_t	m8820x_init(void);
 void	m8820x_cpu_configuration_print(int);
 void	m8820x_shutdown(void);
-void	m8820x_set_sapr(cpuid_t, apr_t);
+void	m8820x_set_sapr(apr_t);
 void	m8820x_set_uapr(apr_t);
 void	m8820x_flush_tlb(cpuid_t, u_int, vaddr_t, u_int);
 void	m8820x_flush_cache(cpuid_t, paddr_t, psize_t);
 void	m8820x_flush_inst_cache(cpuid_t, paddr_t, psize_t);
-void	m8820x_flush_data_page(cpuid_t, paddr_t);
 void	m8820x_dma_cachectl(pmap_t, vaddr_t, vsize_t, int);
 void	m8820x_dma_cachectl_pa(paddr_t, psize_t, int);
 void	m8820x_initialize_cpu(cpuid_t);
@@ -119,7 +118,6 @@ struct cmmu_p cmmu8820x = {
 	m8820x_flush_tlb,
 	m8820x_flush_cache,
 	m8820x_flush_inst_cache,
-	m8820x_flush_data_page,
 	m8820x_dma_cachectl,
 	m8820x_dma_cachectl_pa,
 #ifdef MULTIPROCESSOR
@@ -483,8 +481,10 @@ m8820x_shutdown()
 }
 
 void
-m8820x_set_sapr(cpuid_t cpu, apr_t ap)
+m8820x_set_sapr(apr_t ap)
 {
+	int cpu = cpu_number();
+
 	CMMU_LOCK;
 	m8820x_cmmu_set_reg(CMMU_SAPR, ap, MODE_ALL, cpu, ALL_CMMUS);
 	CMMU_UNLOCK;
@@ -529,12 +529,6 @@ m8820x_flush_tlb(cpuid_t cpu, unsigned kernel, vaddr_t vaddr, u_int count)
 		    kernel ? CMMU_FLUSH_SUPER_ALL : CMMU_FLUSH_USER_ALL,
 		    MODE_ALL, cpu, ALL_CMMUS);
 		break;
-	case 3:
-		m8820x_cmmu_set_cmd(
-		    kernel ? CMMU_FLUSH_SUPER_PAGE : CMMU_FLUSH_USER_PAGE,
-		    MODE_ALL | ADDR_VAL, cpu, ALL_CMMUS, vaddr);
-		vaddr += PAGE_SIZE;
-		/* FALLTHROUGH */
 	case 2:
 		m8820x_cmmu_set_cmd(
 		    kernel ? CMMU_FLUSH_SUPER_PAGE : CMMU_FLUSH_USER_PAGE,
@@ -636,23 +630,6 @@ m8820x_flush_inst_cache(cpuid_t cpu, paddr_t pa, psize_t size)
 		size -= count;
 		m8820x_cmmu_wait(cpu);
 	}
-
-	CMMU_UNLOCK;
-	set_psr(psr);
-}
-
-void
-m8820x_flush_data_page(cpuid_t cpu, paddr_t pa)
-{
-	uint32_t psr;
-
-	psr = get_psr();
-	set_psr(psr | PSR_IND);
-	CMMU_LOCK;
-
-	m8820x_cmmu_set_cmd(CMMU_FLUSH_CACHE_CBI_PAGE,
-	    MODE_VAL /* | ADDR_VAL */, cpu, DATA_CMMU, pa);
-	m8820x_cmmu_wait(cpu);
 
 	CMMU_UNLOCK;
 	set_psr(psr);
