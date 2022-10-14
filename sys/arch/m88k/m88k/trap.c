@@ -606,8 +606,6 @@ m88110_trap(u_int type, struct trapframe *frame)
 #endif
 	int sig = 0;
 
-	extern int pmap_set_modify(pmap_t, vaddr_t);
-
 	uvmexp.traps++;
 
 	if ((l = curlwp) == NULL)
