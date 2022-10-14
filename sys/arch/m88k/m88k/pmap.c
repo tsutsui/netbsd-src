@@ -1,4 +1,4 @@
-/*	$OpenBSD: pmap.c,v 1.37 2007/11/21 19:41:43 miod Exp $	*/
+/*	$OpenBSD: pmap.c,v 1.38 2007/11/22 05:46:07 miod Exp $	*/
 /*
  * Copyright (c) 2001-2004, Miodrag Vallat
  * Copyright (c) 1998-2001 Steve Murphree, Jr.
@@ -173,7 +173,7 @@ pt_entry_t *pmap_pte(pmap_t, vaddr_t);
  */
 static void flush_atc_entry(pmap_t, vaddr_t);
 pt_entry_t *pmap_expand_kmap(vaddr_t, vm_prot_t, int);
-void	pmap_remove_pte(pmap_t, vaddr_t, pt_entry_t *);
+void	pmap_remove_pte(pmap_t, vaddr_t, pt_entry_t *, boolean_t);
 void	pmap_remove_range(pmap_t, vaddr_t, vaddr_t);
 void	pmap_expand(pmap_t, vaddr_t);
 void	pmap_release(pmap_t);
@@ -1043,7 +1043,7 @@ pmap_reference(pmap_t pmap)
  * its zone.
  */
 void
-pmap_remove_pte(pmap_t pmap, vaddr_t va, pt_entry_t *pte)
+pmap_remove_pte(pmap_t pmap, vaddr_t va, pt_entry_t *pte, boolean_t flush)
 {
 	pt_entry_t opte;
 	pv_entry_t prev, cur, pvl;
@@ -1052,7 +1052,7 @@ pmap_remove_pte(pmap_t pmap, vaddr_t va, pt_entry_t *pte)
 
 #ifdef PMAPDEBUG
 	if (pmap_debug & CD_RM)
-		printf("pmap_remove_pte(%p, %lx)\n", pmap, va);
+		printf("pmap_remove_pte(%p, %lx, %d)\n", pmap, va, flush);
 #endif
 
 	if (pte == NULL || !PDT_VALID(pte)) {
@@ -1073,7 +1073,8 @@ pmap_remove_pte(pmap_t pmap, vaddr_t va, pt_entry_t *pte)
 	 */
 
 	opte = invalidate_pte(pte) & PG_M_U;
-	flush_atc_entry(pmap, va);
+	if (flush)
+		flush_atc_entry(pmap, va);
 
 	pg = PHYS_TO_VM_PAGE(pa);
 
@@ -1184,7 +1185,8 @@ pmap_remove_range(pmap_t pmap, vaddr_t s, vaddr_t e)
 			va = eseg;
 		else {
 			while (va != eseg) {
-				pmap_remove_pte(pmap, va, sdt_pte(sdt, va));
+				pmap_remove_pte(pmap, va, sdt_pte(sdt, va),
+				    TRUE);
 				va += PAGE_SIZE;
 			}
 		}
@@ -1322,7 +1324,7 @@ remove_all_Retry:
 			goto next;
 		}
 
-		pmap_remove_pte(pmap, va, pte);
+		pmap_remove_pte(pmap, va, pte, TRUE);
 
 		/*
 		 * Do not free any page tables,
@@ -1646,7 +1648,7 @@ pmap_enter(pmap_t pmap, vaddr_t va, paddr_t pa, vm_prot_t prot, int flags)
 	} else {
 		/* Remove old mapping from the PV list if necessary. */
 		if (PDT_VALID(pte))
-			pmap_remove_pte(pmap, va, pte);
+			pmap_remove_pte(pmap, va, pte, FALSE);
 
 		if (pvl != NULL) {
 			/*
@@ -1655,7 +1657,7 @@ pmap_enter(pmap_t pmap, vaddr_t va, paddr_t pa, vm_prot_t prot, int flags)
 			 */
 			if (pvl->pv_pmap == NULL) {
 				/*
-				 *	No mappings yet
+				 * No mappings yet
 				 */
 				pvl->pv_va = va;
 				pvl->pv_pmap = pmap;
@@ -1667,6 +1669,9 @@ pmap_enter(pmap_t pmap, vaddr_t va, paddr_t pa, vm_prot_t prot, int flags)
 				 */
 				pv_e = pool_get(&pvpool, PR_NOWAIT);
 				if (pv_e == NULL) {
+					/* Invalidate the old pte anyway */
+					flush_atc_entry(pmap, va);
+
 					if (flags & PMAP_CANFAIL) {
 						PMAP_UNLOCK(pmap);
 						splx(spl);
