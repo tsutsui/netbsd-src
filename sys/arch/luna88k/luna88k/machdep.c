@@ -400,7 +400,7 @@ cpu_startup(void)
 	 * Initialize error message buffer (at end of core).
 	 * avail_end was pre-decremented in luna88k_bootstrap() to compensate.
 	 */
-	for (i = 0; i < btoc(MSGBUFSIZE); i++)
+	for (i = 0; i < atop(MSGBUFSIZE); i++)
 		pmap_kenter_pa((paddr_t)msgbufp + i * PAGE_SIZE,
 		    avail_end + i * PAGE_SIZE, VM_PROT_READ | VM_PROT_WRITE);
 	pmap_update(pmap_kernel());
@@ -421,7 +421,7 @@ cpu_startup(void)
 	 */
 	printf(version);
 	identifycpu();
-	format_bytes(pbuf, sizeof(pbuf), ctob(physmem));
+	format_bytes(pbuf, sizeof(pbuf), ptoa(physmem));
 	printf("total memory = %s\n", pbuf);
 
 	/*
@@ -672,7 +672,7 @@ cpu_dump(dev_type_dump((*dump)), daddr_t *blknop)
 	chdr->cputype = cputyp;
 	/* luna88k only uses a single segment. */
 	chdr->ram_segs[0].start = 0;
-	chdr->ram_segs[0].size = ctob(physmem);
+	chdr->ram_segs[0].size = ptoa(physmem);
 
 	error = (*dump)(dumpdev, *blknop, (caddr_t)buf, sizeof(buf));
 	*blknop += btodb(sizeof(buf));
@@ -1022,7 +1022,7 @@ luna88k_bootstrap(void)
 #endif
 	first_addr = round_page(first_addr);
 	last_addr = size_memory();
-	physmem = btoc(last_addr);
+	physmem = atop(last_addr);
 
 	setup_board_config();
 	master_cpu = cmmu_init();
