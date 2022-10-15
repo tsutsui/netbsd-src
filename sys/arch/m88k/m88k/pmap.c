@@ -1,4 +1,4 @@
-/*	$OpenBSD: pmap.c,v 1.40 2007/11/24 11:13:56 miod Exp $	*/
+/*	$OpenBSD: pmap.c,v 1.41 2007/12/02 21:22:19 miod Exp $	*/
 /*
  * Copyright (c) 2001-2004, Miodrag Vallat
  * Copyright (c) 1998-2001 Steve Murphree, Jr.
@@ -804,6 +804,7 @@ pmap_zero_page(paddr_t pa)
 	int spl;
 	int cpu = cpu_number();
 	pt_entry_t *pte;
+	extern void zeropage(vaddr_t);
 
 #ifdef PMAPDEBUG
 	if (pmap_debug & CD_ZERO)
@@ -823,8 +824,7 @@ pmap_zero_page(paddr_t pa)
 	 * bound to only one cpu.
 	 */
 	cmmu_flush_tlb(cpu, TRUE, va, 1);
-
-	bzero((void *)va, PAGE_SIZE);
+	zeropage(va);
 
 	splx(spl);
 }
@@ -2065,6 +2065,7 @@ pmap_copy_page(paddr_t src, paddr_t dst)
 	int spl;
 	pt_entry_t *dstpte, *srcpte;
 	int cpu = cpu_number();
+	extern void copypage(vaddr_t, vaddr_t);
 
 #ifdef PMAPDEBUG
 	if (pmap_debug & CD_COPY)
@@ -2089,7 +2090,7 @@ pmap_copy_page(paddr_t src, paddr_t dst)
 	 * bound to only one cpu.
 	 */
 	cmmu_flush_tlb(cpu, TRUE, dstva, 2);
-	bcopy((const void *)srcva, (void *)dstva, PAGE_SIZE);
+	copypage(srcva, dstva);
 
 	splx(spl);
 }
