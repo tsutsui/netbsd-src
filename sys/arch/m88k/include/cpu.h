@@ -1,4 +1,4 @@
-/*	$OpenBSD: cpu.h,v 1.15 2006/05/08 14:36:09 miod Exp $ */
+/*	$OpenBSD: cpu.h,v 1.18 2007/01/12 21:41:53 aoyama Exp $ */
 /*
  * Copyright (c) 1996 Nivas Madhur
  * Copyright (c) 1992, 1993
@@ -71,8 +71,10 @@
 #define	MAX_CPUS	4
 #endif
 #else
+#if !defined(MAX_CPUS)
 #undef	MAX_CPUS
 #define	MAX_CPUS	1
+#endif
 #endif
 
 #ifndef _LOCORE
