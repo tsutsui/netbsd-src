@@ -298,7 +298,12 @@ vmapbuf(bp, len)
 		kva += PAGE_SIZE;
 	}
 	/* make sure snooping will be possible... */
-	pmap_cache_ctrl(pmap_kernel(), ova, ova + len, CACHE_GLOBAL);
+#if !defined(MULTIPROCESSOR) && defined(M88110)
+	if (CPU_IS88110)
+		pmap_cache_ctrl(pmap_kernel(), ova, ova + len, 0);
+	else
+#endif
+		pmap_cache_ctrl(pmap_kernel(), ova, ova + len, CACHE_GLOBAL);
 	pmap_update(pmap_kernel());
 }
 
