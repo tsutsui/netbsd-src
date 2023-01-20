@@ -167,7 +167,7 @@ typedef u_long	bus_space_handle_t;
 		jne	1b"					:	\
 								:	\
 		    "r" ((h) + (o)), "g" (a), "g" (c)		:	\
-		    "a0","a1","d0");					\
+		    "a0","a1","d0","memory");				\
 } while (0);
 
 #define	bus_space_read_multi_2(t, h, o, a, c) do {			\
@@ -181,7 +181,7 @@ typedef u_long	bus_space_handle_t;
 		jne	1b"					:	\
 								:	\
 		    "r" ((h) + (o)), "g" (a), "g" (c)		:	\
-		    "a0","a1","d0");					\
+		    "a0","a1","d0","memory");				\
 } while (0);
 
 #define	bus_space_read_multi_4(t, h, o, a, c) do {			\
@@ -195,7 +195,7 @@ typedef u_long	bus_space_handle_t;
 		jne	1b"					:	\
 								:	\
 		    "r" ((h) + (o)), "g" (a), "g" (c)		:	\
-		    "a0","a1","d0");					\
+		    "a0","a1","d0","memory");				\
 } while (0);
 
 /*
@@ -219,7 +219,7 @@ typedef u_long	bus_space_handle_t;
 		jne	1b"					:	\
 								:	\
 		    "r" ((h) + (o)), "g" (a), "g" (c)		:	\
-		    "a0","a1","d0");					\
+		    "a0","a1","d0","memory");				\
 } while (0);
 
 #define	bus_space_read_region_2(t, h, o, a, c) do {			\
@@ -233,7 +233,7 @@ typedef u_long	bus_space_handle_t;
 		jne	1b"					:	\
 								:	\
 		    "r" ((h) + (o)), "g" (a), "g" (c)		:	\
-		    "a0","a1","d0");					\
+		    "a0","a1","d0","memory");					\
 } while (0);
 
 #define	bus_space_read_region_4(t, h, o, a, c) do {			\
@@ -246,8 +246,8 @@ typedef u_long	bus_space_handle_t;
 		subql	#1,%%d0					;	\
 		jne	1b"					:	\
 								:	\
-		    "r" ((h) + (o)), "g" (a), "g" (c)		:	\
-		    "a0","a1","d0");					\
+		    "r" ((h) + (o)), "a" (a), "g" (c)		:	\
+		    "a0","a1","d0","memory");					\
 } while (0);
 
 /*
