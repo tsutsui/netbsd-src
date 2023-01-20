@@ -120,9 +120,6 @@ void	loadustp(int);
 void	doboot(void) __attribute__((__noreturn__));
 int	nmihand(void *);
 
-/* clock.c functions */
-void	next68k_calibrate_delay(void);
-
 #endif /* _KERNEL */
 
 #define NEXT_RAMBASE  (0x4000000) /* really depends on slot, but... */

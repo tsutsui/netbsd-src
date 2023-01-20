@@ -48,38 +48,6 @@ __KERNEL_RCSID(0, "$NetBSD: clock.c,v 1.12 2010/04/24 19:58:13 dbj Exp $");
  * -- jewell@mit.edu
  */
 
-/*
- * Note that the value of delay_divisor is roughly
- * 2048 / cpuspeed (where cpuspeed is in MHz) on 68020
- * and 68030 systems.  See clock.c for the delay
- * calibration algorithm.
- */
-int	cpuspeed;		  /* relative cpu speed; XXX skewed on 68040 */
-int	delay_divisor = 2048/25;  /* delay constant */
-
-/*
- * Calibrate the delay constant.
- */
-void
-next68k_calibrate_delay(void)
-{
-	extern int delay_divisor;
-
-	/* @@@ write this once we know how to read
-	 * a real time clock
-	 */
-
-	/*
-	 * Sanity check the delay_divisor value.  If we totally lost,
-	 * assume a 25MHz CPU;
-	 */
-	if (delay_divisor == 0)
-		delay_divisor = 2048 / 25;
-
-	/* Calculate CPU speed. */
-	cpuspeed = 2048 / delay_divisor;
-}
-
 int clock_intr(void *);
 
 int
