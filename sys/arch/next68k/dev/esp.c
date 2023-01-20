@@ -509,6 +509,7 @@ esp_dma_intr(struct ncr53c9x_softc *sc)
 			}
 #endif
 
+			mutex_exit(&sc->sc_lock);	/* for nextdma intr */
 			while (!nextdma_finished(nsc)) {
 			/* esp_dma_isactive(sc)) { */
 				NDTRACEIF (ndtrace_addc('w'));
@@ -602,7 +603,7 @@ esp_dma_intr(struct ncr53c9x_softc *sc)
 
 			}
 		out:
-			;
+			mutex_enter(&sc->sc_lock);	/* for nextdma intr */
 
 #ifdef ESP_DEBUG
 /* 			esp_dma_nest--; */
