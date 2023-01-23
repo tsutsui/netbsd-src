@@ -389,7 +389,7 @@ gpx_attach(device_t parent, device_t self, void *aux)
 	sc->sc_scr = scr;
 
 	aprint_normal("\n");
-	aprint_normal_dev(self, ": %dx%d %d plane color framebuffer\n",
+	aprint_normal_dev(self, "%dx%d %d plane color framebuffer\n",
 	    GPX_WIDTH, GPX_VISHEIGHT, scr->ss_depth);
 
 	aa.console = console;
