@@ -103,6 +103,7 @@
 #include <dev/cons.h>
 
 #include <dev/wscons/wsconsio.h>
+#include <dev/wscons/wscons_callbacks.h>
 #include <dev/wscons/wsdisplayvar.h>
 #include <dev/rasops/rasops.h>
 #include <dev/wsfont/wsfont.h>
@@ -874,6 +875,8 @@ gpx_setup_screen(struct gpx_screen *ss)
 	ri->ri_stride = GPX_WIDTH;
 	ri->ri_flg = RI_CENTER;		/* no RI_CLEAR as ri_bits is NULL! */
 	ri->ri_hw = ss;
+	if (ss == &gpx_consscr)
+		ri->ri_flg |= RI_NO_AUTO;
 
 	/*
 	 * We can not let rasops select our font, because we need to use
@@ -1235,13 +1238,24 @@ gpx_resetcmap(struct gpx_screen *ss)
  * Console support code
  */
 
-int	gpxcnprobe(void);
-int	gpxcninit(void);
+cons_decl(gpx);
 
-int
-gpxcnprobe(void)
+#include "dzkbd.h"
+
+#include <dev/dec/dzreg.h>
+#include <dev/dec/dzvar.h>
+#include <dev/dec/dzkbdvar.h>
+
+/*
+ * Called very early to setup the glass tty as console.
+ * Because it's called before the VM system is initialized, virtual memory
+ * for the framebuffer can be stolen directly without disturbing anything.
+ */
+void
+gpxcnprobe(struct consdev *cndev)
 {
 	extern vaddr_t virtual_avail;
+	extern const struct cdevsw wsdisplay_cdevsw;
 	volatile struct adder *adder;
 	vaddr_t tmp;
 	int depth;
@@ -1265,7 +1279,7 @@ gpxcnprobe(void)
 		status = adder->status;
 		iounaccess(tmp, 1);
 		if (status == offsetof(struct adder, status))
-			return 0;
+			return;
 
 		/* Check for a recognized color depth */
 		tmp = virtual_avail;
@@ -1273,16 +1287,17 @@ gpxcnprobe(void)
 		depth = *(uint16_t *)
 		    (tmp + (GPX_READBACK_OFFSET & VAX_PGOFSET)) & 0x00f0;
 		iounaccess(tmp, 1);
-		if (depth == 0x00f0 || depth == 0x0080)
-			return 1;
+		if (depth != 0x00f0 && depth != 0x0080)
+			return;
 
+		cndev->cn_pri = CN_INTERNAL;
+		cndev->cn_dev =
+		    makedev(cdevsw_lookup_major(&wsdisplay_cdevsw), 0);
 		break;
 
 	default:
 		break;
 	}
-
-	return 0;
 }
 
 /*
@@ -1290,8 +1305,8 @@ gpxcnprobe(void)
  * Because it's called before the VM system is initialized, virtual memory
  * for the framebuffer can be stolen directly without disturbing anything.
  */
-int
-gpxcninit(void)
+void
+gpxcninit(struct consdev *cndev)
 {
 	struct gpx_screen *ss = &gpx_consscr;
 	extern vaddr_t virtual_avail;
@@ -1330,16 +1345,15 @@ gpxcninit(void)
 		iounaccess((vaddr_t)ss->ss_vdac, 1);
 		iounaccess((vaddr_t)ss->ss_adder, 1);
 		virtual_avail = ova;
-		return 1;
+		return;
 	}
 
 	ri = &ss->ss_ri;
 	ri->ri_ops.allocattr(ri, 0, 0, 0, &defattr);
 	wsdisplay_cnattach(&gpx_stdscreen, ri, 0, 0, defattr);
+	cn_tab->cn_pri = CN_INTERNAL;
 
 #if NDZKBD > 0
 	dzkbd_cnattach(0); /* Connect keyboard and screen together */
 #endif
-
-	return 0;
 }
