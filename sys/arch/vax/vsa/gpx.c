@@ -346,11 +346,8 @@ gpx_attach(device_t parent, device_t self, void *aux)
 		scr = &gpx_consscr;
 		sc->sc_nscreens = 1;
 	} else {
-		scr = malloc(sizeof(struct gpx_screen), M_DEVBUF, M_NOWAIT);
-		if (scr == NULL) {
-			aprint_error(": can not allocate memory\n");
-			return;
-		}
+		scr = malloc(sizeof(struct gpx_screen), M_DEVBUF,
+		    M_WAITOK | M_ZERO);
 
 		tmp = vax_map_physmem(va->va_paddr + GPX_READBACK_OFFSET, 1);
 		if (tmp == 0L) {
