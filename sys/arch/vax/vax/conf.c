@@ -45,11 +45,27 @@ __KERNEL_RCSID(0, "$NetBSD: conf.c,v 1.68 2015/07/05 02:10:53 matt Exp $");
  */
 #include <dev/cons.h>
 
+#include "gpx.h"
 #include "lcg.h"
 #include "qv.h"
 #include "smg.h"
 #include "spx.h"
 #include "wskbd.h"
+
+#if NGPX > 0
+#if NWSKBD > 0
+#define gpxcngetc wskbd_cngetc
+#else
+static int
+gpxcngetc(dev_t dev)
+{
+	return 0;
+}
+#endif
+
+#define gpxcnputc wsdisplay_cnputc
+#define gpxcnpollc nullcnpollc
+#endif /* NGPX > 0 */
 
 #if NLCG > 0
 #if NWSKBD > 0
@@ -110,6 +126,7 @@ spxcngetc(dev_t dev)
 
 cons_decl(gen);
 cons_decl(dz);
+cons_decl(gpx);
 cons_decl(qd);
 cons_decl(lcg);
 cons_decl(qv);
@@ -132,6 +149,9 @@ struct	consdev constab[]={
 #if NQD
 	cons_init(qd),
 #endif
+#endif
+#if NGPX
+	cons_init(gpx),
 #endif
 #if NLCG
 	cons_init(lcg),

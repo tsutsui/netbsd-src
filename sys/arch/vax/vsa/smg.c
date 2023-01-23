@@ -40,6 +40,7 @@ __KERNEL_RCSID(0, "$NetBSD: smg.c,v 1.62 2023/01/13 19:45:45 tsutsui Exp $");
 #include <machine/vsbus.h>
 #include <machine/sid.h>
 #include <machine/ka420.h>
+#include <machine/scb.h>
 
 #include <dev/cons.h>
 
@@ -187,34 +188,64 @@ static	struct smg_screen *curscr;
 static	callout_t smg_cursor_ch;
 
 int
-smg_match(device_t parent, cfdata_t match, void *aux)
+smg_match(device_t parent, cfdata_t cf, void *aux)
 {
 	struct vsbus_attach_args * const va = aux;
 	volatile uint16_t *ccmd;
 	volatile uint16_t *cfgtst;
 	uint16_t tmp, tmp2;
 
-	if (vax_boardtype == VAX_BTYP_49 || vax_boardtype == VAX_BTYP_53)
+	switch (vax_boardtype) {
+	default:
 		return 0;
 
-	ccmd = (uint16_t *)va->va_addr;
-	cfgtst = (uint16_t *)vax_map_physmem(VS_CFGTST, 1);
-	/*
-	 * Try to find the cursor chip by testing the flip-flop.
-	 * If nonexistent, no glass tty.
-	 */
-	ccmd[0] = CUR_CMD_HSHI|CUR_CMD_FOPB;
-	DELAY(300000);
-	tmp = cfgtst[0];
-	ccmd[0] = CUR_CMD_TEST|CUR_CMD_HSHI;
-	DELAY(300000);
-	tmp2 = cfgtst[0];
-	vax_unmap_physmem((vaddr_t)cfgtst, 1);
+	case VAX_BTYP_410:
+	case VAX_BTYP_420:
+	case VAX_BTYP_43:
+		if (va->va_paddr != KA420_CUR_BASE)
+			return 0;
 
-	if (tmp2 != tmp)
-		return 20; /* Using periodic interrupt */
-	else
-		return 0;
+		/* not present on microvaxes */
+		if ((vax_confdata & KA420_CFG_MULTU) != 0)
+			return 0;
+		/*
+		 * If the color option board is present, do not attach
+		 * unless we are explicitely asked to via device flags.
+		 */
+		if ((vax_confdata & KA420_CFG_VIDOPT) != 0 &&
+		    (cf->cf_flags & 1) == 0)
+			return 0;
+		break;
+	}
+
+	/* when already running as console, always fake things */
+	if ((vax_confdata & (KA420_CFG_L3CON | KA420_CFG_VIDOPT)) == 0 &&
+		cn_tab->cn_putc == wsdisplay_cnputc) {
+		struct vsbus_softc *sc = device_private(parent);
+
+		sc->sc_mask = 0x08;
+		scb_fake(0x44, va->va_br == 0x14 ? 0x14 : 0x15);
+		return 20;
+	} else {
+		/*
+		 * Try to find the cursor chip by testing the flip-flop.
+		 * If nonexistent, no glass tty.
+		 */
+		ccmd = (uint16_t *)va->va_addr;
+		cfgtst = (uint16_t *)vax_map_physmem(VS_CFGTST, 1);
+		ccmd[0] = CUR_CMD_HSHI|CUR_CMD_FOPB;
+		DELAY(300000);
+		tmp = cfgtst[0];
+		ccmd[0] = CUR_CMD_TEST|CUR_CMD_HSHI;
+		DELAY(300000);
+		tmp2 = cfgtst[0];
+		vax_unmap_physmem((vaddr_t)cfgtst, 1);
+
+		if (tmp2 != tmp)
+			return 20; /* Using periodic interrupt */
+		else
+			return 0;
+	}
 }
 
 void
@@ -234,7 +265,7 @@ smg_attach(device_t parent, device_t self, void *aux)
 	if (curscr == NULL)
 		callout_init(&smg_cursor_ch, 0);
 	curscr = &smg_conscreen;
-	aa.console = (vax_confdata & (KA420_CFG_L3CON|KA420_CFG_MULTU)) == 0;
+	aa.console = (vax_confdata & (KA420_CFG_L3CON | KA420_CFG_VIDOPT)) == 0;
 
 	aa.scrdata = &smg_screenlist;
 	aa.accessops = &smg_accessops;
