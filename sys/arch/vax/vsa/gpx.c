@@ -1,4 +1,4 @@
-/* $NetBSD$ */
+/*	$NetBSD$ */
 /*	$OpenBSD: gpx.c,v 1.25 2014/12/23 21:39:12 miod Exp $	*/
 /*
  * Copyright (c) 2006 Miodrag Vallat.
@@ -185,7 +185,7 @@ struct	gpx_screen {
 	u_int		ss_depth;
 	u_int		ss_gpr;		/* font glyphs per row */
 	struct adder	*ss_adder;
-	void 		*ss_vdac;
+	void		*ss_vdac;
 	uint8_t		ss_cmap[256 * 3];
 #if 0
 	struct dc503reg	*ss_cursor;
@@ -245,7 +245,7 @@ static void gpx_resetcmap(struct gpx_screen *);
 static void gpx_reset_viper(struct gpx_screen *);
 static int gpx_setup_screen(struct gpx_screen *);
 static void gpx_upload_font(struct gpx_screen *);
-static int gpx_viper_write(struct gpx_screen *, u_int, u_int16_t);
+static int gpx_viper_write(struct gpx_screen *, u_int, uint16_t);
 static int gpx_wait(struct gpx_screen *, int);
 
 static void gpx_copycols(void *, int, int, int, int);
@@ -670,7 +670,7 @@ gpx_wait(struct gpx_screen *ss, int bits)
 }
 
 int
-gpx_viper_write(struct gpx_screen *ss, u_int reg, u_int16_t val)
+gpx_viper_write(struct gpx_screen *ss, u_int reg, uint16_t val)
 {
 	if (gpx_wait(ss, ADDRESS_COMPLETE) == 0 &&
 	    gpx_wait(ss, TX_READY) == 0) {
@@ -837,6 +837,7 @@ gpx_reset_viper(struct gpx_screen *ss)
 void
 gpx_clear_screen(struct gpx_screen *ss)
 {
+
 	ss->ss_adder->x_limit = GPX_WIDTH;
 	ss->ss_adder->y_limit = GPX_HEIGHT;
 	ss->ss_adder->y_offset_pending = 0;
@@ -973,10 +974,10 @@ gpx_upload_font(struct gpx_screen *ss)
 {
 	struct rasops_info *ri = &ss->ss_ri;
 	struct wsdisplay_font *font = ri->ri_font;
-	u_int8_t *fontbits, *fb;
+	uint8_t *fontbits, *fb;
 	u_int remaining, nchars, row;
 	u_int i, j;
-	u_int16_t data;
+	uint16_t data;
 
 	/* setup VIPER operand control registers */
 
@@ -1034,12 +1035,12 @@ gpx_upload_font(struct gpx_screen *ss)
 					 */
 					if (j != 1 || (nchars & 1) == 0 ||
 					    remaining != nchars) {
-						data |= ((u_int16_t)*fb) << 8;
+						data |= ((uint16_t)*fb) << 8;
 						fb += font->fontheight;
 					}
 				} else {
 					data =
-					    fb[0] | (((u_int16_t)fb[1]) << 8);
+					    fb[0] | (((uint16_t)fb[1]) << 8);
 					fb += font->fontheight * font->stride;
 				}
 
@@ -1055,7 +1056,9 @@ void
 gpx_copyrect(struct gpx_screen *ss,
     int sx, int sy, int dx, int dy, int w, int h)
 {
-	while (gpx_viper_write(ss, CS_UPDATE_MASK, 0x00ff));
+
+	while (gpx_viper_write(ss, CS_UPDATE_MASK, 0x00ff))
+		continue;
 	gpx_viper_write(ss, MASK_1, 0xffff);
 	gpx_viper_write(ss, VIPER_Z_LOAD | FOREGROUND_COLOR_Z, 255);
 	gpx_viper_write(ss, VIPER_Z_LOAD | BACKGROUND_COLOR_Z, 0);

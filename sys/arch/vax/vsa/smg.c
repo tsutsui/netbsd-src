@@ -27,6 +27,8 @@
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD: smg.c,v 1.62 2023/01/13 19:45:45 tsutsui Exp $");
 
+#include "wsdisplay.h"
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/callout.h>
@@ -219,8 +221,11 @@ smg_match(device_t parent, cfdata_t cf, void *aux)
 	}
 
 	/* when already running as console, always fake things */
-	if ((vax_confdata & (KA420_CFG_L3CON | KA420_CFG_VIDOPT)) == 0 &&
-		cn_tab->cn_putc == wsdisplay_cnputc) {
+	if ((vax_confdata & (KA420_CFG_L3CON | KA420_CFG_VIDOPT)) == 0
+#if NWSDISPLAY > 0
+	    && cn_tab->cn_putc == wsdisplay_cnputc
+#endif
+	) {
 		struct vsbus_softc *sc = device_private(parent);
 
 		sc->sc_mask = 0x08;
@@ -265,7 +270,13 @@ smg_attach(device_t parent, device_t self, void *aux)
 	if (curscr == NULL)
 		callout_init(&smg_cursor_ch, 0);
 	curscr = &smg_conscreen;
-	aa.console = (vax_confdata & (KA420_CFG_L3CON | KA420_CFG_VIDOPT)) == 0;
+	aa.console =
+#if NWSDISPLAY > 0
+	    (vax_confdata & (KA420_CFG_L3CON | KA420_CFG_VIDOPT)) == 0 &&
+	    cn_tab->cn_putc == wsdisplay_cnputc;
+#else
+	    (vax_confdata & (KA420_CFG_L3CON | KA420_CFG_VIDOPT)) == 0;
+#endif
 
 	aa.scrdata = &smg_screenlist;
 	aa.accessops = &smg_accessops;
@@ -612,9 +623,15 @@ smgcninit(struct consdev *cndev)
 {
 	int fcookie;
 	struct wsdisplay_font *console_font;
-	extern void lkccninit(struct consdev *);
-	extern int lkccngetc(dev_t);
+	extern vaddr_t virtual_avail;
 	extern int dz_vsbus_lk201_cnattach(int);
+
+	sm_addr = (void *)virtual_avail;
+	ioaccess((vaddr_t)sm_addr, SMADDR, (SMSIZE / VAX_NBPG));
+	virtual_avail += SMSIZE;
+
+	virtual_avail = round_page(virtual_avail);
+
 	/* Clear screen */
 	memset(sm_addr, 0, 128*864);
 
@@ -649,7 +666,6 @@ smgcninit(struct consdev *cndev)
 void
 smgcnprobe(struct consdev *cndev)
 {
-	extern vaddr_t virtual_avail;
 	extern const struct cdevsw wsdisplay_cdevsw;
 
 	switch (vax_boardtype) {
@@ -659,12 +675,9 @@ smgcnprobe(struct consdev *cndev)
 		if ((vax_confdata & KA420_CFG_L3CON) ||
 		    (vax_confdata & KA420_CFG_MULTU))
 			break; /* doesn't use graphics console */
-		sm_addr = (void *)virtual_avail;
-		virtual_avail += SMSIZE;
-		ioaccess((vaddr_t)sm_addr, SMADDR, (SMSIZE/VAX_NBPG));
 		cndev->cn_pri = CN_INTERNAL;
-		cndev->cn_dev = makedev(cdevsw_lookup_major(&wsdisplay_cdevsw),
-					0);
+		cndev->cn_dev =
+		    makedev(cdevsw_lookup_major(&wsdisplay_cdevsw), 0);
 		break;
 
 	default:
