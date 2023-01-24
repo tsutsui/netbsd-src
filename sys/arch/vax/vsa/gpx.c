@@ -372,7 +372,7 @@ gpx_attach(device_t parent, device_t self, void *aux)
 		scr->ss_vdac = (void *)vax_map_physmem(va->va_paddr +
 		    GPX_VDAC_OFFSET, 1);
 		if (scr->ss_vdac == NULL) {
-			printf(": can not map RAMDAC\n");
+			aprint_error(": can not map RAMDAC\n");
 			goto bad2;
 		}
 
