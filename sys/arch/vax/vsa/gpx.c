@@ -340,8 +340,13 @@ gpx_attach(device_t parent, device_t self, void *aux)
 	vaddr_t tmp;
 
 	sc->sc_dev = self;
-	console = (vax_confdata & KA420_CFG_L3CON) == 0 &&
+	console =
+#if NWSDISPLAY > 0
+	    (vax_confdata & KA420_CFG_L3CON) == 0 &&
 	    cn_tab->cn_putc == wsdisplay_cnputc;
+#else
+	    (vax_confdata & KA420_CFG_L3CON) == 0;
+#endif
 	if (console) {
 		scr = &gpx_consscr;
 		sc->sc_nscreens = 1;
