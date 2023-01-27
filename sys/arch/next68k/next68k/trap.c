@@ -4,7 +4,7 @@
  * This file was taken from mvme68k/mvme68k/trap.c
  * should probably be re-synced when needed.
  * Darrin B. Jewell <jewell@mit.edu> Tue Aug  3 10:53:12 UTC 1999
- * original cvs id: NetBSD: trap.c,v 1.32 1999/08/03 10:52:06 dbj Exp 
+ * original cvs id: NetBSD: trap.c,v 1.32 1999/08/03 10:52:06 dbj Exp
  */
 
 /*
@@ -561,7 +561,7 @@ trap(struct frame *fp, int type, unsigned code, unsigned v)
 			goto dopanic;
 		}
 #endif
-		
+
 		pcb->pcb_onfault = NULL;
 		rv = uvm_fault(map, va, ftype);
 		pcb->pcb_onfault = onfault;

@@ -57,17 +57,17 @@ clock_intr(void *arg)
 	int whilecount = 0;
 
 	if (!INTR_OCCURRED(NEXT_I_TIMER)) {
-		return(0);
+		return 0;
 	}
 
 	do {
 		static int in_hardclock = 0;
 		int s;
-		
+
 		timer = (volatile struct timer_reg *)IIOV(NEXT_P_TIMER);
 		timer->csr |= TIMER_REG_UPDATE;
 
-		if (! in_hardclock) {
+		if (!in_hardclock) {
 			in_hardclock = 1;
 			s = splclock ();
 			hardclock(arg);
@@ -77,7 +77,7 @@ clock_intr(void *arg)
 		if (whilecount++ > 10)
 			panic ("whilecount");
 	} while (INTR_OCCURRED(NEXT_I_TIMER));
-	return(1);
+	return 1;
 }
 
 /*
@@ -114,7 +114,8 @@ setstatclockrate(int newhz)
 	/* XXX should we do something here? XXX */
 }
 
-/* @@@ update this to use the usec timer 
+/*
+ * @@@ update this to use the usec timer
  * Darrin B Jewell <jewell@mit.edu>  Sun Feb  8 05:01:02 1998
  * XXX: Well, there is no more microtime.  But if there is a hardware
  * timer of any sort, it could be added.   ENODOCS.  gdamore.

@@ -100,7 +100,7 @@ typedef u_long	bus_space_handle_t;
        ((*(hp)=(bus_space_handle_t)((t)+((a)-COLORBASE))),0) : (-1))))
 
 #define	bus_space_unmap(t, h, s)
-	
+
 #define	bus_space_subregion(t, h, o, s, hp)				\
      (*(hp)=(h)+(o))
 
