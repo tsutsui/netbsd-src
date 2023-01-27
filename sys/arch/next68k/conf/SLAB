@@ -165,7 +165,7 @@ scsibus* at scsi?
 
 
 # Memory-disk drivers
-pseudo-device	md		
+pseudo-device	md
 
 # Misc.
 pseudo-device	loop			# network loopback

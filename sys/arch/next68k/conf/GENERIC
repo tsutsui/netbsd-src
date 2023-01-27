@@ -213,7 +213,7 @@ uk*	at scsibus? target ? lun ?	# SCSI unknown
 
 
 # Memory-disk drivers
-pseudo-device	md		
+pseudo-device	md
 
 #
 # accept filters
