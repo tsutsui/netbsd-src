@@ -41,14 +41,14 @@ struct nextdma_config {
 	/* This is called when dma shuts down */
 	void			(*nd_shutdown_cb) (void *);
 	/* callback argument */
-	void			*nd_cb_arg;					
+	void			*nd_cb_arg;
 };
 
 struct nextdma_status {
-	bus_dmamap_t	nd_map;			/* map currently in dd_next */
-	int		nd_idx;			/* idx of segment currently in dd_next */
-	bus_dmamap_t	nd_map_cont;		/* map needed to continue DMA */
-	int		nd_idx_cont;		/* segment index to continue DMA */
+	bus_dmamap_t	nd_map;		/* map currently in dd_next */
+	int		nd_idx;       /* idx of segment currently in dd_next */
+	bus_dmamap_t	nd_map_cont;	/* map needed to continue DMA */
+	int		nd_idx_cont;	/* segment index to continue DMA */
 	int		nd_exception;
 };
 
