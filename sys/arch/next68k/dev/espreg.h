@@ -57,4 +57,4 @@
 #define	 ESPDSTAT_D1S1	0x80		/*	DMA rdy b. 0, SCSI b. 1 */
 
 
-#define ESP_DEVICE_SIZE (ESP_DSTAT+1)
+#define ESP_DEVICE_SIZE (ESP_DSTAT + 1)
