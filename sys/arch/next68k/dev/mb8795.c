@@ -348,6 +348,7 @@ mb8795_rint(struct mb8795_softc *sc)
 		printf("rxmode = %s\n", sbuf);
 	}
 #endif
+	rnd_add_uint32(&sc->rnd_source, rxstat);
 
 	return;
 }
@@ -380,7 +381,7 @@ mb8795_tint(struct mb8795_softc *sc)
 			/* printf ("Z"); */
 			mb8795_start_dma(sc);
 		}
-		return;
+		goto out;
 	}
 
 	if (txstat & MB8795_TXSTAT_SHORTED) {
@@ -414,6 +415,8 @@ mb8795_tint(struct mb8795_softc *sc)
 		    txmask & ~MB8795_TXMASK_READYIE);
 	}
 #endif
+ out:
+	rnd_add_uint32(&sc->rnd_source, txstat);
 
 	return;
 }
