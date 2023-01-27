@@ -62,7 +62,7 @@ struct mb8795_softc {
 
 	bus_space_handle_t sc_bmap_bsh; /* bus space handle */
 
-	u_int8_t sc_enaddr[6];
+	uint8_t sc_enaddr[6];
 
 	struct ifaltq sc_tx_snd;
 
