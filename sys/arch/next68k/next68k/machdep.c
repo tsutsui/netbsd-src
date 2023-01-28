@@ -525,7 +525,7 @@ cpu_init_kcore_hdr(void)
 	/*
 	 * Initialize pointer to kernel segment table.
 	 */
-	m->sysseg_pa = (u_int32_t)(pmap_kernel()->pm_stpa);
+	m->sysseg_pa = (uint32_t)(pmap_kernel()->pm_stpa);
 
 	/*
 	 * Initialize relocation value such that:
@@ -537,7 +537,7 @@ cpu_init_kcore_hdr(void)
 	/*
 	 * Define the end of the relocatable range.
 	 */
-	m->relocend = (u_int32_t)end;
+	m->relocend = (uint32_t)end;
 
 	/*
 	 * The next68k has multiple memory segments.
@@ -591,7 +591,7 @@ cpu_dump(int (*dump)(dev_t, daddr_t, void *, size_t), daddr_t *blknop)
 /*
  * These variables are needed by /sbin/savecore
  */
-u_int32_t dumpmag = 0x8fca0101;	/* magic number */
+uint32_t dumpmag = 0x8fca0101;	/* magic number */
 int	dumpsize = 0;		/* pages */
 long	dumplo = 0;		/* blocks */
 
