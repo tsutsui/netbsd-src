@@ -315,7 +315,7 @@ gpx_match(device_t parent, cfdata_t match, void *aux)
 	) {
 		struct vsbus_softc *sc = device_private(parent);
 		sc->sc_mask = 0x08;
-		scb_fake(0x44, va->va_br == 0x14 ? 0x14 : 0x15);
+		scb_fake(0x44, 0x15);
 	} else {
 		adder = (struct adder *)vax_map_physmem(va->va_paddr +
 		    GPX_ADDER_OFFSET, 1);
