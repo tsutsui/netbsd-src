@@ -27,6 +27,8 @@
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD: smg.c,v 1.62 2023/01/13 19:45:45 tsutsui Exp $");
 
+#include "opt_wsfont.h"
+#include "dzkbd.h"
 #include "wsdisplay.h"
 
 #include <sys/param.h>
@@ -54,9 +56,6 @@ __KERNEL_RCSID(0, "$NetBSD: smg.c,v 1.62 2023/01/13 19:45:45 tsutsui Exp $");
 #include <dev/wscons/wsconsio.h>
 #include <dev/wscons/wscons_callbacks.h>
 #include <dev/wsfont/wsfont.h>
-
-#include "dzkbd.h"
-#include "opt_wsfont.h"
 
 /* Screen hardware defs */
 #define SM_COLS		128	/* char width of screen */

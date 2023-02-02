@@ -82,6 +82,7 @@
  * are done for everything.
  */
 
+#include "dzkbd.h"
 #include "wsdisplay.h"
 
 #include <sys/param.h>
@@ -101,6 +102,10 @@
 #include <uvm/uvm_extern.h>
 
 #include <dev/cons.h>
+
+#include <dev/dec/dzreg.h>
+#include <dev/dec/dzvar.h>
+#include <dev/dec/dzkbdvar.h>
 
 #include <dev/wscons/wsconsio.h>
 #include <dev/wscons/wscons_callbacks.h>
@@ -1244,12 +1249,6 @@ gpx_resetcmap(struct gpx_screen *ss)
  */
 
 cons_decl(gpx);
-
-#include "dzkbd.h"
-
-#include <dev/dec/dzreg.h>
-#include <dev/dec/dzvar.h>
-#include <dev/dec/dzkbdvar.h>
 
 /*
  * Called very early to setup the glass tty as console.
