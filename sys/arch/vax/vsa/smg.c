@@ -24,6 +24,34 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+/*-
+ * Copyright (c) 2000 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Tohru Nishimura.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 /*
  * Copyright (c) 1998 Ludd, University of Lule}, Sweden.
  * All rights reserved.
@@ -181,6 +209,8 @@ static const struct wsdisplay_accessops smg_accessops = {
 	.load_font = NULL
 };
 
+static void smg_putchar(void *, int, int, u_int, long);
+static void smg_cursor(void *, int, int, int);
 static void smg_blockmove(struct rasops_info *, u_int, u_int, u_int, u_int,
     u_int, int);
 static void smg_copycols(void *, int, int, int, int);
@@ -341,13 +371,13 @@ smg_setup_screen(struct smg_screen *ss)
 
 	wsfont_init();
 	cookie = wsfont_find(NULL, 12, 0, 0, WSDISPLAY_FONTORDER_R2L,
-	    WSDISPLAY_FONTORDER_L2R, WSFONT_FIND_BITMAP);
+	    WSDISPLAY_FONTORDER_R2L, WSFONT_FIND_BITMAP);
 	if (cookie < 0)
 		cookie = wsfont_find(NULL, 8, 0, 0, WSDISPLAY_FONTORDER_R2L,
-		    WSDISPLAY_FONTORDER_L2R, WSFONT_FIND_BITMAP);
+		    WSDISPLAY_FONTORDER_R2L, WSFONT_FIND_BITMAP);
 	if (cookie < 0)
 		cookie = wsfont_find(NULL, 0, 0, 0, WSDISPLAY_FONTORDER_R2L,
-		    WSDISPLAY_FONTORDER_L2R, WSFONT_FIND_BITMAP);
+		    WSDISPLAY_FONTORDER_R2L, WSFONT_FIND_BITMAP);
 	if (cookie < 0)
 		return -1;
 	if (wsfont_lock(cookie, &ri->ri_font) != 0)
@@ -361,6 +391,8 @@ smg_setup_screen(struct smg_screen *ss)
 	if (rasops_init(ri, 160, 160) != 0)
 		return -1;
 
+	ri->ri_ops.cursor = smg_cursor;
+	ri->ri_ops.putchar = smg_putchar;
 	ri->ri_ops.copycols = smg_copycols;
 	ri->ri_ops.erasecols = smg_erasecols;
 
@@ -602,6 +634,141 @@ smg_updatecursor(struct smg_screen *ss, u_int which)
  */
 
 #include <vax/vsa/maskbits.h>
+
+/* putchar() and cursor() ops are taken from luna68k omrasops.c */
+
+#define	ALL1BITS	(~0U)
+#define	ALL0BITS	(0U)
+#define	BLITWIDTH	(32)
+#define	ALIGNMASK	(0x1f)
+#define	BYTESDONE	(4)
+
+static void
+smg_putchar(void *cookie, int row, int startcol, u_int uc, long attr)
+{
+	struct rasops_info *ri = cookie;
+	uint8_t *p;
+	int scanspan, startx, height, width, align, y;
+	uint32_t lmask, rmask, glyph, inverse;
+	int i;
+	uint8_t *fb;
+
+	scanspan = ri->ri_stride;
+	y = ri->ri_font->fontheight * row;
+	startx = ri->ri_font->fontwidth * startcol;
+	height = ri->ri_font->fontheight;
+	fb = (uint8_t *)ri->ri_font->data +
+	    (uc - ri->ri_font->firstchar) * ri->ri_fontscale;
+	inverse = ((attr & WSATTR_REVERSE) != 0) ? ALL1BITS : ALL0BITS;
+
+	p = (uint8_t *)ri->ri_bits + y * scanspan + ((startx / 32) * 4);
+	align = startx & ALIGNMASK;
+	width = ri->ri_font->fontwidth + align;
+	/* lmask and rmask are in WSDISPLAY_FONTORDER_R2L bitorder */
+	lmask = ALL1BITS << align;
+	rmask = ALL1BITS >> (-width & ALIGNMASK);
+	if (width <= BLITWIDTH) {
+		uint32_t mask = lmask & rmask;
+		while (height > 0) {
+			uint32_t image;
+			/*
+			 * The font glyph is stored in byteorder and bitorder
+			 * WSDISPLAY_FONTORDER_R2L to use proper shift ops.
+			 * On the other hand, VRAM data is stored in
+			 * WSDISPLAY_FONTORDER_R2L bitorder and
+			 * WSDIPPLAY_FONTORDER_L2R byteorder.
+			 */
+			glyph = 0;
+			for (i = ri->ri_font->stride; i != 0; i--)
+				glyph = (glyph << 8) | *fb++;
+			glyph = (glyph << align) ^ inverse;
+			image = *(uint32_t *)p;
+			*(uint32_t *)p = (image & ~mask) | (glyph & mask);
+			p += scanspan;
+			height--;
+		}
+	} else {
+		uint8_t *q = p;
+		uint32_t lhalf, rhalf;
+
+		while (height > 0) {
+			uint32_t image;
+			glyph = 0;
+			for (i = ri->ri_font->stride; i != 0; i--)
+				glyph = (glyph << 8) | *fb++;
+			lhalf = (glyph << align) ^ inverse;
+			image = *(uint32_t *)p;
+			*(uint32_t *)p = (image & ~lmask) | (lhalf & lmask);
+			p += BYTESDONE;
+			rhalf = (glyph >> (BLITWIDTH - align)) ^ inverse;
+			image = *(uint32_t *)p;
+			*(uint32_t *)p = (rhalf & rmask) | (image & ~rmask);
+
+			p = (q += scanspan);
+			height--;
+		}
+	}
+}
+
+static void
+smg_cursor(void *cookie, int on, int row, int col)
+{
+	struct rasops_info *ri = cookie;
+	uint8_t *p;
+	int scanspan, startx, height, width, align, y;
+	uint32_t lmask, rmask, image;
+
+	if (!on) {
+		/* make sure it's on */
+		if ((ri->ri_flg & RI_CURSOR) == 0)
+			return;
+
+		row = ri->ri_crow;
+		col = ri->ri_ccol;
+	} else {
+		/* unpaint the old copy. */
+		ri->ri_crow = row;
+		ri->ri_ccol = col;
+	}
+
+	scanspan = ri->ri_stride;
+	y = ri->ri_font->fontheight * row;
+	startx = ri->ri_font->fontwidth * col;
+	height = ri->ri_font->fontheight;
+
+	p = (uint8_t *)ri->ri_bits + y * scanspan + ((startx / 32) * 4);
+	align = startx & ALIGNMASK;
+	width = ri->ri_font->fontwidth + align;
+	/* lmask and rmask are in WSDISPLAY_FONTORDER_R2L bitorder */
+	lmask = ALL1BITS << align;
+	rmask = ALL1BITS >> (-width & ALIGNMASK);
+	if (width <= BLITWIDTH) {
+		uint32_t mask = lmask & rmask;
+		while (height > 0) {
+			image = *(uint32_t *)p;
+			*(uint32_t *)p =
+			    (image & ~mask) | ((image ^ ALL1BITS) & mask);
+			p += scanspan;
+			height--;
+		}
+	} else {
+		uint8_t *q = p;
+
+		while (height > 0) {
+			image = *(uint32_t *)p;
+			*(uint32_t *)p =
+			    (image & ~lmask) | ((image ^ ALL1BITS) & lmask);
+			p += BYTESDONE;
+			image = *(uint32_t *)p;
+			*(uint32_t *)p =
+			    ((image ^ ALL1BITS) & rmask) | (image & ~rmask);
+
+			p = (q += scanspan);
+			height--;
+		}
+	}
+	ri->ri_flg ^= RI_CURSOR;
+}
 
 static void
 smg_blockmove(struct rasops_info *ri, u_int sx, u_int y, u_int dx, u_int cx,
