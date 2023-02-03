@@ -145,7 +145,6 @@ __KERNEL_RCSID(0, "$NetBSD: smg.c,v 1.62 2023/01/13 19:45:45 tsutsui Exp $");
 #include <dev/wscons/wsconsio.h>
 #include <dev/wscons/wsdisplayvar.h>
 #include <dev/rasops/rasops.h>
-#include <dev/rasops/rasops_masks.h>
 
 /* Screen hardware defs */
 #define SM_XWIDTH	1024
@@ -806,8 +805,8 @@ smg_blockmove(struct rasops_info *ri, u_int sx, u_int y, u_int dx, u_int cx,
 		psrc = psrcLine;
 		pdst = pdstLine;
 
-		srcBit = sx & 0x1f;
-		dstBit = dx & 0x1f;
+		srcBit = sx & ALIGNMASK;
+		dstBit = dx & ALIGNMASK;
 
 		while (cy--) {
 			getandputrop(psrc, srcBit, dstBit, cx, pdst, rop);
@@ -815,18 +814,24 @@ smg_blockmove(struct rasops_info *ri, u_int sx, u_int y, u_int dx, u_int cx,
 			psrc += width;
 		}
 	} else {
-		maskbits(dx, cx, startmask, endmask, nlMiddle);
+		startmask = ALL1BITS << (dx & ALIGNMASK);
+		endmask   = ALL1BITS >> (~cx & ALIGNMASK);
 		if (startmask)
-			nstart = 32 - (dx & 0x1f);
+			nlMiddle = (cx - (32 - (dx & ALIGNMASK))) >> 5;
+		else
+			nlMiddle = cx >> 5;
+
+		if (startmask)
+			nstart = 32 - (dx & ALIGNMASK);
 		else
 			nstart = 0;
 		if (endmask)
-			nend = (dx + cx) & 0x1f;
+			nend = (dx + cx) & ALIGNMASK;
 		else
 			nend = 0;
 
-		xoffSrc = ((sx & 0x1f) + nstart) & 0x1f;
-		srcStartOver = ((sx & 0x1f) + nstart) > 31;
+		xoffSrc = ((sx & ALIGNMASK) + nstart) & ALIGNMASK;
+		srcStartOver = ((sx & ALIGNMASK) + nstart) > 31;
 
 		if (sx >= dx) {	/* move left to right */
 			pdstLine += (dx >> 5);
@@ -837,8 +842,8 @@ smg_blockmove(struct rasops_info *ri, u_int sx, u_int y, u_int dx, u_int cx,
 				pdst = pdstLine;
 
 				if (startmask) {
-					getandputrop(psrc, (sx & 0x1f),
-					    (dx & 0x1f), nstart, pdst, rop);
+					getandputrop(psrc, (sx & ALIGNMASK),
+					    (dx & ALIGNMASK), nstart, pdst, rop);
 					pdst++;
 					if (srcStartOver)
 						psrc++;
@@ -931,8 +936,9 @@ smg_blockmove(struct rasops_info *ri, u_int sx, u_int y, u_int dx, u_int cx,
 					if (srcStartOver)
 						--psrc;
 					--pdst;
-					getandputrop(psrc, (sx & 0x1f),
-					    (dx & 0x1f), nstart, pdst, rop);
+					getandputrop(psrc, (sx & ALIGNMASK),
+					    (dx & ALIGNMASK), nstart, pdst,
+					    rop);
 				}
 
 				pdstLine += width;

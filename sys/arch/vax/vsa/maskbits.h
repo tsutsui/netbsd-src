@@ -36,33 +36,6 @@
  * Derived from X11R4
  */
 
-/* the following notes use the following conventions:
-SCREEN LEFT				SCREEN RIGHT
-in this file and maskbits.c, left and right refer to screen coordinates,
-NOT bit numbering in registers.
-
-rasops_lmask[n]
-	bits[0,n-1] = 0	bits[n,31] = 1
-rasops_rmask[n] =
-	bits[0,n-1] = 1	bits[n,31] = 0
-
-maskbits(x, w, startmask, endmask, nlw)
-	for a span of width w starting at position x, returns
-a mask for ragged bits at start, mask for ragged bits at end,
-and the number of whole longwords between the ends.
-
-*/
-
-#define maskbits(x, w, startmask, endmask, nlw)				\
-do {									\
-	startmask = rasops_lmask[(x) & 0x1f];				\
-	endmask = rasops_rmask[((x) + (w)) & 0x1f];			\
-	if (startmask)							\
-		nlw = (((w) - (32 - ((x) & 0x1f))) >> 5);		\
-	else								\
-		nlw = (w) >> 5;						\
-} while (0)
-
 #define	FASTGETBITS(psrc,x,w,dst)					\
 	__asm__ ("extzv %1,%2,%3,%0"					\
 		: "=g" (dst)						\
