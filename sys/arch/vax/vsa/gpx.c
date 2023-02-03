@@ -90,7 +90,6 @@
 #include <sys/systm.h>
 #include <sys/kmem.h>
 #include <sys/conf.h>
-#include <sys/kernel.h>
 
 #include <machine/sid.h>
 #include <machine/cpu.h>
@@ -98,8 +97,6 @@
 #include <machine/scb.h>
 #include <machine/vsbus.h>
 #include <machine/qdreg.h>
-
-#include <uvm/uvm_extern.h>
 
 #include <dev/cons.h>
 
