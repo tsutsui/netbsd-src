@@ -125,7 +125,7 @@ __KERNEL_RCSID(0, "$NetBSD: smg.c,v 1.62 2023/01/13 19:45:45 tsutsui Exp $");
 #include <sys/param.h>
 #include <sys/device.h>
 #include <sys/systm.h>
-#include <sys/malloc.h>
+#include <sys/kmem.h>
 #include <sys/conf.h>
 
 #include <machine/vsbus.h>
@@ -304,13 +304,13 @@ smg_attach(device_t parent, device_t self, void *aux)
 		scr = &smg_consscr;
 		sc->sc_nscreens = 1;
 	} else {
-		scr = malloc(sizeof(*scr), M_DEVBUF, M_WAITOK | M_ZERO);
+		scr = kmem_zalloc(sizeof(*scr), KM_SLEEP);
 
 		scr->ss_addr =
 		    (void *)vax_map_physmem(SMADDR, SMSIZE / VAX_NBPG);
 		if (scr->ss_addr == NULL) {
 			aprint_error(": can not map frame buffer\n");
-			free(scr, M_DEVBUF);
+			kmem_free(scr, sizeof(*scr));
 			return;
 		}
 
@@ -320,7 +320,7 @@ smg_attach(device_t parent, device_t self, void *aux)
 			aprint_error(": can not map cursor chip\n");
 			vax_unmap_physmem((vaddr_t)scr->ss_addr,
 			    SMSIZE / VAX_NBPG);
-			free(scr, M_DEVBUF);
+			kmem_free(scr, sizeof(*scr));
 			return;
 		}
 
@@ -329,7 +329,7 @@ smg_attach(device_t parent, device_t self, void *aux)
 			vax_unmap_physmem((vaddr_t)scr->ss_cursor, 1);
 			vax_unmap_physmem((vaddr_t)scr->ss_addr,
 			    SMSIZE / VAX_NBPG);
-			free(scr, M_DEVBUF);
+			kmem_free(scr, sizeof(*scr));
 			return;
 		}
 	}
