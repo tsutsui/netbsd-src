@@ -465,9 +465,11 @@ gpx_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 
 	case WSDISPLAYIO_LINEBYTES:	/* no linear mapping */
 		return -1;
-	}
 
-	return EPASSTHROUGH;
+	default:
+		return EPASSTHROUGH;
+	}
+	return 0;
 }
 
 paddr_t
