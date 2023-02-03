@@ -72,29 +72,29 @@
 #define	PCC_LOAD	0x2c	/* cursor pattern load */
 
 struct dc503reg {
-	volatile u_int16_t	cmdr;
+	volatile uint16_t	cmdr;
 	int16_t	pad1;
-	volatile u_int16_t	xpos;
+	volatile uint16_t	xpos;
 	int16_t	pad2;
-	volatile u_int16_t	ypos;
+	volatile uint16_t	ypos;
 	int16_t	pad3;
-	volatile u_int16_t	xmin1;
+	volatile uint16_t	xmin1;
 	int16_t	pad4;
-	volatile u_int16_t	xmax1;
+	volatile uint16_t	xmax1;
 	int16_t	pad5;
-	volatile u_int16_t	ymin1;
+	volatile uint16_t	ymin1;
 	int16_t	pad6;
-	volatile u_int16_t	ymax1;
+	volatile uint16_t	ymax1;
 	int16_t	pad7[9];
-	volatile u_int16_t	xmin2;
+	volatile uint16_t	xmin2;
 	int16_t	pad8;
-	volatile u_int16_t	xmax2;
+	volatile uint16_t	xmax2;
 	int16_t	pad9;
-	volatile u_int16_t	ymin2;
+	volatile uint16_t	ymin2;
 	int16_t	pad10;
-	volatile u_int16_t	ymax2;
+	volatile uint16_t	ymax2;
 	int16_t	pad11;
-	volatile u_int16_t	load;
+	volatile uint16_t	load;
 };
 
 #define	PCC_CURSOR_SIZE	16
