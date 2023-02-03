@@ -88,7 +88,7 @@
 #include <sys/param.h>
 #include <sys/device.h>
 #include <sys/systm.h>
-#include <sys/malloc.h>
+#include <sys/kmem.h>
 #include <sys/conf.h>
 #include <sys/kernel.h>
 
@@ -356,8 +356,7 @@ gpx_attach(device_t parent, device_t self, void *aux)
 		scr = &gpx_consscr;
 		sc->sc_nscreens = 1;
 	} else {
-		scr = malloc(sizeof(struct gpx_screen), M_DEVBUF,
-		    M_WAITOK | M_ZERO);
+		scr = kmem_zalloc(sizeof(*scr), KM_SLEEP);
 
 		tmp = vax_map_physmem(va->va_paddr + GPX_READBACK_OFFSET, 1);
 		if (tmp == 0L) {
@@ -420,7 +419,7 @@ gpx_attach(device_t parent, device_t self, void *aux)
  bad2:
 	vax_unmap_physmem((vaddr_t)scr->ss_adder, 1);
  bad1:
-	free(scr, M_DEVBUF);
+	kmem_free(scr, sizeof(*scr));
 }
 
 /*
