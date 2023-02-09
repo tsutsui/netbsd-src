@@ -1076,17 +1076,17 @@ GLOBAL(intiobase)
 GLOBAL(intiolimit)
 	.long	INTIOTOP	| KVA of end of internal IO space
 
-GLOBAL(monobase)
-	.long	MONOBASE	| KVA of base of mono FB
+GLOBAL(fbbase)
+	.long	0		| KVA of base of framebuffer
 
-GLOBAL(monolimit)
-	.long	MONOTOP		| KVA of end of mono FB
+GLOBAL(fblimit)
+	.long	0		| KVA of end of framebuffer
 
-GLOBAL(colorbase)
-	.long	COLORBASE	| KVA of base of color FB
+GLOBAL(fbbasepa)
+	.long	MONOBASE	| PA of base of framebuffer
 
-GLOBAL(colorlimit)
-	.long	COLORTOP	| KVA of end of color FB
+GLOBAL(fblimitpa)
+	.long	MONOTOP		| PA of end of framebuffer
 
 ASLOCAL(save_vbr)		| VBR from ROM
 	.long 0xdeadbeef

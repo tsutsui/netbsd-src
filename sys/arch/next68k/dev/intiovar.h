@@ -47,7 +47,7 @@ struct intio_attach_args {
 
 extern	vaddr_t intiobase;
 extern  vaddr_t intiolimit;
-extern	vaddr_t monobase;
-extern  vaddr_t monolimit;
-extern	vaddr_t colorbase;
-extern  vaddr_t colorlimit;
+extern	vaddr_t fbbase;
+extern  vaddr_t fblimit;
+extern	paddr_t fbbasepa;
+extern  paddr_t fblimitpa;
