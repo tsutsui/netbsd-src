@@ -261,6 +261,11 @@ next68k_bootargs(unsigned char **args)
 			msize4  =  0x800000;
 			msize1  =  0x200000;
 			ROM_PUTS("Looks like a NeXT_TURBO_MONO\r\n");
+		} else if (MONRELOC(char, MG_machine_type) == NeXT_CUBE_TURBO) {
+			msize16 = 0x2000000;
+			msize4  =  0x800000;
+			msize1  =  0x200000;
+			ROM_PUTS("Looks like a NeXT_CUBE_TURBO\r\n");
 		} else {
 			msize16 = 0x100000;
 			msize4  = 0x100000;
@@ -270,7 +275,9 @@ next68k_bootargs(unsigned char **args)
 
 		mach = MONRELOC(char, MG_machine_type);
 		RELOC(rom_machine_type, char) = mach;
-		if (mach == NeXT_TURBO_MONO || mach == NeXT_TURBO_COLOR)
+		if (mach == NeXT_TURBO_MONO ||
+		    mach == NeXT_TURBO_COLOR ||
+		    mach == NeXT_CUBE_TURBO)
 			turbo_l = 1;
 		else
 			turbo_l = 0;

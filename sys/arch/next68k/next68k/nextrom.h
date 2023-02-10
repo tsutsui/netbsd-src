@@ -233,6 +233,7 @@ void *mon_alloc();
 #define	NeXT_WARP9C	3
 #define NeXT_TURBO_MONO	4
 #define NeXT_TURBO_COLOR 5			/* probed witnessed */
+#define NeXT_CUBE_TURBO	8
 
 #define	ROM_STACK_SIZE	(8192 - 2048)
 

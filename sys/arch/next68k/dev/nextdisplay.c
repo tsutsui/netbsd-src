@@ -147,7 +147,8 @@ nextdisplay_match(device_t parent, cfdata_t match, void *aux)
 	    rom_machine_type == NeXT_X15 ||
 	    rom_machine_type == NeXT_WARP9C ||
 	    rom_machine_type == NeXT_TURBO_MONO ||
-	    rom_machine_type == NeXT_TURBO_COLOR)
+	    rom_machine_type == NeXT_TURBO_COLOR ||
+	    rom_machine_type == NeXT_CUBE_TURBO)
 		return 1;
 	else
 		return 0;

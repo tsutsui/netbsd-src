@@ -67,7 +67,8 @@ nextcnprobe(struct consdev *cp)
 	    rom_machine_type == NeXT_X15 ||
 	    rom_machine_type == NeXT_WARP9C ||
 	    rom_machine_type == NeXT_TURBO_MONO ||
-	    rom_machine_type == NeXT_TURBO_COLOR)
+	    rom_machine_type == NeXT_TURBO_COLOR ||
+	    rom_machine_type == NeXT_CUBE_TURBO)
 		cp->cn_pri = CN_INTERNAL;
 	else
 		cp->cn_pri = CN_DEAD;

@@ -84,7 +84,9 @@ main(char *boot_arg)
 #endif
 
 	machine = MON(char, MG_machine_type);
-	if (machine == NeXT_TURBO_MONO || machine == NeXT_TURBO_COLOR)
+	if (machine == NeXT_TURBO_MONO ||
+	    machine == NeXT_TURBO_COLOR ||
+	    machine == NeXT_CUBE_TURBO)
 		turbo = 1;
 	else
 		turbo = 0;
