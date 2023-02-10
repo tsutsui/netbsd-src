@@ -246,7 +246,7 @@ nextdisplay_attach(device_t parent, device_t self, void *aux)
 	printf(": %d x %d, %dbpp\n", sc->sc_dc->dc_wid, sc->sc_dc->dc_ht,
 	    sc->sc_dc->dc_depth);
 
-	if (iscolor) {
+	if (iscolor && !turbo) {
 #if 0
 		uint8_t x;
 
