@@ -54,6 +54,7 @@ struct nextdisplay_config {
 	int dc_ht;			/* height of frame buffer */
 	int dc_depth;			/* depth of frame buffer */
 	int dc_rowbytes;		/* bytes in fb scan line */
+	int dc_cmsize;
 
 	struct raster dc_raster;	/* raster description */
 	struct rcons dc_rcons;		/* raster blitter control info */
@@ -67,6 +68,7 @@ struct nextdisplay_softc {
 	device_t sc_dev;
 
 	struct nextdisplay_config *sc_dc;
+	int sc_mode;
 
 	int nscreens;
 };
