@@ -520,6 +520,7 @@ read_integral_parameter (const char *p, const char *pname, const int  defval)
 /* Given X, an unsigned number, return the largest int Y such that 2**Y <= X.
    If X is 0, return -1.  */
 
+#if 0
 int
 floor_log2 (unsigned HOST_WIDE_INT x)
 {
@@ -551,10 +552,12 @@ floor_log2 (unsigned HOST_WIDE_INT x)
 
   return t;
 }
+#endif
 
 /* Return the logarithm of X, base 2, considering X unsigned,
    if X is a power of 2.  Otherwise, returns -1.  */
 
+#if 0
 int
 exact_log2 (unsigned HOST_WIDE_INT x)
 {
@@ -566,6 +569,7 @@ exact_log2 (unsigned HOST_WIDE_INT x)
   return floor_log2 (x);
 #endif
 }
+#endif
 
 /* Handler for fatal signals, such as SIGSEGV.  These are transformed
    into ICE messages, which is much more user friendly.  In case the

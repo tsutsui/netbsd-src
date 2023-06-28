@@ -153,10 +153,10 @@ extern void decode_d_option		(const char *);
 extern bool fast_math_flags_set_p	(void);
 
 /* Return log2, or -1 if not exact.  */
-extern int exact_log2                  (unsigned HOST_WIDE_INT);
+static inline int exact_log2                  (unsigned HOST_WIDE_INT);
 
 /* Return floor of log2, with -1 for zero.  */
-extern int floor_log2                  (unsigned HOST_WIDE_INT);
+static inline int floor_log2                  (unsigned HOST_WIDE_INT);
 
 /* Inline versions of the above for speed.  */
 #if GCC_VERSION >= 3004
@@ -171,13 +171,13 @@ extern int floor_log2                  (unsigned HOST_WIDE_INT);
 #  define CTZ_HWI __builtin_ctz
 # endif
 
-extern inline int
+static inline int
 floor_log2 (unsigned HOST_WIDE_INT x)
 {
   return x ? HOST_BITS_PER_WIDE_INT - 1 - (int) CLZ_HWI (x) : -1;
 }
 
-extern inline int
+static inline int
 exact_log2 (unsigned HOST_WIDE_INT x)
 {
   return x == (x & -x) && x ? (int) CTZ_HWI (x) : -1;
