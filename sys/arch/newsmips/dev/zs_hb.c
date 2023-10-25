@@ -214,7 +214,7 @@ zs_hb_attach(device_t parent, device_t self, void *aux)
 #endif
 	}
 
-	aprint_error(" level %d\n", intlevel);
+	aprint_normal(" level %d\n", intlevel);
 
 	zs_delay = zs_hb_delay;
 
