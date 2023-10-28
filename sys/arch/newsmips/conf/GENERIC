@@ -124,7 +124,8 @@ options 	NFS_BOOT_DHCP
 # wscons options
 options 	WSEMUL_VT100		# VT100 / VT220 emulation
 options 	WSDISPLAY_COMPAT_USL		# wsconscfg VT handling
-options 	FONT_GALLANT12x22
+#options 	FONT_GALLANT12x22
+options 	FONT_SONY12x24
 
 config	netbsd	root on ? type ?
 
