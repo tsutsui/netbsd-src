@@ -170,6 +170,7 @@ zstty4	at zsc2 channel 0		# tty04
 zstty5	at zsc2 channel 1		# tty05
 
 fb0	at hb0 addr 0x88000000		# NWB-253 frame buffer
+fb0	at hb0 addr 0x90200000		# LCD-MONO on NWS-32x0
 wsdisplay0 at fb? console ?
 
 xafb*	at ap?				# "XA" frame buffer
