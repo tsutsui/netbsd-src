@@ -373,7 +373,7 @@ fb_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 		wdf->height = dc->dc_ri.ri_height;
 		wdf->width = dc->dc_ri.ri_width;
 		wdf->depth = dc->dc_ri.ri_depth;
-		wdf->cmsize = 2;
+		wdf->cmsize = 0;
 		return 0;
 
 	case WSDISPLAYIO_LINEBYTES:
