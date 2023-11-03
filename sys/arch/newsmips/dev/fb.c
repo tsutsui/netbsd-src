@@ -489,6 +489,12 @@ fb_cnattach(void)
 	fb_common_init(dc);
 	fb_init(dc);
 
+	/*
+	 * Wait CRTC output or LCD backlight become settled
+	 * before starting to print kernel greeting messages.
+	 */
+	delay(500 * 1000);
+
 	(*ri->ri_ops.allocattr)(ri, 0, 0, 0, &defattr);
 	wsdisplay_cnattach(&fb_stdscreen, ri, 0, ri->ri_rows - 1, defattr);
 }
