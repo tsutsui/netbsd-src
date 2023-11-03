@@ -4,7 +4,8 @@
 .PATH: ${.CURDIR}/gdtoa
 CPPFLAGS+=-I${.CURDIR}/gdtoa -I${.CURDIR}/locale
 
-.if ${MACHINE_ARCH} == "vax"
+.if ${MACHINE_CPU} == "mips" || \
+    ${MACHINE_ARCH} == "vax"
 CPPFLAGS+=-DNO_FENV_H
 .else
 CPPFLAGS+=-DHonor_FLT_ROUNDS
