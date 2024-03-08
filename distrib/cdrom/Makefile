@@ -298,12 +298,12 @@ MKISOFS_ARGS.${image}+= -b ${BOOTFILE.amd64} -c boot.catalog
 .if !empty(ports:Mmacppc)
 BOOTHFS=	boothfs
 MKISOFS_ARGS.${image}+=	-hfs -part -hide-hfs-list ${.CURDIR}/hide-hfs.lst \
-	--macbin -data-change-warn -map ${.CURDIR}/hfsmap.lst \
+	--macbin -map ${.CURDIR}/hfsmap.lst \
 	-boot-hfs-file ${.OBJDIR}/${BOOTHFS}
 UUDECODE_FILES=	${BOOTHFS}
 .include <bsd.files.mk>
 .elif defined(USE_APPLE_ISO) || !empty(ports:Mmac68k)
-MKISOFS_ARGS.${image}+=	-apple --macbin -data-change-warn -map ${.CURDIR}/hfsmap.lst
+MKISOFS_ARGS.${image}+=	-apple --macbin -map ${.CURDIR}/hfsmap.lst
 .endif
 
 # Sun (sparc, sparc64, sun3)
