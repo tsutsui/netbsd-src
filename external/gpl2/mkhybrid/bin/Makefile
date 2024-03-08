@@ -5,21 +5,24 @@
 # to make mkisofs as a link to this, rather than the (earlier) version in
 # the tree.
 
+DIST=	${NETBSDSRCDIR}/external/gpl2/mkhybrid/dist
+
 PROG=	mkhybrid
 MAN=	mkhybrid.8
 BINDIR=	/usr/sbin
 CLEANFILES+= mkhybrid.8
-.PATH:	${.CURDIR}/../src ${.CURDIR}/../src/libhfs_iso ${.CURDIR}/../src/libfile
+.PATH:	${DIST} ${DIST}/libhfs_iso ${DIST}/libfile
 
 SRCS=	data.c block.c low.c lfile.c btree.c node.c record.c lvolume.c \
 	hfs.c file.c apprentice.c softmagic.c mkisofs.c tree.c write.c \
 	hash.c rock.c multi.c joliet.c match.c name.c eltorito.c \
 	apple.c volume.c desktop.c mac_label.c		
+SRCS+=	getopt.c getopt1.c
 
-CFLAGS+=-DSYSTEM_ID_DEFAULT=\"OpenBSD\" -DAPPLE_HYB -DVANILLA_AUTOCONF \
-	-I${.CURDIR}/../src -I${.CURDIR}/../src/include \
-	-I${.CURDIR}/../src/libhfs_iso \
-	-I${.CURDIR}/../src/libfile
+CPPFLAGS+=-DSYSTEM_ID_DEFAULT=\"NetBSD\" -DAPPLE_HYB -DVANILLA_AUTOCONF \
+	-I${DIST} -I${DIST}/include \
+	-I${DIST}/libhfs_iso \
+	-I${DIST}/libfile
 
 mkhybrid.8: mkhybrid.8tbl
 	cp ${.ALLSRC} ${.TARGET}
