@@ -37,6 +37,9 @@
 /* Define if you have the <strings.h> header file.  */
 #define HAVE_STRINGS_H 1
 
+/* Define if you have the <strlib.h> header file.  */
+#define HAVE_STDLIB_H 1
+
 /* Define if you have the <sys/dir.h> header file.  */
 /* #undef HAVE_SYS_DIR_H */
 
@@ -64,4 +67,5 @@
 /* Define if you have the <unistd.h> header file.  */
 #define HAVE_UNISTD_H 1
 
-#define HAVE_FLOCK 1
+/* Define if you have the <flock.h> header file.  */
+/* #undef HAVE_FLOCK_H */
