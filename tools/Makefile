@@ -230,6 +230,10 @@ SUBDIR+=	dtc
 SUBDIR+=	mvme68k-wrtvid
 .endif
 
+.if ${MACHINE} == "mac68k" || ${MACHINE} == "macppc"
+SUBDIR+=	mkhybrid
+.endif
+
 .if ${MKX11} != "no"
 SUBDIR+=	makestrs
 SUBDIR+=	makekeys
