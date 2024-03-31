@@ -33,10 +33,15 @@
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD: ite_tv.c,v 1.20 2024/01/07 07:58:33 isaki Exp $");
 
+#include "opt_ite.h"
+
 #include <sys/param.h>
 #include <sys/device.h>
 #include <sys/proc.h>
 #include <sys/systm.h>
+#if defined(ITE_SYSCTL)
+#include <sys/sysctl.h>
+#endif
 
 #include <machine/bus.h>
 #include <machine/grfioctl.h>
@@ -71,6 +76,9 @@ __KERNEL_RCSID(0, "$NetBSD: ite_tv.c,v 1.20 2024/01/07 07:58:33 isaki Exp $");
 
 static u_int  tv_top;
 static uint8_t *tv_row[PLANELINES];
+#if defined(ITE_SIXEL)
+uint8_t *tv_end;
+#endif
 static uint8_t *tv_font[256];
 static volatile uint8_t *tv_kfont[0x7f];
 
@@ -89,6 +97,9 @@ static void tv_putc(struct ite_softc *, int, int, int, int);
 static void tv_cursor(struct ite_softc *, int);
 static void tv_clear(struct ite_softc *, int, int, int, int);
 static void tv_scroll(struct ite_softc *, int, int, int, int);
+#if defined(ITE_SIXEL)
+static void tv_sixel(struct ite_softc *, int, int);
+#endif
 
 static inline uint32_t expbits(uint32_t);
 static inline void txrascpy(uint8_t, uint8_t, int16_t, uint16_t);
@@ -166,6 +177,9 @@ tv_init(struct ite_softc *ip)
 	for (i = 0; i < PLANELINES; i++)
 		tv_row[i] =
 		    (void *)__UNVOLATILE(&IODEVbase->tvram[ROWOFFSET(i)]);
+#if defined(ITE_SIXEL)
+	tv_end = (void *)__UNVOLATILE(&IODEVbase->tvram[ROWOFFSET(i)]);
+#endif
 	/* shadow ANK font */
 	memcpy(kern_font, (void *)&IODEVbase->cgrom0_8x16, 256 * FONTHEIGHT);
 	ite_set_glyph();
@@ -189,6 +203,9 @@ tv_init(struct ite_softc *ip)
 	ip->isw->ite_cursor = tv_cursor;
 	ip->isw->ite_clear  = tv_clear;
 	ip->isw->ite_scroll = tv_scroll;
+#if defined(ITE_SIXEL)
+	ip->isw->ite_sixel  = tv_sixel;
+#endif
 
 	/*
 	 * Initialize colormap
@@ -196,7 +213,7 @@ tv_init(struct ite_softc *ip)
 #define RED   (0x1f << 6)
 #define BLUE  (0x1f << 1)
 #define GREEN (0x1f << 11)
-	IODEVbase->tpalet[0] = 0;			/* black */
+	IODEVbase->tpalet[0] = 0;			/* transparent */
 	IODEVbase->tpalet[1] = 1 | RED;			/* red */
 	IODEVbase->tpalet[2] = 1 | GREEN;		/* green */
 	IODEVbase->tpalet[3] = 1 | RED | GREEN;		/* yellow */
@@ -204,6 +221,20 @@ tv_init(struct ite_softc *ip)
 	IODEVbase->tpalet[5] = 1 | BLUE | RED;		/* magenta */
 	IODEVbase->tpalet[6] = 1 | BLUE | GREEN;	/* cyan */
 	IODEVbase->tpalet[7] = 1 | BLUE | RED | GREEN;	/* white */
+
+#if defined(ITE_16COLOR)
+#define hRED   (0x0f << 6)
+#define hBLUE  (0x0f << 1)
+#define hGREEN (0x0f << 11)
+	IODEVbase->tpalet[8]  = 1;			/* black */
+	IODEVbase->tpalet[9]  = 1 | hRED;
+	IODEVbase->tpalet[10] = 1 | hGREEN;
+	IODEVbase->tpalet[11] = 1 | hRED | hGREEN;
+	IODEVbase->tpalet[12] = 1 | hBLUE;
+	IODEVbase->tpalet[13] = 1 | hBLUE | hRED;
+	IODEVbase->tpalet[14] = 1 | hBLUE | hGREEN;
+	IODEVbase->tpalet[15] = 1 | hBLUE | hRED | hGREEN;
+#endif	/* ITE_16COLOR */
 }
 
 /*
@@ -741,3 +772,169 @@ tv_scroll(struct ite_softc *ip, int srcy, int srcx, int count, int dir)
 		break;
 	}
 }
+
+#if defined(ITE_SIXEL)
+/*
+ * put SIXEL graphics
+ */
+static void
+tv_sixel(struct ite_softc *ip, int sy, int sx)
+{
+	uint8_t *p;
+	int width;
+	int y;
+	int cx;
+	int px;
+#if defined(ITE_16COLOR)
+	uint16_t data[4];
+#else
+	uint16_t data[3];
+#endif
+	uint8_t color;
+
+	width = MIN(ip->decsixel_ph, MAX_SIXEL_WIDTH);
+	width = MIN(width, PLANEWIDTH - sx * FONTWIDTH);
+
+	p = CHADDR(sy, sx);
+	p += ROWBYTES * ip->decsixel_y;
+	/* boundary check */
+	if (p < tv_row[0]) {
+		p = tv_end + (p - tv_row[0]);
+	}
+
+	for (y = 0; y < 6; y++) {
+		/* for each 16dot word */
+		for (cx = 0; cx < howmany(width, 16); cx++) {
+			data[0] = 0;
+			data[1] = 0;
+			data[2] = 0;
+#if defined(ITE_16COLOR)
+			data[3] = 0;
+#endif
+			for (px = 0; px < 16; px++) {
+				color = ip->decsixel_buf[cx * 16 + px] >> (y * 4);
+				/* x68k console is 8 colors */
+				data[0] = (data[0] << 1) | ((color >> 0) & 1);
+				data[1] = (data[1] << 1) | ((color >> 1) & 1);
+				data[2] = (data[2] << 1) | ((color >> 2) & 1);
+#if defined(ITE_16COLOR)
+				data[3] = (data[3] << 1) | ((color >> 3) & 1);
+#endif
+			}
+			*(uint16_t *)(p + cx * 2          ) = data[0];
+			*(uint16_t *)(p + cx * 2 + 0x20000) = data[1];
+			*(uint16_t *)(p + cx * 2 + 0x40000) = data[2];
+#if defined(ITE_16COLOR)
+			*(uint16_t *)(p + cx * 2 + 0x60000) = data[3];
+#endif
+		}
+
+		p += ROWBYTES;
+		if (p >= tv_end) {
+			p = tv_row[0] + (p - tv_end);
+		}
+	}
+}
+#endif /* ITE_SIXEL */
+
+#if defined(ITE_SYSCTL)
+static int
+sysctl_hw_ite_textpalette(SYSCTLFN_ARGS)
+{
+	struct sysctlnode node;
+	int idx;
+	int error;
+	int t;
+
+	node = *rnode;
+	idx = node.sysctl_name[strlen("tpalette")] - '0';
+	if (idx > 9)
+		idx -= 7;
+	t = (int)(IODEVbase->tpalet[idx]);
+
+	node.sysctl_data = &t;
+
+	error = sysctl_lookup(SYSCTLFN_CALL(&node));
+	if (error || newp == NULL)
+		return error;
+
+	if (t < 0 || t > 65535)
+		return EINVAL;
+
+	IODEVbase->tpalet[idx] = t;
+
+	return 0;
+}
+
+SYSCTL_SETUP(sysctl_ite_setup, "sysctl hw.ite setup")
+{
+	char name[16];
+	const struct sysctlnode *node;
+	int i;
+
+	sysctl_createv(NULL, 0, NULL, &node,
+	    CTLFLAG_PERMANENT, CTLTYPE_NODE,
+	    "ite", SYSCTL_DESCR("ite"),
+	    NULL, 0, NULL, 0,
+	    CTL_HW, CTL_CREATE, CTL_EOL);
+	if (node == NULL)
+		return;
+
+	for (i = 0; i < 16; i++) {
+		snprintf(name, sizeof(name), "tpalette%X", i);
+		sysctl_createv(NULL, 0, NULL, NULL,
+		    CTLFLAG_PERMANENT | CTLFLAG_READWRITE,
+		    CTLTYPE_INT,
+		    name, SYSCTL_DESCR("text palette"),
+		    sysctl_hw_ite_textpalette, 0, NULL, 0,
+		    CTL_HW, node->sysctl_num, CTL_CREATE, CTL_EOL);
+	}
+}
+#endif /* ITE_SYSCTL */
+
+#if defined(ITE_SYSCTL)
+static int sysctl_hw_sysport_contrast(SYSCTLFN_PROTO);
+static int
+sysctl_hw_sysport_contrast(SYSCTLFN_ARGS)
+{
+	struct sysctlnode node;
+	int error;
+	int t;
+
+	node = *rnode;
+	t = (int)(IODEVbase->io_sysport.contrast);
+
+	node.sysctl_data = &t;
+
+	error = sysctl_lookup(SYSCTLFN_CALL(&node));
+	if (error || newp == NULL)
+		return error;
+
+	if (t < 0 || t > 15)
+		return EINVAL;
+
+	IODEVbase->io_sysport.contrast = t;
+
+	return 0;
+}
+
+SYSCTL_SETUP(sysctl_sysport, "sysctl sysport.contrast")
+{
+	const struct sysctlnode *node;
+
+	sysctl_createv(NULL, 0, NULL, &node,
+		CTLFLAG_PERMANENT, CTLTYPE_NODE,
+		"sysport", SYSCTL_DESCR("sysport"),
+		NULL, 0, NULL, 0,
+		CTL_HW, CTL_CREATE, CTL_EOL);
+	if (node == NULL)
+		return;
+
+	sysctl_createv(NULL, 0, NULL, NULL,
+		CTLFLAG_PERMANENT | CTLFLAG_READWRITE,
+		CTLTYPE_INT,
+		"contrast", SYSCTL_DESCR("contrast"),
+		sysctl_hw_sysport_contrast, 0, NULL, 0,
+		CTL_HW, node->sysctl_num, CTL_CREATE, CTL_EOL);
+}
+#endif

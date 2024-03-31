@@ -229,6 +229,9 @@ kbd0	at mfp0				# standard keyboard
 ite0	at grf0 grfaddr 0		# internal terminal emulator
 options 	ITE_KERNEL_ATTR=4	# bold for kernel messages
 					# see /sys/arch/x68k/dev/itevar.h
+options		ITE_SIXEL
+options		ITE_16COLOR
+options		ITE_SYSCTL
 
 ## floppy disks
 fdc0	at intio0 addr 0xe94000 intr 96 dma 0 dmaintr 100 # floppy controller

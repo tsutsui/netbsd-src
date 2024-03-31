@@ -68,6 +68,9 @@ file	arch/x68k/dev/grf_tv.c		grf | ite
 file	arch/x68k/dev/grf_gv.c		grf | ite
 
 defparam opt_ite.h	ITE_KERNEL_ATTR
+defflag opt_ite.h	ITE_SIXEL
+defflag opt_ite.h	ITE_16COLOR
+defflag opt_ite.h	ITE_SYSCTL
 device	ite : tty
 attach	ite at grf
 file	arch/x68k/dev/ite.c		ite needs-flag
