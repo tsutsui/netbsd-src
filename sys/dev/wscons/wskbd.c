@@ -215,6 +215,9 @@ struct wskbd_softc {
 	/* optional table to translate scancodes in event mode */
 	int		sc_evtrans_len;
 	keysym_t	*sc_evtrans;
+
+	wskbd_consdev_kbdinput *sc_consdev_kbdinput;
+	device_t sc_consdev;
 };
 
 #define MOD_SHIFT_L		(1 << 0)
@@ -419,6 +422,8 @@ wskbd_attach(device_t parent, device_t self, void *aux)
 	sc->sc_hotkeycookie = NULL;
 	sc->sc_evtrans_len = 0;
 	sc->sc_evtrans = NULL;
+	sc->sc_consdev_kbdinput = NULL;
+	sc->sc_consdev = NULL;
 
 #if NWSMUX > 0 || NWSDISPLAY > 0
 	sc->sc_base.me_ops = &wskbd_srcops;
@@ -663,9 +668,7 @@ void
 wskbd_input(device_t dev, u_int type, int value)
 {
 	struct wskbd_softc *sc = device_private(dev);
-#if NWSDISPLAY > 0
 	int num, i;
-#endif
 
 	if (sc->sc_repeating) {
 		sc->sc_repeating = 0;
@@ -702,6 +705,24 @@ wskbd_input(device_t dev, u_int type, int value)
 			}
 		}
 		return;
+	}
+#endif
+
+#if NWSDISPLAY == 0
+	if (sc->sc_translating) {
+		keysym_t ks;
+
+		if (sc->sc_consdev_kbdinput) {
+			num = wskbd_translate(sc->id, type, value);
+			for (i = 0; i < num; i++) {
+				ks = sc->id->t_symbols[i];
+				if (KS_GROUP(ks) == KS_GROUP_Plain &&
+				    KS_VALUE(ks) <= 0x7f)
+					(*sc->sc_consdev_kbdinput)(
+					    sc->sc_consdev, KS_VALUE(ks));
+			}
+			return;
+		}
 	}
 #endif
 
@@ -1680,6 +1701,36 @@ wskbd_hotkey_deregister(device_t self)
 
 	sc->sc_hotkey = NULL;
 	sc->sc_hotkeycookie = NULL;
+}
+
+device_t
+wskbd_consdev_kbdinput_register(device_t self, wskbd_consdev_kbdinput *kifn,
+    device_t cons_dv)
+{
+	struct wskbd_softc *sc = device_private(self);
+
+	if (sc == NULL)
+		return NULL;
+
+	if (kifn == NULL)
+		return NULL;
+
+	sc->sc_consdev_kbdinput = kifn;
+	sc->sc_consdev = cons_dv;
+	aprint_verbose_dev(self, "connecting to %s\n", device_xname(cons_dv));
+
+	return sc->sc_base.me_dv;
+}
+
+void
+wskbd_consdev_kbdinput_deregister(device_t self)
+{
+	struct wskbd_softc *sc = device_private(self);
+
+	KASSERT(sc != NULL);
+
+	sc->sc_consdev_kbdinput = NULL;
+	sc->sc_consdev = NULL;
 }
 
 static int

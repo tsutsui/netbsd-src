@@ -107,6 +107,14 @@ device_t wskbd_hotkey_register(device_t, void *, wskbd_hotkey_plugin *);
 void	 wskbd_hotkey_deregister(device_t);
 
 /*
+ * Callbacks from the keyboard driver to non-wscons console drivers.
+ */
+typedef void (wskbd_consdev_kbdinput)(device_t, int);
+device_t wskbd_consdev_kbdinput_register(device_t, wskbd_consdev_kbdinput *,
+    device_t);
+void wskbd_consdev_kbdinput_deregister(device_t);
+
+/*
  * set a translation table for scancodes in event mode
  * parameters are a pointer to the table and its length
  * pass length zero to turn translation off
