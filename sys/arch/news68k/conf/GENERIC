@@ -206,7 +206,7 @@ ss*	at scsibus? target ? lun ?		# SCSI scanners
 uk*	at scsibus? target ? lun ?		# unknown SCSI devices
 
 # PROM console support
-#romcons0 at mainbus0
+romcons0 at mainbus0
 
 #
 # accept filters

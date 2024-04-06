@@ -134,7 +134,7 @@ st*	at scsibus? target ? lun ?		# SCSI tapes
 cd*	at scsibus? target ? lun ?		# SCSI CD-ROMs
 
 # PROM console support
-#romcons0 at mainbus0
+romcons0 at mainbus0
 
 # Misc.
 pseudo-device	bpfilter		# Berkeley Packet Filter
