@@ -37,6 +37,8 @@
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD: romcons.c,v 1.3 2014/07/25 08:10:34 dholland Exp $");
 
+#include "wskbd.h"
+
 #include <sys/param.h>
 #include <sys/conf.h>
 #include <sys/device.h>
@@ -47,6 +49,9 @@ __KERNEL_RCSID(0, "$NetBSD: romcons.c,v 1.3 2014/07/25 08:10:34 dholland Exp $")
 #include <sys/kauth.h>
 
 #include <dev/cons.h>
+#if NWSKBD > 0
+#include <dev/wscons/wskbdvar.h>
+#endif
 
 #include <machine/autoconf.h>
 #include <machine/romcall.h>
@@ -59,6 +64,8 @@ struct romcons_softc {
 	struct callout sc_poll_ch;
 	int sc_flags;
 #define	CONS_POLL	1
+
+	device_t sc_kbdinput_dv;
 };
 
 #define	BURSTLEN	128	/* max number of bytes to write in one chunk */
@@ -79,7 +86,10 @@ dev_type_ioctl(romcons_ioctl);
 dev_type_tty(romcons_tty);
 dev_type_poll(romcons_poll);
 
-void romcons_kbdinput(int);
+#if NWSKBD > 0
+static void romcons_attach_deferred(device_t);
+static void romcons_kbdinput(device_t, int);
+#endif
 
 const struct cdevsw romcons_cdevsw = {
 	.d_open = romcons_open,
@@ -129,7 +139,34 @@ romcons_attach(device_t parent, device_t self, void *aux)
 	aprint_normal("\n");
 
 	callout_init(&sc->sc_poll_ch, 0);
+
+#if NWSKBD > 0
+	config_defer(self, romcons_attach_deferred);
+#endif
 }
+
+#if NWSKBD > 0
+static void
+romcons_attach_deferred(device_t self)
+{
+	struct romcons_softc *sc;
+	device_t wskbd_dev;
+
+	sc = device_private(self);
+	KASSERT(sc != NULL);
+
+	/* XXX assume only one keyboard at wskbd0 */
+	wskbd_dev = device_lookup(&wskbd_cd, 0);
+	if (wskbd_dev == NULL) {
+		aprint_error_dev(self, "no wskbd0 is attached\n");
+		return;
+	}
+
+	/* attach wskbd hook for tty(4) of userland processes */
+	sc->sc_kbdinput_dv =
+	    wskbd_consdev_kbdinput_register(wskbd_dev, romcons_kbdinput, self);
+}
+#endif
 
 static void romcons_start(struct tty *);
 static int romcons_param(struct tty *, struct termios *);
@@ -294,17 +331,19 @@ romcons_pollin(void *aux)
 	callout_reset(&sc->sc_poll_ch, 1, romcons_pollin, sc);
 }
 
-void
-romcons_kbdinput(int ks)
+#if NWSKBD > 0
+static void
+romcons_kbdinput(device_t self, int ks)
 {
-	struct romcons_softc *sc;
+	struct romcons_softc *sc = device_private(self);
 	struct tty *tp;
 
-	sc = device_lookup_private(&romcons_cd, 0);
+	KASSERT(sc != NULL);
 	tp = sc->sc_tty;
 	if (tp && (tp->t_state & TS_ISOPEN))
 		(*tp->t_linesw->l_rint)(ks, tp);
 }
+#endif
 
 void
 romcons_cnprobe(struct consdev *cd)
