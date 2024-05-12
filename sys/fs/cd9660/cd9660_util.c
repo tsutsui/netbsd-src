@@ -66,11 +66,7 @@ __KERNEL_RCSID(0, "$NetBSD: cd9660_util.c,v 1.14 2016/03/09 20:18:17 christos Ex
 #endif
 
 #include <fs/cd9660/iso.h>
-#ifdef _KERNEL
 #include <fs/cd9660/cd9660_extern.h>
-#else
-static int isochar(const u_char *, const u_char *, int, uint16_t *);
-#endif
 
 #include <fs/unicode.h>
 
