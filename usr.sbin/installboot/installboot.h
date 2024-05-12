@@ -171,15 +171,19 @@ int		shared_bbinfo_clearboot(ib_params *, struct bbinfo_params *,
 int		shared_bbinfo_setboot(ib_params *, struct bbinfo_params *,
 		    int (*)(ib_params *, struct bbinfo_params *, uint8_t *));
 
-	/* fstypes.c */
-int		hardcode_stage2(ib_params *, uint32_t *, ib_block *);
+	/* ext2fs.c */
+int		ext2fs_match(ib_params *);
+int		ext2fs_findstage2(ib_params *, uint32_t *, ib_block *);
+
+	/* ffs.c */
 int		ffs_match(ib_params *);
 int		ffs_findstage2(ib_params *, uint32_t *, ib_block *);
 int		raid_match(ib_params *);
+
+	/* fstypes.c */
+int		hardcode_stage2(ib_params *, uint32_t *, ib_block *);
 int		raw_match(ib_params *);
 int		raw_findstage2(ib_params *, uint32_t *, ib_block *);
-int		ext2fs_match(ib_params *);
-int		ext2fs_findstage2(ib_params *, uint32_t *, ib_block *);
 
 	/* machines.c */
 extern struct ib_mach ib_mach_alpha;
