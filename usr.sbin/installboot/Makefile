@@ -69,9 +69,29 @@ SRCS+= ffs_bswap.c
 #SRCS+= ext2fs.c ext2fs_bswap.c
 .endif
 
+.if !empty(ARCH_FILES:C/(hp300|macppc)/cd9660/:Mcd9660.c)
+SRCS+= cd9660.c cd9660_util.c
+
+.if !make(obj) && !make(clean) && !make(cleandir)
+.BEGIN:
+	-rm -rf fs
+	${HOST_INSTALL_DIR} fs
+	${HOST_INSTALL_DIR} fs/cd9660
+	${HOST_LN} -s ${NETBSDSRCDIR}/sys/fs/unicode.h fs
+	${HOST_LN} -s ${NETBSDSRCDIR}/sys/fs/cd9660/iso.h fs/cd9660
+	${HOST_LN} -s ${NETBSDSRCDIR}/sys/fs/cd9660/cd9660_extern.h fs/cd9660
+.endif
+
+cleandir distclean: cleaninc
+
+cleaninc:
+	-rm -rf fs
+.endif
+
 UFSSRC=		${NETBSDSRCDIR}/sys/ufs
+CD9660SRC=	${NETBSDSRCDIR}/sys/fs/cd9660
 CPPFLAGS+=	-I${.CURDIR} -I.
-.PATH:		${.CURDIR}/arch ${UFSSRC}/ffs ${UFSSRC}/ext2fs
+.PATH:		${.CURDIR}/arch ${UFSSRC}/ffs ${UFSSRC}/ext2fs ${CD9660SRC}
 
 .if !defined(HOSTPROGNAME)
 .for f in i386 macppc

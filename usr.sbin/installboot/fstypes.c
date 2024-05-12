@@ -48,11 +48,30 @@ __RCSID("$NetBSD: fstypes.c,v 1.13 2010/01/14 16:27:49 tsutsui Exp $");
 
 struct ib_fs fstypes[] = {
 #ifndef NO_STAGE2
-	{ .name = "ffs",  .match = ffs_match,	.findstage2 = ffs_findstage2	},
-	{ .name = "raid", .match = raid_match,	.findstage2 = ffs_findstage2	},
-	{ .name = "raw",  .match = raw_match,	.findstage2 = raw_findstage2	},
+	{
+		.name = "ffs",
+		.match = ffs_match,
+		.findstage2 = ffs_findstage2
+	},
+	{
+		.name = "raid",
+		.match = raid_match,
+		.findstage2 = ffs_findstage2
+	},
+	{
+		.name = "raw",
+		.match = raw_match,
+		.findstage2 = raw_findstage2
+	},
+	{
+		.name = "cd9660",
+		.match = cd9660_match,
+		.findstage2 = cd9660_findstage2
+	},
 #endif
-	{ .name = NULL, }
+	{
+		.name = NULL
+	}
 };
 
 #ifndef NO_STAGE2
