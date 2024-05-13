@@ -43,10 +43,6 @@
 #include <sys/stat.h>
 #include <stdint.h>
 
-#ifndef MAXNAMLEN
-#define MAXNAMLEN	511
-#endif
-
 typedef enum {
 				/* flags from global options */
 	IB_VERBOSE =	1<<0,		/* verbose operation */
@@ -134,8 +130,5 @@ struct bbinfo_params {
 
 int		cd9660_match(ib_params *);
 int		cd9660_findstage2(ib_params *, uint32_t *, ib_block *);
-
-int isofncmp(const u_char *, size_t, const u_char *, size_t, int);
-void isofntrans(const u_char *, int, u_char *, u_short *, int, int, int, int);
 
 #endif	/* _INSTALLBOOT_H */

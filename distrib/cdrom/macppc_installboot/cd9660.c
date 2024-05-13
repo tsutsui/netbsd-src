@@ -51,6 +51,7 @@ __RCSID("$NetBSD: cd9660.c,v 1.4 2014/09/27 15:21:40 tsutsui Exp $");
 #include <dirent.h>
 
 #include <fs/cd9660/iso.h>
+#include <fs/cd9660/cd9660_extern.h>
 
 #include "installboot.h"
 
@@ -104,7 +105,7 @@ int
 cd9660_findstage2(ib_params *params, uint32_t *maxblk, ib_block *blocks)
 {
 	uint8_t buf[ISO_DEFAULT_BLOCK_SIZE];
-	char name[MAXNAMLEN];
+	char name[ISO_MAXNAMLEN];
 	char *ofwboot;
 	off_t loc;
 	int rv, blocksize, found, i;
@@ -122,7 +123,7 @@ cd9660_findstage2(ib_params *params, uint32_t *maxblk, ib_block *blocks)
 #endif
 
 	/* The secondary bootstrap must be clearly in /. */
-	strlcpy(name, params->stage2, MAXNAMLEN);
+	strlcpy(name, params->stage2, ISO_MAXNAMLEN);
 	ofwboot = name;
 	if (ofwboot[0] == '/')
 		ofwboot++;
@@ -135,7 +136,7 @@ cd9660_findstage2(ib_params *params, uint32_t *maxblk, ib_block *blocks)
 		/*
 		 * XXX should fix isofncmp()?
 		 */
-		strlcat(ofwboot, ".", MAXNAMLEN);
+		strlcat(ofwboot, ".", ISO_MAXNAMLEN);
 	}
 
 	rv = pread(params->fsfd, &ipd, sizeof(ipd),
