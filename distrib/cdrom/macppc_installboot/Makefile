@@ -16,6 +16,7 @@ HOST_CPPFLAGS+=	-I. -I${.CURDIR}
 	${HOST_INSTALL_DIR} fs/cd9660
 	${HOST_LN} -s ${NETBSDSRCDIR}/sys/fs/unicode.h fs
 	${HOST_LN} -s ${NETBSDSRCDIR}/sys/fs/cd9660/iso.h fs/cd9660
+	${HOST_LN} -s ${NETBSDSRCDIR}/sys/fs/cd9660/cd9660_extern.h fs/cd9660
 .endif
 
 cleandir distclean: cleaninc

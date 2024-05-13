@@ -87,7 +87,7 @@ main(int argc, char **argv)
 	if (pread(params->fsfd, &pme, sizeof pme, BSIZE * 2) != sizeof(pme))
 		err(1, "read pme from file system `%s'", params->filesystem);
 
-	if (strcmp(pme.pmPartName, "NetBSD_BootBlock"))
+	if (strcmp((char *)pme.pmPartName, "NetBSD_BootBlock"))
 		err(1, "invalid partition map in file system `%s'",
 		    params->filesystem);
 
