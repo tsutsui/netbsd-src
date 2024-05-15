@@ -213,8 +213,6 @@ cd9660_findstage2(ib_params *params, uint32_t *maxblk, ib_block *blocks)
 			found = 1;
 			/* ISO filesystem always has contiguous file blocks */
 			blocks[0].block = (int64_t)isonum_733(idr->extent);
-			/* XXX bootxx assumes blocksize is 512 */
-			blocks[0].block *= blocksize / 512;
 			blocks[0].blocksize =
 			    roundup(isonum_733(idr->size), blocksize);
 			*maxblk = 1;
