@@ -11,7 +11,7 @@ PRIMARY_BOOT=	${DESTDIR}/usr/mdec/rbootd/${SYS_UBOOT}
 
 # make the CD bootable
 prepare_md_post:
-	${INSTALL} ${COPY} -m 0644 ${BOOT} cdrom/
+	${INSTALL} ${COPY} -m 0644 ${PRIMARY_BOOT} cdrom
 
 image_md_post:
 	${TOOL_INSTALLBOOT} -m ${MACHINE} -t cd9660 \
