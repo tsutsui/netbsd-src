@@ -151,8 +151,7 @@ hp300_setboot(ib_params *params)
 			goto done;
 		}
 
-		/* XXX most bootxx assumes block size is 512 bytes */
-		boot_offset = blocks[0].block * 512;
+		boot_offset = blocks[0].block * params->fstype->blocksize;
 		/* need to read only LIF volume and directories */
 		boot_size   = LIF_VOLDIRSIZE;
 
