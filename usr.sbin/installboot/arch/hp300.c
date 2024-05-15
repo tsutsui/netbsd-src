@@ -62,6 +62,9 @@ __RCSID("$NetBSD: hp300.c,v 1.18 2024/05/11 22:10:27 tsutsui Exp $");
 
 #include "installboot.h"
 
+#define	HP300_MAXBLOCKS	1	/* Only contiguous blocks are expected. */
+#define	LIF_VOLDIRSIZE	1024	/* size of LIF volume header and directory */
+
 static int hp300_setboot(ib_params *);
 
 struct ib_mach ib_mach_hp300 = {
@@ -84,6 +87,8 @@ hp300_setboot(ib_params *params)
 	int		i;
 	unsigned int	secsize = HP300_SECTSIZE;
 	uint64_t	boot_size, boot_offset;
+	uint32_t	nblk;
+	ib_block	*blocks;
 	struct disklabel *label;
 
 	assert(params != NULL);
@@ -101,7 +106,63 @@ hp300_setboot(ib_params *params)
 		goto done;
 	}
 
-	if (params->flags & IB_APPEND) {
+	if (params->stage2 != NULL) {
+		/*
+		 * Use contiguous blocks of SYS_BOOT in the target filesystem
+		 * (assuming ISO9660) for a LIF directory entry used
+		 * by BOOTROM on bootstrap.
+		 */
+		if (strcmp(params->fstype->name, "cd9660") != 0) {
+			warn("Target filesystem `%s' is unexpected",
+			    params->fstype->name);
+		}
+
+		if (S_ISREG(params->fsstat.st_mode)) {
+			if (fsync(params->fsfd) == -1)
+				warn("Synchronising file system `%s'",
+				    params->filesystem);
+		} else {
+			/* Don't allow real file systems for sanity */
+			warnx("`%s' must be a regular file to append "
+			    "a bootstrap", params->filesystem);
+			goto done;
+		}
+
+		/* Allocate space for our block list. */
+		nblk = HP300_MAXBLOCKS;
+		blocks = malloc(sizeof(*blocks) * nblk);
+		if (blocks == NULL) {
+			warn("Allocating %lu bytes for block list",
+			    (unsigned long)sizeof(*blocks) * nblk);
+			goto done;
+		}
+
+		/* Check the block of for the SYS_UBOOT in the target fs */
+		if (!params->fstype->findstage2(params, &nblk, blocks))
+			goto done;
+
+		if (nblk == 0) {
+			warnx("Secondary bootstrap `%s' is empty",
+			    params->stage2);
+			goto done;
+		} else if (nblk > 1) {
+			warnx("Secondary bootstrap `%s' doesn't have "
+			    "contiguous blocks", params->stage2);
+			goto done;
+		}
+
+		/* XXX most bootxx assumes block size is 512 bytes */
+		boot_offset = blocks[0].block * 512;
+		/* need to read only LIF volume and directories */
+		boot_size   = LIF_VOLDIRSIZE;
+
+		if ((params->flags & IB_VERBOSE) != 0) {
+			printf("Bootstrap `%s' found at offset %lu in `%s'\n",
+			    params->stage2, (unsigned long)boot_offset,
+			    params->filesystem);
+		}
+
+	} else if (params->flags & IB_APPEND) {
 		if (!S_ISREG(params->fsstat.st_mode)) {
 			warnx(
 		    "`%s' must be a regular file to append a bootstrap",
@@ -157,11 +218,23 @@ hp300_setboot(ib_params *params)
 		}
 	}
 
-	bootstrap = mmap(NULL, params->s1stat.st_size, PROT_READ | PROT_WRITE,
-			    MAP_PRIVATE, params->s1fd, 0);
-	if (bootstrap == MAP_FAILED) {
-		warn("mmapping `%s'", params->stage1);
-		goto done;
+	if (params->stage2 != NULL) {
+		/* Use bootstrap file in the target filesystem. */
+		bootstrap = mmap(NULL, boot_size,
+		    PROT_READ | PROT_WRITE, MAP_PRIVATE, params->fsfd,
+		    boot_offset);
+		if (bootstrap == MAP_FAILED) {
+			warn("mmapping `%s'", params->filesystem);
+			goto done;
+		}
+	} else {
+		/* Use bootstrap specified as stage1. */
+		bootstrap = mmap(NULL, params->s1stat.st_size,
+		    PROT_READ | PROT_WRITE, MAP_PRIVATE, params->s1fd, 0);
+		if (bootstrap == MAP_FAILED) {
+			warn("mmapping `%s'", params->stage1);
+			goto done;
+		}
 	}
 
 	/* Relocate files, sanity check LIF directory on the way */
@@ -187,12 +260,21 @@ hp300_setboot(ib_params *params)
 	}
 
 	/* Write LIF volume header and directory to sectors 0 and 1 */
-	rv = pwrite(params->fsfd, bootstrap, 1024, 0);
-	if (rv != 1024) {
+	rv = pwrite(params->fsfd, bootstrap, LIF_VOLDIRSIZE, 0);
+	if (rv != LIF_VOLDIRSIZE) {
 		if (rv == -1)
 			warn("Writing `%s'", params->filesystem);
 		else
 			warnx("Writing `%s': short write", params->filesystem);
+		goto done;
+	}
+
+	if (params->stage2 != NULL) {
+		/*
+		 * Bootstrap in the target filesystem is used.
+		 * No need to write bootstrap to BOOT partition.
+		 */
+		retval = 1;
 		goto done;
 	}
 
@@ -215,7 +297,11 @@ hp300_setboot(ib_params *params)
  done:
 	if (label != NULL)
 		free(label);
-	if (bootstrap != MAP_FAILED)
-		munmap(bootstrap, params->s1stat.st_size);
+	if (bootstrap != MAP_FAILED) {
+		if (params->stage2 != NULL)
+			munmap(bootstrap, boot_size);
+		else
+			munmap(bootstrap, params->s1stat.st_size);
+	}
 	return retval;
 }
