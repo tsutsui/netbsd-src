@@ -59,6 +59,7 @@ main(int argc, char **argv)
 	uint32_t nblk, maxblk, blk_i;
 	int rv;
 	ib_block *blocks;
+	uint64_t block;
 
 	setprogname(argv[0]);
 	params = &installboot_params;
@@ -174,7 +175,9 @@ main(int argc, char **argv)
 	bbinfop->bbi_block_count = htobe32(nblk);
 	bbinfop->bbi_block_size = htobe32(blocks[0].blocksize);
 	for (blk_i = 0; blk_i < nblk; blk_i++) {
-		bbinfop->bbi_block_table[blk_i] = htobe32(blocks[blk_i].block);
+		/* XXX bootxx assumes blocksize is 512 */
+		block = blocks[blk_i].block * (params->fstype->blocksize / 512);
+		bbinfop->bbi_block_table[blk_i] = htobe32(block);
 		if (blocks[blk_i].blocksize < blocks[0].blocksize &&
 		    blk_i + 1 != nblk) {
 			warnx("Secondary bootstrap `%s' blocks do not have "
