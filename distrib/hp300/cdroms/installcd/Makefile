@@ -7,13 +7,14 @@ CDKERNELS=	netbsd-RAMDISK.gz netbsd
 CDINSTKERNEL=	../../instkernel
 
 SYS_UBOOT=	SYS_UBOOT
-BOOT=		${DESTDIR}/usr/mdec/rbootd/${SYS_UBOOT}
+PRIMARY_BOOT=	${DESTDIR}/usr/mdec/rbootd/${SYS_UBOOT}
 
 # make the CD bootable
 prepare_md_post:
 	${INSTALL} ${COPY} -m 0644 ${BOOT} cdrom/
 
-#image_md_post:
-#	${TOOL_INSTALLBOOT} -m ${MACHINE} -o append ${CDIMAGE} ${BOOTXX}
+image_md_post:
+	${TOOL_INSTALLBOOT} -m ${MACHINE} -t cd9660 \
+	    ${CDIMAGE} ${PRIMARY_BOOT} /${SYS_UBOOT}
 
 .include "${.CURDIR}/../../../common/Makefile.bootcd"
