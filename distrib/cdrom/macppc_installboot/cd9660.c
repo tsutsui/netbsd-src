@@ -88,7 +88,7 @@ cd9660_match(ib_params *params)
 		return 0;
 	}
 
-	blocksize = isonum_723((char *)ipd.logical_block_size);
+	blocksize = isonum_723((u_char *)ipd.logical_block_size);
 	if (blocksize != ISO_DEFAULT_BLOCK_SIZE) {
 		warnx("Invalid blocksize %d in `%s'",
 		    blocksize, params->filesystem);
@@ -108,7 +108,8 @@ cd9660_findstage2(ib_params *params, uint32_t *maxblk, ib_block *blocks)
 	char name[ISO_MAXNAMLEN];
 	char *ofwboot;
 	off_t loc;
-	int rv, blocksize, found, i;
+	int rv, blocksize, found;
+	u_int i;
 	struct iso_primary_descriptor ipd;
 	struct iso_directory_record *idr;
 
@@ -149,7 +150,7 @@ cd9660_findstage2(ib_params *params, uint32_t *maxblk, ib_block *blocks)
 		   params->filesystem);
 		return 0;
 	}
-	blocksize = isonum_723((char *)ipd.logical_block_size);
+	blocksize = isonum_723((u_char *)ipd.logical_block_size);
 
 	idr = (void *)ipd.root_directory_record;
 	loc = (off_t)isonum_733(idr->extent) * blocksize;
@@ -206,8 +207,9 @@ cd9660_findstage2(ib_params *params, uint32_t *maxblk, ib_block *blocks)
 			printf("\n");
 		}
 #endif
-		if (isofncmp(ofwboot, strlen(ofwboot),
-		    idr->name, isonum_711(idr->name_len), 0) == 0) {
+		if (isofncmp((u_char *)ofwboot, strlen(ofwboot),
+		    (u_char *)idr->name,
+		    isonum_711((u_char *)idr->name_len), 0) == 0) {
 			found = 1;
 			/* ISO filesystem always has contiguous file blocks */
 			blocks[0].block = (int64_t)isonum_733(idr->extent);
