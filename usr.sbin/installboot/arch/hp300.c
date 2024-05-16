@@ -80,6 +80,7 @@ hp300_setboot(ib_params *params)
 {
 	int		retval;
 	uint8_t		*bootstrap;
+	size_t		bootstrap_size;
 	ssize_t		rv;
 	struct partition *boot;
 	struct hp300_lifdir *lifdir;
@@ -153,7 +154,7 @@ hp300_setboot(ib_params *params)
 
 		boot_offset = blocks[0].block * params->fstype->blocksize;
 		/* need to read only LIF volume and directories */
-		boot_size   = LIF_VOLDIRSIZE;
+		bootstrap_size = LIF_VOLDIRSIZE;
 
 		if ((params->flags & IB_VERBOSE) != 0) {
 			printf("Bootstrap `%s' found at offset %lu in `%s'\n",
@@ -219,7 +220,7 @@ hp300_setboot(ib_params *params)
 
 	if (params->stage2 != NULL) {
 		/* Use bootstrap file in the target filesystem. */
-		bootstrap = mmap(NULL, boot_size,
+		bootstrap = mmap(NULL, bootstrap_size,
 		    PROT_READ | PROT_WRITE, MAP_PRIVATE, params->fsfd,
 		    boot_offset);
 		if (bootstrap == MAP_FAILED) {
@@ -228,7 +229,8 @@ hp300_setboot(ib_params *params)
 		}
 	} else {
 		/* Use bootstrap specified as stage1. */
-		bootstrap = mmap(NULL, params->s1stat.st_size,
+		bootstrap_size = params->s1stat.st_size;
+		bootstrap = mmap(NULL, bootstrap_size,
 		    PROT_READ | PROT_WRITE, MAP_PRIVATE, params->s1fd, 0);
 		if (bootstrap == MAP_FAILED) {
 			warn("mmapping `%s'", params->stage1);
@@ -296,11 +298,7 @@ hp300_setboot(ib_params *params)
  done:
 	if (label != NULL)
 		free(label);
-	if (bootstrap != MAP_FAILED) {
-		if (params->stage2 != NULL)
-			munmap(bootstrap, boot_size);
-		else
-			munmap(bootstrap, params->s1stat.st_size);
-	}
+	if (bootstrap != MAP_FAILED)
+		munmap(bootstrap, bootstrap_size);
 	return retval;
 }
