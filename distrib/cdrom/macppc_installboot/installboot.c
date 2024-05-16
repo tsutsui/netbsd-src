@@ -47,6 +47,12 @@ static	void usage(void);
 
 static	ib_params	installboot_params;
 
+static	struct ib_fs cd9660_fstype = {
+	.name = "cd9660",
+	.match = cd9660_match,
+	.findstage2 = cd9660_findstage2
+};
+
 int
 main(int argc, char **argv)
 {
@@ -71,11 +77,16 @@ main(int argc, char **argv)
 		usage();
 
 	params->filesystem = argv[1];
+	params->fstype = &cd9660_fstype;
 
 	if ((params->fsfd = open(params->filesystem, O_RDWR, 0600)) == -1)
 		err(1, "Opening file system `%s' read", params->filesystem);
 	if (fstat(params->fsfd, &params->fsstat) == -1)
 		err(1, "Examining file system `%s'", params->filesystem);
+	if (!params->fstype->match(params))
+		errx(1, "File system `%s' is not of type %s",
+		    params->filesystem, params->fstype->name);
+
 #ifdef DEBUG
 	printf("file system: %s, %ld bytes\n",
 	    params->filesystem, (long)params->fsstat.st_size);
@@ -168,7 +179,7 @@ main(int argc, char **argv)
 	}
 
 	nblk = maxblk;
-	if (!cd9660_findstage2(params, &nblk, blocks)) {
+	if (!params->fstype->findstage2(params, &nblk, blocks)) {
 		exit(1);
 	}
 
