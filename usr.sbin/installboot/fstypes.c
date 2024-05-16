@@ -59,14 +59,15 @@ struct ib_fs fstypes[] = {
 		.findstage2 = ffs_findstage2
 	},
 	{
-		.name = "raw",
-		.match = raw_match,
-		.findstage2 = raw_findstage2
-	},
-	{
 		.name = "cd9660",
 		.match = cd9660_match,
 		.findstage2 = cd9660_findstage2
+	},
+	/* raw_match() always matches, so raw should be at the end. */
+	{
+		.name = "raw",
+		.match = raw_match,
+		.findstage2 = raw_findstage2
 	},
 #endif
 	{
