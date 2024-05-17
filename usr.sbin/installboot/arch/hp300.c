@@ -88,8 +88,10 @@ hp300_setboot(ib_params *params)
 	int		i;
 	unsigned int	secsize = HP300_SECTSIZE;
 	uint64_t	boot_size, boot_offset;
+#ifdef SUPPORT_CD9660
 	uint32_t	nblk;
 	ib_block	*blocks;
+#endif
 	struct disklabel *label;
 
 	assert(params != NULL);
@@ -107,6 +109,7 @@ hp300_setboot(ib_params *params)
 		goto done;
 	}
 
+#ifdef SUPPORT_CD9660
 	if (params->stage2 != NULL) {
 		/*
 		 * Use contiguous blocks of SYS_BOOT in the target filesystem
@@ -162,7 +165,9 @@ hp300_setboot(ib_params *params)
 			    params->filesystem);
 		}
 
-	} else if (params->flags & IB_APPEND) {
+	} else
+#endif
+	if (params->flags & IB_APPEND) {
 		if (!S_ISREG(params->fsstat.st_mode)) {
 			warnx(
 		    "`%s' must be a regular file to append a bootstrap",
@@ -218,6 +223,7 @@ hp300_setboot(ib_params *params)
 		}
 	}
 
+#ifdef SUPPORT_CD9660
 	if (params->stage2 != NULL) {
 		/* Use bootstrap file in the target filesystem. */
 		bootstrap = mmap(NULL, bootstrap_size,
@@ -227,7 +233,9 @@ hp300_setboot(ib_params *params)
 			warn("mmapping `%s'", params->filesystem);
 			goto done;
 		}
-	} else {
+	} else
+#endif
+	{
 		/* Use bootstrap specified as stage1. */
 		bootstrap_size = params->s1stat.st_size;
 		bootstrap = mmap(NULL, bootstrap_size,
@@ -270,6 +278,7 @@ hp300_setboot(ib_params *params)
 		goto done;
 	}
 
+#ifdef SUPPORT_CD9660
 	if (params->stage2 != NULL) {
 		/*
 		 * Bootstrap in the target filesystem is used.
@@ -278,6 +287,7 @@ hp300_setboot(ib_params *params)
 		retval = 1;
 		goto done;
 	}
+#endif
 
 	/* Write files to BOOT partition */
 	offset = boot_offset <= HP300_SECTSIZE * 16 ? HP300_SECTSIZE * 16 : 0;

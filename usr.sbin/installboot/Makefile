@@ -69,7 +69,8 @@ SRCS+= ffs_bswap.c
 #SRCS+= ext2fs.c ext2fs_bswap.c
 .endif
 
-.if !empty(ARCH_FILES:C/(hp300|macppc)/cd9660/:Mcd9660.c)
+.if !empty(ARCH_FILES:C/(hp300|macppc)/cd9660/:Mcd9660.c) && \
+    !defined(SMALLPROG)
 CPPFLAGS+=	-DSUPPORT_CD9660
 SRCS+= cd9660.c cd9660_util.c
 
