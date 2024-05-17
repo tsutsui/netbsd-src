@@ -58,11 +58,13 @@ struct ib_fs fstypes[] = {
 		.match = raid_match,
 		.findstage2 = ffs_findstage2
 	},
+#ifdef SUPPORT_CD9660
 	{
 		.name = "cd9660",
 		.match = cd9660_match,
 		.findstage2 = cd9660_findstage2
 	},
+#endif
 	/* raw_match() always matches, so raw should be at the end. */
 	{
 		.name = "raw",

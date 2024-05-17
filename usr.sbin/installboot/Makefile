@@ -70,6 +70,7 @@ SRCS+= ffs_bswap.c
 .endif
 
 .if !empty(ARCH_FILES:C/(hp300|macppc)/cd9660/:Mcd9660.c)
+CPPFLAGS+=	-DSUPPORT_CD9660
 SRCS+= cd9660.c cd9660_util.c
 
 .if !make(obj) && !make(clean) && !make(cleandir)
