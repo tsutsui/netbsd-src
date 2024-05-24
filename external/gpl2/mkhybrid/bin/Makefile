@@ -11,13 +11,18 @@ PROG=	mkhybrid
 MAN=	mkhybrid.8
 BINDIR=	/usr/sbin
 CLEANFILES+= mkhybrid.8
-.PATH:	${DIST} ${DIST}/libhfs_iso ${DIST}/libfile
 
-SRCS=	data.c block.c low.c lfile.c btree.c node.c record.c lvolume.c \
-	hfs.c file.c apprentice.c softmagic.c mkisofs.c tree.c write.c \
-	hash.c rock.c multi.c joliet.c match.c name.c eltorito.c \
+.PATH:	${DIST}
+SRCS=	mkisofs.c tree.c write.c hash.c rock.c multi.c \
+	joliet.c match.c name.c eltorito.c \
 	apple.c volume.c desktop.c mac_label.c		
 SRCS+=	getopt.c getopt1.c
+
+.PATH:	${DIST}/libhfs_iso
+SRCS+=	block.c btree.c data.c file.c hfs.c low.c lvolume.c node.c record.c
+
+.PATH:	${DIST}/libfile
+SRCS+=	apprentice.c lfile.c softmagic.c
 
 CPPFLAGS+=-DSYSTEM_ID_DEFAULT=\"NetBSD\" -DAPPLE_HYB -DVANILLA_AUTOCONF \
 	-I${DIST} -I${DIST}/include \
