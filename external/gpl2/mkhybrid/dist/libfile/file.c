@@ -1,3 +1,9 @@
+/* @(#)file.c	1.10 09/08/04 joerg */
+#include <schily/mconfig.h>
+#ifndef lint
+static	UConst char sccsid[] =
+	"@(#)file.c	1.10 09/08/04 joerg";
+#endif
 /*
 **	find file types by using a modified "magic" file
 **
@@ -35,68 +41,74 @@
  * Copyright (c) Ian F. Darwin, 1987.
  * Written by Ian F. Darwin.
  *
- * This software is not subject to any license of the American Telephone
- * and Telegraph Company or of the Regents of the University of California.
+ * This software is not subject to any export provision of the United States
+ * Department of Commerce, and may be exported to any country or planet.
  *
- * Permission is granted to anyone to use this software for any purpose on
- * any computer system, and to alter it and redistribute it freely, subject
- * to the following restrictions:
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice immediately at the beginning of the file, without modification,
+ *    this list of conditions, and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 1. The author is not responsible for the consequences of use of this
- *    software, no matter how awful, even if they arise from flaws in it.
- *
- * 2. The origin of this software must not be misrepresented, either by
- *    explicit claim or by omission.  Since few users ever read sources,
- *    credits must appear in the documentation.
- *
- * 3. Altered versions must be plainly marked as such, and must not be
- *    misrepresented as being the original software.  Since few users
- *    ever read sources, credits must appear in the documentation.
- *
- * 4. This notice may not be removed or altered.
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/param.h>	/* for MAXPATHLEN */
-#include <sys/stat.h>
-#include <fcntl.h>	/* for open() */
-#if (__COHERENT__ >= 0x420)
-# include <sys/utime.h>
-#else
-# ifdef USE_UTIMES
-#  include <sys/time.h>
-# else
-#  include <utime.h>
-# endif
-#endif
-#include <unistd.h>	/* for read() */
+#ifndef	lint
+static UConst char moduleid[] = 
+	"@(#)$Id: file.c,v 1.38 1997/01/15 19:28:35 christos Exp $";
+#endif	/* lint */
 
-#include <netinet/in.h>		/* for byte swapping */
+#include <schily/stdio.h>
+#include <schily/stdlib.h>
+#include <schily/unistd.h>	/* for read() */
+#include <schily/stat.h>
+#include <schily/fcntl.h>	/* for open() */
+
+#ifdef RESTORE_TIME
+#include <schily/utime.h>
+#ifdef HAVE_UTIMES
+#define	USE_UTIMES
+#endif
+#endif
+
+#if 0
+#include <schily/in.h>		/* for byte swapping */
+#endif
 
 #include "patchlevel.h"
 #include "file.h"
-#include "proto.h"
 
-int 			/* Global command-line options 		*/
+#ifdef MAIN
+ 			/* Global command-line options 		*/
 #ifdef DEBUG
-	debug = 1, 	/* debugging 				*/
+int	debug = 1; 	/* debugging 				*/
 #else
-	debug = 0, 	/* debugging 				*/
+int	debug = 0; 	/* debugging 				*/
 #endif /* DEBUG */
-	lflag = 0,	/* follow Symlinks (BSD only) 		*/
-	zflag = 0;	/* follow (uncompress) compressed files */
+int	lflag = 0;	/* follow Symlinks (BSD only) 		*/
+int	zflag = 0;	/* follow (uncompress) compressed files */
 
-int			/* Misc globals				*/
-	nmagic = 0;	/* number of valid magic[]s 		*/
-
-struct  magic *magic;	/* array of magic entries		*/
-
+			/* Misc globals				*/
 char *magicfile;	/* where magic be found 		*/
 
 char *progname;		/* used throughout 			*/
-int lineno;		/* line number in the magic file	*/
+#endif
+
+char *	get_magic_match	__PR((const char *inname));
+void	clean_magic	__PR((void));
 
 #if 0
 static int	byteconv4	__P((int, int, int));
@@ -224,6 +236,7 @@ const char	*inname;
 		utbuf.modtime = sb.st_mtime;
 		(void) utime(inname, &utbuf); /* don't care if loses */
 # endif
+	}
 #endif
 	(void) close(fd);
 
@@ -236,8 +249,8 @@ const char	*inname;
 void
 clean_magic()
 {
-	if (magic)
-		free(magic);
+	if (__f_magic)
+		free(__f_magic);
 }
 	
 

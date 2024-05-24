@@ -1,3 +1,9 @@
+/* @(#)softmagic.c	1.12 09/07/11 joerg */
+#include <schily/mconfig.h>
+#ifndef lint
+static	UConst char sccsid[] =
+	"@(#)softmagic.c	1.12 09/07/11 joerg";
+#endif
 /*
 **	find file types by using a modified "magic" file
 **
@@ -12,41 +18,60 @@
  * Copyright (c) Ian F. Darwin, 1987.
  * Written by Ian F. Darwin.
  *
- * This software is not subject to any license of the American Telephone
- * and Telegraph Company or of the Regents of the University of California.
+ * This software is not subject to any export provision of the United States
+ * Department of Commerce, and may be exported to any country or planet.
  *
- * Permission is granted to anyone to use this software for any purpose on
- * any computer system, and to alter it and redistribute it freely, subject
- * to the following restrictions:
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice immediately at the beginning of the file, without modification,
+ *    this list of conditions, and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 1. The author is not responsible for the consequences of use of this
- *    software, no matter how awful, even if they arise from flaws in it.
- *
- * 2. The origin of this software must not be misrepresented, either by
- *    explicit claim or by omission.  Since few users ever read sources,
- *    credits must appear in the documentation.
- *
- * 3. Altered versions must be plainly marked as such, and must not be
- *    misrepresented as being the original software.  Since few users
- *    ever read sources, credits must appear in the documentation.
- *
- * 4. This notice may not be removed or altered.
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
-#include <sys/types.h>
+#include <schily/stdio.h>
+#include <schily/string.h>
+#include <schily/stdlib.h>
+#include <schily/schily.h>
 
 #include "file.h"
 
-/* static int match	__P((unsigned char *, int)); */
-static char *match	__P((unsigned char *, int));
-static int mget		__P((union VALUETYPE *,
+#ifndef	lint
+static UConst char moduleid[] = 
+	"@(#)$Id: softmagic.c,v 1.34 1997/01/15 19:28:35 christos Exp $";
+#endif	/* lint */
+
+#ifdef DEBUG
+int	debug = 1; 	/* debugging 				*/
+#else
+#define	debug	0 	/* debugging 				*/
+#endif /* DEBUG */
+
+/* static int match	__PR((unsigned char *, int)); */
+static char *match	__PR((unsigned char *, int));
+static int mget		__PR((union VALUETYPE *,
 			     unsigned char *, struct magic *, int));
-static int mcheck	__P((union VALUETYPE *, struct magic *));
-static int mconvert	__P((union VALUETYPE *, struct magic *));
+/* QNX has a mcheck() prototyp in a public include file */
+static int magcheck	__PR((union VALUETYPE *, struct magic *));
+#ifdef	__used__
+static void mdebug	__PR((Int32_t, char *, int));
+#endif
+static int mconvert	__PR((union VALUETYPE *, struct magic *));
 
 /*
  * softmagic - lookup one file in database 
@@ -97,21 +122,21 @@ int nbytes;
 	int magindex = 0;
 	union VALUETYPE p;
 
-	for (magindex = 0; magindex < nmagic; magindex++) {
+	for (magindex = 0; magindex < __f_nmagic; magindex++) {
 		/* if main entry matches, print it... */
-		if (!mget(&p, s, &magic[magindex], nbytes) ||
-		    !mcheck(&p, &magic[magindex])) {
+		if (!mget(&p, s, &__f_magic[magindex], nbytes) ||
+		    !magcheck(&p, &__f_magic[magindex])) {
 			    /* 
 			     * main entry didn't match,
 			     * flush its continuations
 			     */
-			    while (magindex < nmagic &&
-			    	   magic[magindex + 1].cont_level != 0)
+			    while (magindex < __f_nmagic &&
+			    	   __f_magic[magindex + 1].cont_level != 0)
 			    	   magindex++;
 			    continue;
 		}
 
-		return (magic[magindex].desc);
+		return (__f_magic[magindex].desc);
 	}
 	return 0;			/* no match at all */
 }
@@ -146,7 +171,7 @@ struct magic *m;
 		return 1;
 	case BELONG:
 	case BEDATE:
-		p->l = (int32)
+		p->l = (Int32_t)
 		    ((p->hl[0]<<24)|(p->hl[1]<<16)|(p->hl[2]<<8)|(p->hl[3]));
 		return 1;
 	case LESHORT:
@@ -154,7 +179,7 @@ struct magic *m;
 		return 1;
 	case LELONG:
 	case LEDATE:
-		p->l = (int32)
+		p->l = (Int32_t)
 		    ((p->hl[3]<<24)|(p->hl[2]<<16)|(p->hl[1]<<8)|(p->hl[0]));
 		return 1;
 	default:
@@ -162,6 +187,19 @@ struct magic *m;
 	}
 }
 
+#ifdef	__used__
+static void
+mdebug(offset, str, len)
+Int32_t offset;
+char *str;
+int len;
+{
+	(void) fprintf(stderr, "mget @%d: ", offset);
+	showstr(stderr, (char *) str, len);
+	(void) fputc('\n', stderr);
+	(void) fputc('\n', stderr);
+}
+#endif
 
 static int
 mget(p, s, m, nbytes)
@@ -170,7 +208,7 @@ unsigned char	*s;
 struct magic *m;
 int nbytes;
 {
-	int32 offset = m->offset;
+	Int32_t offset = m->offset;
 
 	if (offset + sizeof(union VALUETYPE) <= nbytes)
 		memcpy(p, s + offset, sizeof(union VALUETYPE));
@@ -179,7 +217,7 @@ int nbytes;
 		 * the usefulness of padding with zeroes eludes me, it
 		 * might even cause problems
 		 */
-		int32 have = nbytes - offset;
+		Int32_t have = nbytes - offset;
 		memset(p, 0, sizeof(union VALUETYPE));
 		if (have > 0)
 			memcpy(p, s + offset, have);
@@ -214,12 +252,12 @@ int nbytes;
 }
 
 static int
-mcheck(p, m)
+magcheck(p, m)
 union VALUETYPE* p;
 struct magic *m;
 {
-	register uint32 l = m->value.l;
-	register uint32 v;
+	register UInt32_t l = m->value.l;
+	register UInt32_t v;
 	int matched;
 
 	if ( (m->value.s[0] == 'x') && (m->value.s[1] == '\0') ) {
@@ -301,10 +339,10 @@ struct magic *m;
 					       v, l, matched);
 		}
 		else {
-			matched = (int32) v > (int32) l;
+			matched = (Int32_t) v > (Int32_t) l;
 			if (debug)
 				(void) fprintf(stderr, "%d > %d = %d\n",
-					       v, l, matched);
+					    (Int32_t)v, (Int32_t)l, matched);
 		}
 		break;
 
@@ -316,10 +354,10 @@ struct magic *m;
 					       v, l, matched);
 		}
 		else {
-			matched = (int32) v < (int32) l;
+			matched = (Int32_t) v < (Int32_t) l;
 			if (debug)
 				(void) fprintf(stderr, "%d < %d = %d\n",
-					       v, l, matched);
+					    (Int32_t)v, (Int32_t)l, matched);
 		}
 		break;
 

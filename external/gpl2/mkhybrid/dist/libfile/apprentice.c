@@ -1,3 +1,9 @@
+/* @(#)apprentice.c	1.13 09/07/11 joerg */
+#include <schily/mconfig.h>
+#ifndef lint
+static	UConst char sccsid[] =
+	"@(#)apprentice.c	1.13 09/07/11 joerg";
+#endif
 /*
 **	find file types by using a modified "magic" file
 **
@@ -12,33 +18,54 @@
  * Copyright (c) Ian F. Darwin, 1987.
  * Written by Ian F. Darwin.
  *
- * This software is not subject to any license of the American Telephone
- * and Telegraph Company or of the Regents of the University of California.
+ * This software is not subject to any export provision of the United States
+ * Department of Commerce, and may be exported to any country or planet.
  *
- * Permission is granted to anyone to use this software for any purpose on
- * any computer system, and to alter it and redistribute it freely, subject
- * to the following restrictions:
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice immediately at the beginning of the file, without modification,
+ *    this list of conditions, and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 1. The author is not responsible for the consequences of use of this
- *    software, no matter how awful, even if they arise from flaws in it.
- *
- * 2. The origin of this software must not be misrepresented, either by
- *    explicit claim or by omission.  Since few users ever read sources,
- *    credits must appear in the documentation.
- *
- * 3. Altered versions must be plainly marked as such, and must not be
- *    misrepresented as being the original software.  Since few users
- *    ever read sources, credits must appear in the documentation.
- *
- * 4. This notice may not be removed or altered.
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <errno.h>
+#include <schily/stdio.h>
+#include <schily/stdlib.h>
+#include <schily/string.h>
+#include <schily/ctype.h>
 #include "file.h"
+#include <schily/schily.h>
+
+#ifndef	lint
+static UConst char moduleid[] = 
+	"@(#)$Id: apprentice.c,v 1.25 1997/01/15 17:23:24 christos Exp $";
+#endif	/* lint */
+
+int	__f_nmagic = 0;		/* number of valid magic[]s 		*/
+#if	defined(IS_MACOS_X)
+/*
+ * The MAC OS X linker does not grok "common" varaibles.
+ * Make __f_magic a "data" variable.
+ */
+struct  magic *__f_magic = 0;	/* array of magic entries		*/
+#else
+struct  magic *__f_magic;	/* array of magic entries		*/
+#endif
 
 #define	EATAB {while (isascii((unsigned char) *l) && \
 		      isspace((unsigned char) *l))  ++l;}
@@ -46,15 +73,15 @@
 			tolower((unsigned char) (l)) : (l))
 
 
-static int getvalue	__P((struct magic *, char **));
-static int hextoint	__P((int));
-static char *getstr	__P((char *, char *, int, int *));
-static int parse	__P((char *, int *, int));
-static void eatsize	__P((char **));
+static int getvalue	__PR((struct magic *, char **));
+static int hextoint	__PR((int));
+static char *apgetstr	__PR((char *, char *, int, int *));
+static int parse	__PR((char *, int *, int));
+static void eatsize	__PR((char **));
 
 static int maxmagic = 0;
 
-static int apprentice_1	__P((char *, int));
+static int apprentice_1	__PR((char *, int));
 
 /*
  * init_magic - read magic file and set up mapping
@@ -65,8 +92,8 @@ init_magic(fn)
 char *fn;			/* list of magic files */
 {
         maxmagic = MAXMAGIS;
-	magic = (struct magic *) calloc(sizeof(struct magic), maxmagic);
-	if (magic == NULL) 
+	__f_magic = (struct magic *) calloc(sizeof(struct magic), maxmagic);
+	if (__f_magic == NULL) 
 		return -1;
 
 	return(apprentice_1(fn, 0));
@@ -82,6 +109,7 @@ int check;			/* non-zero? checking-only run. */
 	FILE *f;
 	char line[BUFSIZ+1];
 	int errs = 0;
+	int lineno;
 
 	f = fopen(fn, "r");
 	if (f==NULL) {
@@ -92,14 +120,13 @@ int check;			/* non-zero? checking-only run. */
 	if (check)	/* print silly verbose header for USG compat. */
 		(void) printf("%s\n", hdr);
 
-	for (lineno = 1;fgets(line, sizeof(line), f) != NULL; lineno++) {
+	for (lineno = 1;fgets(line, BUFSIZ, f) != NULL; lineno++) {
 		if (line[0]=='#')	/* comment, do not parse */
 			continue;
-		/* delete newline */
-		line[strcspn(line, "\n")] = '\0';
-		if (line[0] == '\0')
+		if (strlen(line) <= (unsigned)1) /* null line, garbage, etc */
 			continue;
-		if (parse(line, &nmagic, check) != 0)
+		line[strlen(line)-1] = '\0'; /* delete newline */
+		if (parse(line, &__f_nmagic, check) != 0)
 			errs = 1;
 	}
 
@@ -109,11 +136,12 @@ int check;			/* non-zero? checking-only run. */
 
 /*
  * extend the sign bit if the comparison is to be signed
+ * XXX is uint32 really a good idea XXX JS
  */
-uint32
+UInt32_t
 signextend(m, v)
 struct magic *m;
-uint32 v;
+UInt32_t v;
 {
 	if (!(m->flag & UNSIGNED))
 		switch(m->type) {
@@ -136,7 +164,7 @@ uint32 v;
 		case LONG:
 		case BELONG:
 		case LELONG:
-			v = (int32) v;
+			v = (Int32_t) v;
 			break;
 		case STRING:
 			break;
@@ -161,18 +189,22 @@ int *ndx, check;
 #define ALLOC_INCR	20
 	if (nd+1 >= maxmagic){
 	    maxmagic += ALLOC_INCR;
-	    if ((magic = (struct magic *) realloc(magic, 
+	    if ((__f_magic = (struct magic *) realloc(__f_magic, 
 						  sizeof(struct magic) * 
 						  maxmagic)) == NULL) {
+#ifdef	MAIN
 		(void) fprintf(stderr, "%s: Out of memory.\n", progname);
+#else
+		(void) fprintf(stderr, "libfile: Out of memory.\n");
+#endif
 		if (check)
 			return -1;
 		else
 			exit(1);
 	    }
-	    memset(&magic[*ndx], 0, sizeof(struct magic) * ALLOC_INCR);
+	    memset(&__f_magic[*ndx], 0, sizeof(struct magic) * ALLOC_INCR);
 	}
-	m = &magic[*ndx];
+	m = &__f_magic[*ndx];
 	m->flag = 0;
 	m->cont_level = 0;
 
@@ -300,7 +332,7 @@ int *ndx, check;
 	/* New-style anding: "0 byte&0x80 =0x80 dynamically linked" */
 	if (*l == '&') {
 		++l;
-		m->mask = signextend(m, strtoul(l, &l, 0));
+		m->mask = signextend(m, (UInt32_t)strtoul(l, &l, 0)); /* XXX JS uint32 cat may be wrong */
 		eatsize(&l);
 	} else
 		m->mask = ~0L;
@@ -377,11 +409,11 @@ char **p;
 	int slen;
 
 	if (m->type == STRING) {
-		*p = getstr(*p, m->value.s, sizeof(m->value.s), &slen);
+		*p = apgetstr(*p, m->value.s, sizeof(m->value.s), &slen);
 		m->vallen = slen;
 	} else
 		if (m->reln != 'x') {
-			m->value.l = signextend(m, strtoul(*p, p, 0));
+			m->value.l = signextend(m, (UInt32_t)strtoul(*p, p, 0)); /* XXX JS uint32 cat may be wrong */
 			eatsize(p);
 		}
 	return 0;
@@ -394,7 +426,7 @@ char **p;
  * Return updated scan pointer as function result.
  */
 static char *
-getstr(s, p, plen, slen)
+apgetstr(s, p, plen, slen)
 register char	*s;
 register char	*p;
 int	plen, *slen;

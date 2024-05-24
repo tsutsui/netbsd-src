@@ -1,18 +1,12 @@
+/* @(#)patchlevel.h	1.1 97/01/15 joerg */
 #define	FILE_VERSION_MAJOR	3
 #define	patchlevel		22
 
 /*
  * Patchlevel file for Ian Darwin's MAGIC command.
- * $Id: patchlevel.h,v 1.1 2000/10/10 20:40:37 beck Exp $
+ * $Id: patchlevel.h,v 1.22 1997/01/15 17:23:24 christos Exp $
  *
  * $Log: patchlevel.h,v $
- * Revision 1.1  2000/10/10 20:40:37  beck
- * mkhybrid 1.12b5.1
- *
- * Note, this normally makes a "mkisofs" which is the same binary, mkisofs
- * from here needs to be tested out prior to replacing our existing mkisofs
- * with this. (currently just installs mkhybrid)
- *
  * Revision 1.22  1997/01/15 17:23:24  christos
  * - add support for elf core files: find the program name under SVR4 [Ken Pizzini]
  * - print strings only up to the first carriage return [various]
