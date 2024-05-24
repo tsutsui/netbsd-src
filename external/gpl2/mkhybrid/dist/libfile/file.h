@@ -1,7 +1,7 @@
 /* @(#)file.h	1.12 09/07/13 joerg */
 /*
  * file.h - definitions for file(1) program
- * @(#)$Id: file.h,v 1.25 1997/01/15 19:28:35 christos Exp $
+ * @(#)Id: file.h,v 1.25 1997/01/15 19:28:35 christos Exp
  *
  * Copyright (c) Ian F. Darwin, 1987.
  * Written by Ian F. Darwin.

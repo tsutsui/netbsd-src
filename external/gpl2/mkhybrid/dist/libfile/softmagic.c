@@ -51,7 +51,7 @@ static	const char sccsid[] =
 
 #ifndef	lint
 static const char moduleid[] = 
-	"@(#)$Id: softmagic.c,v 1.34 1997/01/15 19:28:35 christos Exp $";
+	"@(#)Id: softmagic.c,v 1.34 1997/01/15 19:28:35 christos Exp";
 #endif	/* lint */
 
 #ifdef DEBUG

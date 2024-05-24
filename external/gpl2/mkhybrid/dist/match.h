@@ -5,7 +5,7 @@
  */
 
 /*
- * 	$Id: match.h,v 1.5 2008/04/18 20:52:34 millert Exp $
+ * 	Id: match.h,v 1.5 2008/04/18 20:52:34 millert Exp
  */
 
 #include <inttypes.h>

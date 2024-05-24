@@ -1,4 +1,4 @@
-# $Id: mkisofs.spec,v 1.1 2000/10/10 20:40:19 beck Exp $
+# Id: mkisofs.spec,v 1.1 2000/10/10 20:40:19 beck Exp
 Summary: Creates a ISO9660 filesystem image
 Name: mkisofs
 Version: 1.12b5

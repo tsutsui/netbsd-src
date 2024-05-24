@@ -2,7 +2,7 @@
  * Header file defaults.h - assorted default values for character strings in
  * the volume descriptor.
  *
- * 	$Id: defaults.h,v 1.1 2000/10/10 20:40:13 beck Exp $
+ * 	Id: defaults.h,v 1.1 2000/10/10 20:40:13 beck Exp
  */
 
 #define  PREPARER_DEFAULT 	NULL

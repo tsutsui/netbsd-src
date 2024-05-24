@@ -52,7 +52,7 @@ static	const char sccsid[] =
 
 #ifndef	lint
 static const char moduleid[] = 
-	"@(#)$Id: apprentice.c,v 1.25 1997/01/15 17:23:24 christos Exp $";
+	"@(#)Id: apprentice.c,v 1.25 1997/01/15 17:23:24 christos Exp";
 #endif	/* lint */
 
 int	__f_nmagic = 0;		/* number of valid magic[]s 		*/

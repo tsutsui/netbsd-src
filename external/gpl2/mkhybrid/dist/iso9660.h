@@ -21,7 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /*
- * 	$Id: iso9660.h,v 1.1 2000/10/10 20:40:16 beck Exp $
+ * 	Id: iso9660.h,v 1.1 2000/10/10 20:40:16 beck Exp
  */
 
 #ifndef _ISOFS_FS_H

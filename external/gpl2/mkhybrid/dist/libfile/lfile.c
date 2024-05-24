@@ -67,7 +67,7 @@ static	const char sccsid[] =
  */
 #ifndef	lint
 static const char moduleid[] = 
-	"@(#)$Id: file.c,v 1.38 1997/01/15 19:28:35 christos Exp $";
+	"@(#)Id: file.c,v 1.38 1997/01/15 19:28:35 christos Exp";
 #endif	/* lint */
 
 #include <stdio.h>

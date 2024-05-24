@@ -20,7 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /*
- * 	$Id: mkisofs.h,v 1.4 2015/09/09 20:02:31 miod Exp $
+ * 	Id: mkisofs.h,v 1.4 2015/09/09 20:02:31 miod Exp
  */
 
 /* APPLE_HYB James Pearson j.pearson@ge.ucl.ac.uk 12/3/99 */

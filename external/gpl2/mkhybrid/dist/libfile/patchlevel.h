@@ -4,9 +4,9 @@
 
 /*
  * Patchlevel file for Ian Darwin's MAGIC command.
- * $Id: patchlevel.h,v 1.22 1997/01/15 17:23:24 christos Exp $
+ * Id: patchlevel.h,v 1.22 1997/01/15 17:23:24 christos Exp
  *
- * $Log: patchlevel.h,v $
+ * Log: patchlevel.h,v
  * Revision 1.22  1997/01/15 17:23:24  christos
  * - add support for elf core files: find the program name under SVR4 [Ken Pizzini]
  * - print strings only up to the first carriage return [various]

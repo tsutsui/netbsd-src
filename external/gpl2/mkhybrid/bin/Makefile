@@ -1,3 +1,4 @@
+#	$NetBSD$
 #	$OpenBSD: Makefile,v 1.7 2015/09/09 20:02:31 miod Exp $
 
 # NOTE: The mkhybrid distrib also makes an "mkisofs" which is the same binary
