@@ -10,7 +10,6 @@ DIST=	${NETBSDSRCDIR}/external/gpl2/mkhybrid/dist
 PROG=	mkhybrid
 MAN=	mkhybrid.8
 BINDIR=	/usr/sbin
-CLEANFILES+= mkhybrid.8
 
 .PATH:	${DIST}
 SRCS=	mkisofs.c tree.c write.c hash.c rock.c multi.c \
@@ -28,8 +27,5 @@ CPPFLAGS+=-DSYSTEM_ID_DEFAULT=\"NetBSD\" -DAPPLE_HYB -DVANILLA_AUTOCONF \
 	-I${DIST} -I${DIST}/include \
 	-I${DIST}/libhfs_iso \
 	-I${DIST}/libfile
-
-mkhybrid.8: mkhybrid.8tbl
-	cp ${.ALLSRC} ${.TARGET}
 
 .include <bsd.prog.mk>
