@@ -63,6 +63,10 @@ ALL_PORTS:=		${ALL_PORTS} ${BASE_PORTS.${image}}
 
 SUBDIR=
 
+.if !empty(ALL_PORTS:Mmac68k) || !empty(ALL_PORTS:Mmacppc)
+MKISOFS=	${TOOL_MKHYBRID}
+.endif
+
 .if !empty(ALL_PORTS:Mmacppc)
 SUBDIR+=	macppc_installboot
 .endif
