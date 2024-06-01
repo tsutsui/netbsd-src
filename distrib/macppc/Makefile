@@ -18,6 +18,9 @@ release: check_RELEASEDIR .WAIT ${OWFBOOTERS}
 	${RELEASE_INSTALL} ${OFWBOOTERS} ${RELEASEDIR}/${RELEASEMACHINEDIR}/installation
 
 iso_image:
-	${MAKEDIRTARGET} cdroms iso_image
+# macppc installcd is now created via "do-isa-image" target in
+# etc/Makefile using ${TOOLS_MKHYBRID} for ISO9660/HFS hybrid image
+# with bootable special Apple partition map
+#	${MAKEDIRTARGET} cdroms iso_image
 
 .include <bsd.subdir.mk>
