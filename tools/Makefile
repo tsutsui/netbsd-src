@@ -172,6 +172,7 @@ SUBDIR+=	ibmnws-ncdcs
 
 .if ${MACHINE} == "macppc"
 SUBDIR+=	macppc-fixcoff
+SUBDIR+=	macppc_installboot
 .endif
 
 .if (${MACHINE} == "prep" || ${MACHINE} == "rs6000" || ${MACHINE} == "bebox")
