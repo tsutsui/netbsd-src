@@ -50,8 +50,3 @@ iso-image: do-iso-image
 iso-image-md-post:
 	${TOOL_MACPPCINSTALLBOOT} ${CDROM_IMAGE} \
 		${DESTDIR}/usr/mdec/bootxx /ofwboot
-	@echo Rounding up to 32k boundary and padding 32k....
-	@size=$$(${TOOL_STAT} -f '%z' ${CDROM_IMAGE}); \
-	    pad=$$(( 32768 - ( $$size & 32767 ) )); \
-	    [ $$pad = 32768 ] || \
-	    dd if=/dev/zero bs=1 count=$$pad >> ${CDROM_IMAGE} 2>/dev/null
