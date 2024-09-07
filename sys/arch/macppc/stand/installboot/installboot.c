@@ -1,4 +1,4 @@
-/*	$NetBSD: installboot.c,v 1.7 2024/05/19 15:52:34 tsutsui Exp $	*/
+/*	$NetBSD$	*/
 
 /*-
  * Copyright (c) 2005 Izumi Tsutsui.  All rights reserved.

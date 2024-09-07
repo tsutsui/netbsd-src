@@ -1,4 +1,4 @@
-#	$NetBSD: Makefile,v 1.14 2024/06/08 13:03:40 tsutsui Exp $
+#	$NetBSD$
 
 NOMAN=	# defined
 PROG=	macppc_installboot

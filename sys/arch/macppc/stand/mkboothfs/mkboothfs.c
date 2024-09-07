@@ -1,4 +1,4 @@
-/*	$NetBSD: mkboothfs.c,v 1.4 2024/06/08 13:05:33 tsutsui Exp $	*/
+/*	$NetBSD$	*/
 
 /*-
  * Copyright (c) 2005, 2006 Izumi Tsutsui.  All rights reserved.

@@ -3,8 +3,9 @@
 .include <bsd.own.mk>
 
 .if (${USETOOLS} != "yes")
-SUBDIR=		fixcoff .WAIT
+SUBDIR=		fixcoff mkboothfs .WAIT
 .endif
 SUBDIR+=	bootxx ofwboot
+SUBDIR+=	boothfs
 
 .include <bsd.subdir.mk>
