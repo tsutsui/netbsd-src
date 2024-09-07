@@ -1,0 +1,26 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        machine: [ "macppc", "amd64", "i386", "mac68k" ]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: setup build environment
+      run: |
+        sudo apt update
+        sudo apt upgrade -y
+        sudo apt install -y build-essential flex
+
+    - name: build
+      run: |
+        export USR_OBJMACHINE=yes OBJMACHINE=yes MKHOSTOBJ=yes
+        sh build.sh -U -j 2 -m ${{ matrix.machine }} release iso-image
