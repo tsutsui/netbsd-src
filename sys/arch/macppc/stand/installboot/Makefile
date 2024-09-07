@@ -1,5 +1,15 @@
 #	$NetBSD$
 
+# XXX
+# This installboot(8) tool for macppc is prepared to handle quirks on
+# creating bootable ISO using mkhybrid(8) for OpenFirmware 1.x and 2.x
+# machines that require "bootable partition" info the Apple Partition map
+# entry even on HFS/ISO9660 hybrid images.
+#
+# This should be merge into MI installboot(8) once after we have proper
+# defintitions how Apple Partition Map should be handled on creating
+# a new label on fresh disks in MD macppc/disksubr.c etc.
+
 NOMAN=	# defined
 PROG=	macppc_installboot
 SRCS=	installboot.c cd9660.c cd9660_util.c
