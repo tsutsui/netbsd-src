@@ -1,0 +1,37 @@
+name: ci
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        machine: [ "virt68k", "sun3" ]
+
+    steps:
+    - name: checkout src
+      uses: actions/checkout@v4
+
+    - name: checkout xsrc
+      uses: actions/checkout@v4
+      with:
+        repository: netbsd/xsrc
+        path: xsrc
+
+    - name: setup build environment
+      run: |
+        sudo apt install -y build-essential flex
+
+    - name: build
+      run: |
+        export USR_OBJMACHINE=yes OBJMACHINE=yes MKHOSTOBJ=yes
+        sh build.sh -U -u -x -X xsrc -j 4 -N 0 -m ${{ matrix.machine }} -V OBJMACHINE=yes release live-image
+
+    - name: upload liveimages
+      uses: actions/upload-artifact@v4
+      with:
+        name: liveimage-${{ matrix.machine }}
+        path: obj.${{ matrix.machine }}/releasedir/images/
