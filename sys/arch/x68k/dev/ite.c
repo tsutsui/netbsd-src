@@ -154,6 +154,9 @@ static u_char cons_tabs[MAX_TABS];
 static void itestart(struct tty *);
 
 static void iteputchar(int, struct ite_softc *);
+#if defined(ITE_SIXEL)
+static int ite_dcs(const int, struct ite_softc *);
+#endif
 static void ite_putstr(const u_char *, int, dev_t);
 
 static int itematch(device_t, cfdata_t, void *);
@@ -1230,18 +1233,6 @@ iteputchar(int c, struct ite_softc *ip)
 {
 	int n, x, y;
 	char *cp;
-#if defined(ITE_SIXEL)
-	const uint32_t table[64] = {
-		0x000000,0x000001,0x000010,0x000011,0x000100,0x000101,0x000110,0x000111,
-		0x001000,0x001001,0x001010,0x001011,0x001100,0x001101,0x001110,0x001111,
-		0x010000,0x010001,0x010010,0x010011,0x010100,0x010101,0x010110,0x010111,
-		0x011000,0x011001,0x011010,0x011011,0x011100,0x011101,0x011110,0x011111,
-		0x100000,0x100001,0x100010,0x100011,0x100100,0x100101,0x100110,0x100111,
-		0x101000,0x101001,0x101010,0x101011,0x101100,0x101101,0x101110,0x101111,
-		0x110000,0x110001,0x110010,0x110011,0x110100,0x110101,0x110110,0x110111,
-		0x111000,0x111001,0x111010,0x111011,0x111100,0x111101,0x111110,0x111111,
-	};
-#endif
 
 #if defined(ITE_SIXEL)
 	if ((c >= 0x20 && ip->escape != 0) || ip->escape == DCS) {
@@ -1645,8 +1636,13 @@ iteputchar(int c, struct ite_softc *ip)
 							ite_sendstr(ip,
 							    "\033[?1;1c");
 						else
+#if defined(ITE_SIXEL)
+							ite_sendstr(ip,
+							    "\033[63;4c");
+#else
 							ite_sendstr(ip,
 							    "\033[63;0c");
+#endif
 						break;
 					}
 				}
@@ -1982,29 +1978,9 @@ iteputchar(int c, struct ite_softc *ip)
 						break;
 
 					case '1':
-#if defined(ITE_16COLOR)
-						if (c_p[1] == '0') {
-							switch (c_p[2]) {
-							case '0': case '1': case '2': case '3':
-							case '4': case '5': case '6': case '7':
-								/* background colors */
-								ip->bgcolor = c_p[2] - '0' + 8;
-								c_p += 3;
-								break;
-							default:
-								c_p += 3;
-								break;
-							}
-						} else {
-							set_attr(ip, ATTR_BOLD);
-							c_p++;
-						}
-						break;
-#else
 						set_attr(ip, ATTR_BOLD);
 						c_p++;
 						break;
-#endif
 
 					case '2':
 						switch (c_p[1]) {
@@ -2087,22 +2063,6 @@ iteputchar(int c, struct ite_softc *ip)
 						set_attr(ip, ATTR_INV);
 						c_p++;
 						break;
-
-#if defined(ITE_16COLOR)
-					case '9':
-						switch (c_p[1]) {
-						case '0': case '1': case '2': case '3':
-						case '4': case '5': case '6': case '7':
-							/* foreground colors */
-							ip->fgcolor = c_p[1] - '0' + 8;
-							c_p += 2;
-							break;
-						default:
-							c_p++;
-							break;
-						}
-						break;
-#endif
 
 					default:
 						c_p++;
@@ -2232,223 +2192,11 @@ iteputchar(int c, struct ite_softc *ip)
 
 #if defined(ITE_SIXEL)
 		case DCS:
-			switch (ip->dcs_cmd) {
-			case DCS_DISCARD:
-				/* discard sixel cause kernel message interrupted */
-				switch (c) {
-				case '-':
-					/* restart from next SIXEL line */
-					ite_lf(ip);
-					goto sixel_restart;
-
-				case CAN:
-				case SUB:
-					/* SUB should also display a reverse question mark... */
-					ip->escape = 0;
-					return;
-
-				case ESC:
-					ip->escape = ESC;
-					return;
-				default:
-					return;
-				}
-				break;
-
-			case DCS_START:
-				/* the biggie... */
-				switch (c) {
-				case '0': case '1': case '2': case '3': case '4':
-				case '5': case '6': case '7': case '8': case '9':
-				case ';': case '$':
-					if (ip->ap < ip->argbuf + MAX_ARGSIZE)
-						*ip->ap++ = c;
-					return;
-
-				case 'q':
-					/* init sixel */
-					/*
-					 * DCS <P1> ; <P2> ; <P3> q
-					 * P1 is aspect ratio, XXX not supported.
-					 * P2 is bgcolor mode.
-					 *  0..2: bgcolor mode, XXX not supported here.
-					 *  bit2 means 'OR'ed color mode. it's original extension.
-					 */
-					ip->ap = ip->argbuf;
-					cp = strchr(ip->ap, ';');
-					if (cp != NULL) {
-						int mode;
-						mode = atoi(cp + 1) - '0';
-						ip->decsixel_ormode = (mode & 4);
-					} else {
-						ip->decsixel_ormode = 0;
-					}
- sixel_restart:
-					ip->dcs_cmd = DCS_SIXEL;
-					ip->decsixel_state = DECSIXEL_INIT;
-					ip->decsixel_ph = MAX_SIXEL_WIDTH;
-					ip->decsixel_x = 0;
-					ip->decsixel_y = 0;
-					ip->decsixel_repcount = 0;
-					ip->decsixel_color = ip->fgcolor;
-					memset(ip->decsixel_buf, 0, sizeof(ip->decsixel_buf));
-					return;
-
-				case CAN:
-				case SUB:
-					/* SUB should also display a reverse question mark... */
-					ip->escape = 0;
-					return;
-
-				case ESC:
-					ip->escape = ESC;
-					return;
-
-				default:
-					return;
-				}
-				break;
-
-			case DCS_SIXEL:
- sixel_loop:
-				switch (ip->decsixel_state) {
-				case DECSIXEL_INIT:
-					switch (c) {
-					case CAN:
-					case SUB:
-						/* SUB should also display a reverse question mark... */
-						ip->escape = 0;
-						return;
-					case ESC:
-						ip->escape = ESC;
-						return;
-					case DECSIXEL_REPEAT:
-						ip->decsixel_state = c;
-						ip->decsixel_repcount = 0;
-						return;
-					case DECSIXEL_RASTER:
-					case DECSIXEL_COLOR:
-						ip->decsixel_state = c;
-						ip->ap = ip->argbuf;
-						return;
-					case '$':	// CR
-						ip->decsixel_x = 0;
-						return;
-					case '-':	// LF
-						/* XXX FONTHEIGHT is defined in ite_tv.c, not here... */
-						if (ip->decsixel_y + 6 > 15) {
-							ite_lf(ip);
-							ip->decsixel_y -= 16;
-						}
-						SUBR_SIXEL(ip, ip->cury, ip->curx);
-						memset(ip->decsixel_buf, 0, sizeof(ip->decsixel_buf));
-						ip->decsixel_x = 0;
-						ip->decsixel_y += 6;
-						return;
-					default:
-						if ('?' <= c && c <= '~'
-						 && ip->decsixel_x < MAX_SIXEL_WIDTH) {
-							uint32_t d;
-							d = table[c - '?'] * ip->decsixel_color;
-							ip->decsixel_buf[ip->decsixel_x] |= d;
-							ip->decsixel_x++;
-						} else {
-							/* ignore */
-						}
-						return;
-					}
-					break;
-				case DECSIXEL_REPEAT:
-					if ('0' <= c && c <= '9') {
-						ip->decsixel_repcount = ip->decsixel_repcount * 10
-							+ (c - '0');
-					} else if ('?' <= c && c <= '~') {
-						int cnt = MIN(ip->decsixel_repcount,
-							MAX_SIXEL_WIDTH - ip->decsixel_x);
-						uint32_t d;
-						int i;
-						d = table[c - '?'] * ip->decsixel_color;
-						for (i = 0; i < cnt; i++) {
-							ip->decsixel_buf[ip->decsixel_x + i] |= d;
-						}
-						ip->decsixel_x += cnt;
-						ip->decsixel_state = DECSIXEL_INIT;
-					} else {
-						/* invalid ? */
-						ip->decsixel_state = DECSIXEL_INIT;
-					}
-					return;
-				case DECSIXEL_RASTER:
-				case DECSIXEL_RASTER_PAD:
-				case DECSIXEL_RASTER_PH:
-				case DECSIXEL_RASTER_PV:
-					switch (c) {
-					case '0': case '1': case '2': case '3': case '4':
-					case '5': case '6': case '7': case '8': case '9':
-						if (ip->ap < ip->argbuf + MAX_ARGSIZE)
-							*ip->ap++ = c;
-						return;
-					case ';':
-					default:
-						switch (ip->decsixel_state) {
-						case DECSIXEL_RASTER:
-							/* ignore PAN */
-							ip->ap = ip->argbuf;
-							ip->decsixel_state = DECSIXEL_RASTER_PAD;
-							return;
-						case DECSIXEL_RASTER_PAD:
-							/* ignore PAD */
-							ip->ap = ip->argbuf;
-							ip->decsixel_state = DECSIXEL_RASTER_PH;
-							return;
-						case DECSIXEL_RASTER_PH:
-							ip->decsixel_ph = ite_zargnum(ip);
-							ip->ap = ip->argbuf;
-							ip->decsixel_state = DECSIXEL_RASTER_PV;
-							return;
-						case DECSIXEL_RASTER_PV:
-							/* ignore PV */
-							ip->decsixel_state = DECSIXEL_INIT;
-							/* c is a next sequence char */
-							goto sixel_loop;
-						default:
-							/* NOTREACHED */
-							return;
-						}
-					}
-					return;
-				case DECSIXEL_COLOR:
-					switch (c) {
-					case '0': case '1': case '2': case '3': case '4':
-					case '5': case '6': case '7': case '8': case '9':
-					case ';':
-						if (ip->ap < ip->argbuf + MAX_ARGSIZE)
-							*ip->ap++ = c;
-						return;
-					default:
-						*ip->ap = '\0';
-						if (strchr(ip->argbuf, ';')) {
-							/* ignore the palette definition */
-						} else {
-							/* otherwise, it specifies color */
-#if defined(ITE_16COLOR)
-							ip->decsixel_color = ite_zargnum(ip) & 15;
-#else
-							ip->decsixel_color = ite_zargnum(ip) & 7;
-#endif
-						}
-						ip->decsixel_state = DECSIXEL_INIT;
-						ip->ap = ip->argbuf;
-						/* c is a next sequence char */
-						goto sixel_loop;
-					}
-					return;
-				}
-				break;
+			if (ite_dcs(c, ip) == 0) {
+				return;
 			}
 			break;
 #endif /* ITE_SIXEL */
- 
 		default:
 			ip->escape = 0;
 			return;
@@ -2644,6 +2392,291 @@ iteputchar(int c, struct ite_softc *ip)
 		break;
 	}
 }
+
+#if defined(ITE_SIXEL)
+/*
+ * Handle DCS.
+ * 0:  return in the caller.
+ * !0: break the switch-case in the caller.
+ */
+static int
+ite_dcs(const int c, struct ite_softc *ip)
+{
+	static const uint32_t table[64] = {
+		0x000000, 0x000001, 0x000010, 0x000011,
+		0x000100, 0x000101, 0x000110, 0x000111,
+		0x001000, 0x001001, 0x001010, 0x001011,
+		0x001100, 0x001101, 0x001110, 0x001111,
+		0x010000, 0x010001, 0x010010, 0x010011,
+		0x010100, 0x010101, 0x010110, 0x010111,
+		0x011000, 0x011001, 0x011010, 0x011011,
+		0x011100, 0x011101, 0x011110, 0x011111,
+		0x100000, 0x100001, 0x100010, 0x100011,
+		0x100100, 0x100101, 0x100110, 0x100111,
+		0x101000, 0x101001, 0x101010, 0x101011,
+		0x101100, 0x101101, 0x101110, 0x101111,
+		0x110000, 0x110001, 0x110010, 0x110011,
+		0x110100, 0x110101, 0x110110, 0x110111,
+		0x111000, 0x111001, 0x111010, 0x111011,
+		0x111100, 0x111101, 0x111110, 0x111111,
+	};
+
+	switch (ip->dcs_cmd) {
+	case DCS_DISCARD:
+		/* discard sixel cause kernel message interrupted */
+		switch (c) {
+		case '-':
+			/* restart from next SIXEL line */
+			ite_lf(ip);
+			goto sixel_restart;
+
+		case CAN:
+		case SUB:
+			/* SUB should also display a reverse question mark... */
+			ip->escape = 0;
+			return 0;
+
+		case ESC:
+			ip->escape = ESC;
+			return 0;
+
+		default:
+			return 0;
+		}
+		break;
+
+	case DCS_START:
+		/* the biggie... */
+		switch (c) {
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+		case ';':
+		case '$':
+			if (ip->ap < ip->argbuf + MAX_ARGSIZE)
+				*ip->ap++ = c;
+			return 0;
+
+		case 'q':
+		{
+			char *cp;
+
+			/* init sixel */
+			/*
+			 * DCS <P1> ; <P2> ; <P3> q
+			 * P1 is aspect ratio, XXX not supported.
+			 * P2 is bgcolor mode.
+			 *  0..2: bgcolor mode, XXX not supported here.
+			 *  bit2 means 'OR'ed color mode.
+			 *  This is an original extension.
+			 */
+			ip->ap = ip->argbuf;
+			cp = strchr(ip->ap, ';');
+			if (cp != NULL) {
+				int mode;
+				mode = atoi(cp + 1) - '0';
+				ip->decsixel_ormode = (mode & 4);
+			} else {
+				ip->decsixel_ormode = 0;
+			}
+sixel_restart:
+			ip->dcs_cmd = DCS_SIXEL;
+			ip->decsixel_state = DECSIXEL_INIT;
+			ip->decsixel_ph = MAX_SIXEL_WIDTH;
+			ip->decsixel_x = 0;
+			ip->decsixel_y = 0;
+			ip->decsixel_repcount = 0;
+			ip->decsixel_color = ip->fgcolor;
+			memset(ip->decsixel_buf, 0, sizeof(ip->decsixel_buf));
+			return 0;
+		}
+
+		case CAN:
+		case SUB:
+			/* SUB should also display a reverse question mark... */
+			ip->escape = 0;
+			return 0;
+
+		case ESC:
+			ip->escape = ESC;
+			return 0;
+
+		default:
+			return 0;
+		}
+		break;
+
+	case DCS_SIXEL:
+sixel_loop:
+		switch (ip->decsixel_state) {
+		case DECSIXEL_INIT:
+			switch (c) {
+			case CAN:
+			case SUB:
+				/*
+				 * SUB should also display a reverse question
+				 * mark...
+				 */
+				ip->escape = 0;
+				return 0;
+			case ESC:
+				ip->escape = ESC;
+				return 0;
+			case DECSIXEL_REPEAT:
+				ip->decsixel_state = c;
+				ip->decsixel_repcount = 0;
+				return 0;
+			case DECSIXEL_RASTER:
+			case DECSIXEL_COLOR:
+				ip->decsixel_state = c;
+				ip->ap = ip->argbuf;
+				return 0;
+			case '$':	/* CR */
+				ip->decsixel_x = 0;
+				return 0;
+			case '-':	/* LF */
+				/*
+				 * XXX
+				 * FONTHEIGHT is defined in ite_tv.c, not here..
+				 */
+				if (ip->decsixel_y + 6 > 15) {
+					ite_lf(ip);
+					ip->decsixel_y -= 16;
+				}
+				SUBR_SIXEL(ip, ip->cury, ip->curx);
+				memset(ip->decsixel_buf, 0,
+				    sizeof(ip->decsixel_buf));
+				ip->decsixel_x = 0;
+				ip->decsixel_y += 6;
+				return 0;
+			default:
+				if ('?' <= c && c <= '~'
+				    && ip->decsixel_x < MAX_SIXEL_WIDTH) {
+					uint32_t d;
+					d = table[c - '?'] * ip->decsixel_color;
+					ip->decsixel_buf[ip->decsixel_x] |= d;
+					ip->decsixel_x++;
+				} else {
+					/* ignore */
+				}
+				return 0;
+			}
+			break;
+		case DECSIXEL_REPEAT:
+			if ('0' <= c && c <= '9') {
+				ip->decsixel_repcount =
+				    ip->decsixel_repcount * 10 + (c - '0');
+			} else if ('?' <= c && c <= '~') {
+				uint32_t d;
+				int i;
+				int cnt = MIN(ip->decsixel_repcount,
+				    MAX_SIXEL_WIDTH - ip->decsixel_x);
+				d = table[c - '?'] * ip->decsixel_color;
+				for (i = 0; i < cnt; i++) {
+					ip->decsixel_buf[ip->decsixel_x + i] |=
+					    d;
+				}
+				ip->decsixel_x += cnt;
+				ip->decsixel_state = DECSIXEL_INIT;
+			} else {
+				/* invalid ? */
+				ip->decsixel_state = DECSIXEL_INIT;
+			}
+			return 0;
+		case DECSIXEL_RASTER:
+		case DECSIXEL_RASTER_PAD:
+		case DECSIXEL_RASTER_PH:
+		case DECSIXEL_RASTER_PV:
+			switch (c) {
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				if (ip->ap < ip->argbuf + MAX_ARGSIZE)
+					*ip->ap++ = c;
+				return 0;
+			case ';':
+			default:
+				switch (ip->decsixel_state) {
+				case DECSIXEL_RASTER:
+					/* ignore PAN */
+					ip->ap = ip->argbuf;
+					ip->decsixel_state =
+					    DECSIXEL_RASTER_PAD;
+					return 0;
+				case DECSIXEL_RASTER_PAD:
+					/* ignore PAD */
+					ip->ap = ip->argbuf;
+					ip->decsixel_state = DECSIXEL_RASTER_PH;
+					return 0;
+				case DECSIXEL_RASTER_PH:
+					ip->decsixel_ph = ite_zargnum(ip);
+					ip->ap = ip->argbuf;
+					ip->decsixel_state = DECSIXEL_RASTER_PV;
+					return 0;
+				case DECSIXEL_RASTER_PV:
+					/* ignore PV */
+					ip->decsixel_state = DECSIXEL_INIT;
+					/* c is a next sequence char. */
+					goto sixel_loop;
+				default:
+					/* NOTREACHED */
+					return 0;
+				}
+			}
+			return 0;
+		case DECSIXEL_COLOR:
+			switch (c) {
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+			case ';':
+				if (ip->ap < ip->argbuf + MAX_ARGSIZE)
+					*ip->ap++ = c;
+				return 0;
+			default:
+				*ip->ap = '\0';
+				if (strchr(ip->argbuf, ';')) {
+					/* ignore the palette definition. */
+				} else {
+					/* otherwise, it specifies color. */
+					ip->decsixel_color =
+					    ite_zargnum(ip) & 7;
+				}
+				ip->decsixel_state = DECSIXEL_INIT;
+				ip->ap = ip->argbuf;
+				/* c is a next sequence char. */
+				goto sixel_loop;
+			}
+			return 0;
+		}
+		break;
+	}
+
+	/* Continue in caller's switch-case. */
+	return 1;
+}
+#endif /* ITE_SIXEL */
 
 static void
 iteprecheckwrap(struct ite_softc *ip)

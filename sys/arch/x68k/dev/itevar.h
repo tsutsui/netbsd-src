@@ -97,7 +97,7 @@ struct ite_softc {
 	char	*sc_GL, *sc_GR;
 	enum {
 		DCS_START = 0,
-		DCS_SIXEL = 'q',	// DECRQSS also use 'q'...
+		DCS_SIXEL = 'q',	/* DECRQSS also use 'q'... */
 		DCS_DISCARD = -1,
 	} dcs_cmd;
 	enum {
@@ -109,12 +109,12 @@ struct ite_softc {
 		DECSIXEL_RASTER = '\"',
 		DECSIXEL_COLOR = '#',
 	} decsixel_state;
-	int     decsixel_ph;
-	int     decsixel_x;
-	int     decsixel_y;
-	int		decsixel_repcount;
-	int     decsixel_color;
-	int     decsixel_ormode;
+	int	decsixel_ph;
+	int	decsixel_x;
+	int	decsixel_y;
+	int	decsixel_repcount;
+	int	decsixel_color;
+	int	decsixel_ormode;
 #define MAX_SIXEL_WIDTH (768)
 	uint32_t decsixel_buf[MAX_SIXEL_WIDTH];
 };
