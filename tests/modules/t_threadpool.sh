@@ -1,4 +1,4 @@
-# $NetBSD: t_threadpool.sh,v 1.1 2019/01/25 18:34:45 christos Exp $
+# $NetBSD: t_threadpool.sh,v 1.3 2024/09/08 09:36:53 rillig Exp $
 #
 # Copyright (c) 2018 The NetBSD Foundation, Inc.
 # All rights reserved.
@@ -37,16 +37,16 @@ job_delay=2
 
 read_sysctl() {
 	echo "${1} = ${2}" >expout
-	atf_check -s eq:0 -o file:expout -e empty sysctl ${1}
+	atf_check -s exit:0 -o file:expout -e empty sysctl ${1}
 }
 
 write_sysctl() {
-	atf_check -s eq:0 -o ignore -e empty sysctl -w "${1}=${2}"
+	atf_check -s exit:0 -o ignore -e empty sysctl -w "${1}=${2}"
 }
 
 write_sysctl_fail() {
 	echo "${3}" >experr
-	atf_check -s eq:1 -o ignore -e file:experr sysctl -w "${1}=${2}"
+	atf_check -s exit:1 -o ignore -e file:experr sysctl -w "${1}=${2}"
 }
 
 atf_test_case unbound cleanup
@@ -105,7 +105,7 @@ percpu_body() {
 	# Ensure that the state is clean.
 	read_sysctl kern.threadpool_tester.test_value 0
 
-	# Create an percpu pool.
+	# Create a percpu pool.
 	write_sysctl kern.threadpool_tester.get_percpu $tp_pri
 
 	# Do it again.  We expect this to fail, but the test jig will

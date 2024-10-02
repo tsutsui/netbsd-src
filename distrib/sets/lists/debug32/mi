@@ -1,0 +1,5 @@
+# $NetBSD: mi,v 1.2 2024/07/11 08:13:50 riastradh Exp $
+#
+# Note: don't delete entries from here - mark them as "obsolete" instead.
+#
+./etc/mtree/set.debug32                           comp-sys-root

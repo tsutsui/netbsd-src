@@ -1,4 +1,4 @@
-# $NetBSD: varmod-loop-delete.mk,v 1.3 2023/06/01 20:56:35 rillig Exp $
+# $NetBSD: varmod-loop-delete.mk,v 1.7 2024/08/29 20:20:36 rillig Exp $
 #
 # Tests for the variable modifier ':@', which as a side effect allows to
 # delete an arbitrary variable.

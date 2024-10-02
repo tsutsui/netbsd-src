@@ -1,4 +1,4 @@
-$NetBSD: acronyms.comp,v 1.388 2024/01/29 16:31:53 jschauma Exp $
+$NetBSD: acronyms.comp,v 1.394 2024/09/27 20:08:21 jschauma Exp $
 3WHS	three-way handshake
 8VSB	8-state vestigial side band modulation
 AA	anti-aliasing
@@ -874,6 +874,7 @@ KB	kilobyte
 KBD	keyboard
 KBD	kilobaud
 KCS	keyboard controller style
+KDF	key derivation function
 KEK	key encryption key
 KEM	key encapsulation mechanism
 KLOC	thousand lines of code
@@ -1123,7 +1124,9 @@ NIA	next instruction address
 NIC	network information center
 NIC	network interface card
 NIDS	network intrusion detection system
+NIKE	Non-Interactive Key Exchange
 NIP	network interface protocol
+NIPR	non-classified IP router (network)
 NIPS	network intrusion prevention system
 NIS	network information service
 NIST	National Institute of Standards and Technology
@@ -1427,6 +1430,7 @@ RIB	routing information base
 RIFF	Resource Interchange File Format
 RIP	Raster Image Processor
 RIP	Routing Information Protocol
+RIPR	releasable IP router (network)
 RIR	regional Internet registry
 RISC	reduced instruction set {computer,computing}
 RKM	ROM Kernel Manual
@@ -1503,6 +1507,8 @@ SASL	simple authentication [and] security layer
 SATA	serial advanced technology attachment
 SAX	simple API for XML
 SB	sound blaster
+SBI	supervisor binary interface
+SBOM	Software Bill of Materials
 SBSA	server base system architecture
 SBU	standard build unit
 SC	store conditional
@@ -1566,6 +1572,7 @@ SIM	subscriber identity module
 SIMD	single instruction, multiple data
 SIMM	single inline memory module
 SIP	Session Initiation Protocol
+SIPR	secret IP router (network)
 SIR	signal-to-interference ratio
 SIR	slow infrared
 SIRT	security incident response team
@@ -1845,6 +1852,7 @@ VFO	variable-frequency oscillator
 VFS	virtual file system
 VG	volume group
 VGA	Video Graphics Array
+VHD	virtual hard disk
 VHDCI	very high density cable interconnect
 VID	{VLAN,voltage level} identifier
 VIM	Vi IMproved
@@ -1885,6 +1893,7 @@ WAN	wide area network
 WAP	Wireless Application Protocol
 WAP	wireless access point
 WDDM	Windows Display Driver Model
+WDM	Wavelength Division Multiplexing
 WDM	Windows Driver Model
 WDT	watchdog timer
 WEP	Wired Equivalent Privacy

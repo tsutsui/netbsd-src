@@ -1,4 +1,4 @@
-/*	$NetBSD: unistd.h,v 1.164 2024/01/19 18:40:35 christos Exp $	*/
+/*	$NetBSD: unistd.h,v 1.168 2024/09/20 15:52:12 kre Exp $	*/
 
 /*-
  * Copyright (c) 1998, 1999, 2008 The NetBSD Foundation, Inc.
@@ -173,6 +173,7 @@ ssize_t	 readlink(const char * __restrict, char * __restrict, size_t);
  */
 #if (_POSIX_C_SOURCE - 0) >= 200112L || (_XOPEN_SOURCE - 0) >= 600 || \
     defined(_NETBSD_SOURCE)
+int	 gethostname(char *, size_t);
 int	 setegid(gid_t);
 int	 seteuid(uid_t);
 #endif
@@ -266,7 +267,6 @@ int	 fchown(int, uid_t, gid_t);
 #endif
 int	 getdtablesize(void);
 long	 gethostid(void);
-int	 gethostname(char *, size_t);
 __pure int
 	 getpagesize(void);		/* legacy */
 pid_t	 getpgid(pid_t);
@@ -320,6 +320,14 @@ int	unlinkat(int, const char *, int);
 int	fexecve(int, char * const *, char * const *);
 #endif
 
+/*
+ * IEEE Std 1003.1-2024 (POSIX.1-2024)
+ */
+#if (_POSIX_C_SOURCE - 0) >= 202405L || (_XOPEN_SOURCE - 0 >= 800) || \
+    defined(_NETBSD_SOURCE)
+int	 getentropy(void *, size_t);
+#endif
+
 
 /*
  * Implementation-defined extensions
@@ -329,7 +337,9 @@ int	 acct(const char *);
 int	 closefrom(int);
 int	 des_cipher(const char *, char *, long, int);
 int	 des_setkey(const char *);
-int	 dup3(int, int, int);
+#ifndef __LIBC12_SOURCE__
+int	 dup3(int, int, int) __RENAME(__dup3100);
+#endif
 void	 endusershell(void);
 int	 exect(const char *, char * const *, char * const *);
 int	 execvpe(const char *, char * const *, char * const *);
@@ -338,7 +348,6 @@ int	 fchroot(int);
 int	 fdiscard(int, off_t, off_t);
 int	 fsync_range(int, int, off_t, off_t);
 int	 getdomainname(char *, size_t);
-int	 getentropy(void *, size_t);
 int	 getgrouplist(const char *, gid_t, gid_t *, int *);
 int	 getgroupmembership(const char *, gid_t, gid_t *, int, int *);
 mode_t	 getmode(const void *, mode_t);

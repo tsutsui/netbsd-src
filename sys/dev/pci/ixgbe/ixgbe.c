@@ -1,4 +1,4 @@
-/* $NetBSD: ixgbe.c,v 1.349 2024/01/24 05:18:59 msaitoh Exp $ */
+/* $NetBSD: ixgbe.c,v 1.354 2024/07/10 03:26:30 msaitoh Exp $ */
 
 /******************************************************************************
 
@@ -64,12 +64,11 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: ixgbe.c,v 1.349 2024/01/24 05:18:59 msaitoh Exp $");
+__KERNEL_RCSID(0, "$NetBSD: ixgbe.c,v 1.354 2024/07/10 03:26:30 msaitoh Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_inet.h"
 #include "opt_inet6.h"
-#include "opt_net_mpsafe.h"
 #endif
 
 #include "ixgbe.h"
@@ -358,8 +357,8 @@ SYSCTL_INT(_hw_ix, OID_AUTO, enable_msix, CTLFLAG_RDTUN, &ixgbe_enable_msix, 0,
 /*
  * Number of Queues, can be set to 0,
  * it then autoconfigures based on the
- * number of cpus with a max of 8. This
- * can be overridden manually here.
+ * number of cpus and number of MSI-X vectors.
+ * This can be overridden manually here.
  */
 static int ixgbe_num_queues = 0;
 SYSCTL_INT(_hw_ix, OID_AUTO, num_queues, CTLFLAG_RDTUN, &ixgbe_num_queues, 0,
@@ -411,18 +410,6 @@ static int (*ixgbe_start_locked)(struct ifnet *, struct tx_ring *);
 static int (*ixgbe_ring_empty)(struct ifnet *, pcq_t *);
 #endif
 
-#ifdef NET_MPSAFE
-#define IXGBE_MPSAFE		1
-#define IXGBE_CALLOUT_FLAGS	CALLOUT_MPSAFE
-#define IXGBE_SOFTINT_FLAGS	SOFTINT_MPSAFE
-#define IXGBE_WORKQUEUE_FLAGS	WQ_PERCPU | WQ_MPSAFE
-#define IXGBE_TASKLET_WQ_FLAGS	WQ_MPSAFE
-#else
-#define IXGBE_CALLOUT_FLAGS	0
-#define IXGBE_SOFTINT_FLAGS	0
-#define IXGBE_WORKQUEUE_FLAGS	WQ_PERCPU
-#define IXGBE_TASKLET_WQ_FLAGS	0
-#endif
 #define IXGBE_WORKQUEUE_PRI PRI_SOFTNET
 
 /* Interval between reports of errors */
@@ -845,11 +832,10 @@ ixgbe_attach(device_t parent, device_t dev, void *aux)
 	IXGBE_CORE_LOCK_INIT(sc, device_xname(dev));
 
 	/* Set up the timer callout and workqueue */
-	callout_init(&sc->timer, IXGBE_CALLOUT_FLAGS);
+	callout_init(&sc->timer, CALLOUT_MPSAFE);
 	snprintf(wqname, sizeof(wqname), "%s-timer", device_xname(dev));
 	error = workqueue_create(&sc->timer_wq, wqname,
-	    ixgbe_handle_timer, sc, IXGBE_WORKQUEUE_PRI, IPL_NET,
-	    IXGBE_TASKLET_WQ_FLAGS);
+	    ixgbe_handle_timer, sc, IXGBE_WORKQUEUE_PRI, IPL_NET, WQ_MPSAFE);
 	if (error) {
 		aprint_error_dev(dev,
 		    "could not create timer workqueue (%d)\n", error);
@@ -1136,6 +1122,21 @@ ixgbe_attach(device_t parent, device_t dev, void *aux)
 	error = ixgbe_read_pba_string(hw, buf, IXGBE_PBANUM_LENGTH);
 	aprint_normal_dev(dev, "PBA number %s\n", error ? "unknown" : buf);
 
+	/* Recovery mode */
+	switch (sc->hw.mac.type) {
+	case ixgbe_mac_X550:
+	case ixgbe_mac_X550EM_x:
+	case ixgbe_mac_X550EM_a:
+		/* >= 2.00 */
+		if (hw->eeprom.nvm_image_ver_high >= 2) {
+			sc->feat_cap |= IXGBE_FEATURE_RECOVERY_MODE;
+			sc->feat_en |= IXGBE_FEATURE_RECOVERY_MODE;
+		}
+		break;
+	default:
+		break;
+	}
+
 	if (sc->feat_en & IXGBE_FEATURE_MSIX) {
 		error = ixgbe_allocate_msix(sc, pa);
 		if (error) {
@@ -1155,21 +1156,6 @@ ixgbe_attach(device_t parent, device_t dev, void *aux)
 		}
 	}
 
-	/* Recovery mode */
-	switch (sc->hw.mac.type) {
-	case ixgbe_mac_X550:
-	case ixgbe_mac_X550EM_x:
-	case ixgbe_mac_X550EM_a:
-		/* >= 2.00 */
-		if (hw->eeprom.nvm_image_ver_high >= 2) {
-			sc->feat_cap |= IXGBE_FEATURE_RECOVERY_MODE;
-			sc->feat_en |= IXGBE_FEATURE_RECOVERY_MODE;
-		}
-		break;
-	default:
-		break;
-	}
-
 	if ((sc->feat_en & IXGBE_FEATURE_MSIX) == 0)
 		error = ixgbe_allocate_legacy(sc, pa);
 	if (error)
@@ -1179,8 +1165,7 @@ ixgbe_attach(device_t parent, device_t dev, void *aux)
 	mutex_init(&(sc)->admin_mtx, MUTEX_DEFAULT, IPL_NET);
 	snprintf(wqname, sizeof(wqname), "%s-admin", device_xname(dev));
 	error = workqueue_create(&sc->admin_wq, wqname,
-	    ixgbe_handle_admin, sc, IXGBE_WORKQUEUE_PRI, IPL_NET,
-	    IXGBE_TASKLET_WQ_FLAGS);
+	    ixgbe_handle_admin, sc, IXGBE_WORKQUEUE_PRI, IPL_NET, WQ_MPSAFE);
 	if (error) {
 		aprint_error_dev(dev,
 		    "could not create admin workqueue (%d)\n", error);
@@ -1297,13 +1282,12 @@ ixgbe_attach(device_t parent, device_t dev, void *aux)
 		sc->recovery_mode = 0;
 
 		/* Set up the timer callout */
-		callout_init(&sc->recovery_mode_timer,
-		    IXGBE_CALLOUT_FLAGS);
+		callout_init(&sc->recovery_mode_timer, CALLOUT_MPSAFE);
 		snprintf(wqname, sizeof(wqname), "%s-recovery",
 		    device_xname(dev));
 		error = workqueue_create(&sc->recovery_mode_timer_wq,
 		    wqname, ixgbe_handle_recovery_mode_timer, sc,
-		    IXGBE_WORKQUEUE_PRI, IPL_NET, IXGBE_TASKLET_WQ_FLAGS);
+		    IXGBE_WORKQUEUE_PRI, IPL_NET, WQ_MPSAFE);
 		if (error) {
 			aprint_error_dev(dev, "could not create "
 			    "recovery_mode_timer workqueue (%d)\n", error);
@@ -1385,9 +1369,7 @@ ixgbe_setup_interface(device_t dev, struct ixgbe_softc *sc)
 	ifp->if_stop = ixgbe_ifstop;
 	ifp->if_softc = sc;
 	ifp->if_flags = IFF_BROADCAST | IFF_SIMPLEX | IFF_MULTICAST;
-#ifdef IXGBE_MPSAFE
 	ifp->if_extflags = IFEF_MPSAFE;
-#endif
 	ifp->if_ioctl = ixgbe_ioctl;
 #if __FreeBSD_version >= 1100045
 	/* TSO parameters */
@@ -1798,7 +1780,7 @@ ixgbe_update_stats_counters(struct ixgbe_softc *sc)
 	 * normal RX counters are prepared in ether_input().
 	 */
 	net_stat_ref_t nsr = IF_STAT_GETREF(ifp);
-	if_statadd_ref(nsr, if_iqdrops, total_missed_rx + total_qprdc);
+	if_statadd_ref(ifp, nsr, if_iqdrops, total_missed_rx + total_qprdc);
 
 	/*
 	 * Aggregate following types of errors as RX errors:
@@ -1810,7 +1792,7 @@ ixgbe_update_stats_counters(struct ixgbe_softc *sc)
 	 * - oversized packets count,
 	 * - jabber count.
 	 */
-	if_statadd_ref(nsr, if_ierrors,
+	if_statadd_ref(ifp, nsr, if_ierrors,
 	    crcerrs + illerrc + rlec + ruc + rfc + roc + rjc);
 
 	IF_STAT_PUTREF(ifp);
@@ -6838,22 +6820,22 @@ alloc_retry:
 	 */
 	if (!(sc->feat_en & IXGBE_FEATURE_LEGACY_TX)) {
 		txr->txr_si =
-		    softint_establish(SOFTINT_NET | IXGBE_SOFTINT_FLAGS,
+		    softint_establish(SOFTINT_NET | SOFTINT_MPSAFE,
 			ixgbe_deferred_mq_start, txr);
 
 		snprintf(wqname, sizeof(wqname), "%sdeferTx",
 		    device_xname(dev));
 		defertx_error = workqueue_create(&sc->txr_wq, wqname,
 		    ixgbe_deferred_mq_start_work, sc, IXGBE_WORKQUEUE_PRI,
-		    IPL_NET, IXGBE_WORKQUEUE_FLAGS);
+		    IPL_NET, WQ_PERCPU | WQ_MPSAFE);
 		sc->txr_wq_enqueued = percpu_alloc(sizeof(u_int));
 	}
-	que->que_si = softint_establish(SOFTINT_NET | IXGBE_SOFTINT_FLAGS,
+	que->que_si = softint_establish(SOFTINT_NET | SOFTINT_MPSAFE,
 	    ixgbe_handle_que, que);
 	snprintf(wqname, sizeof(wqname), "%sTxRx", device_xname(dev));
 	error = workqueue_create(&sc->que_wq, wqname,
 	    ixgbe_handle_que_work, sc, IXGBE_WORKQUEUE_PRI, IPL_NET,
-	    IXGBE_WORKQUEUE_FLAGS);
+	    WQ_PERCPU | WQ_MPSAFE);
 
 	if ((!(sc->feat_en & IXGBE_FEATURE_LEGACY_TX)
 		&& ((txr->txr_si == NULL) || defertx_error != 0))
@@ -6929,10 +6911,9 @@ ixgbe_allocate_msix(struct ixgbe_softc *sc, const struct pci_attach_args *pa)
 		    device_xname(dev), i);
 		intrstr = pci_intr_string(pc, sc->osdep.intrs[i], intrbuf,
 		    sizeof(intrbuf));
-#ifdef IXGBE_MPSAFE
 		pci_intr_setattr(pc, &sc->osdep.intrs[i], PCI_INTR_MPSAFE,
 		    true);
-#endif
+
 		/* Set the handler function */
 		que->res = sc->osdep.ihs[i] = pci_intr_establish_xname(pc,
 		    sc->osdep.intrs[i], IPL_NET, ixgbe_msix_que, que,
@@ -6989,7 +6970,7 @@ ixgbe_allocate_msix(struct ixgbe_softc *sc, const struct pci_attach_args *pa)
 
 		if (!(sc->feat_en & IXGBE_FEATURE_LEGACY_TX)) {
 			txr->txr_si = softint_establish(
-				SOFTINT_NET | IXGBE_SOFTINT_FLAGS,
+				SOFTINT_NET | SOFTINT_MPSAFE,
 				ixgbe_deferred_mq_start, txr);
 			if (txr->txr_si == NULL) {
 				aprint_error_dev(dev,
@@ -6999,7 +6980,7 @@ ixgbe_allocate_msix(struct ixgbe_softc *sc, const struct pci_attach_args *pa)
 			}
 		}
 		que->que_si
-		    = softint_establish(SOFTINT_NET | IXGBE_SOFTINT_FLAGS,
+		    = softint_establish(SOFTINT_NET | SOFTINT_MPSAFE,
 			ixgbe_handle_que, que);
 		if (que->que_si == NULL) {
 			aprint_error_dev(dev,
@@ -7011,7 +6992,7 @@ ixgbe_allocate_msix(struct ixgbe_softc *sc, const struct pci_attach_args *pa)
 	snprintf(wqname, sizeof(wqname), "%sdeferTx", device_xname(dev));
 	error = workqueue_create(&sc->txr_wq, wqname,
 	    ixgbe_deferred_mq_start_work, sc, IXGBE_WORKQUEUE_PRI, IPL_NET,
-	    IXGBE_WORKQUEUE_FLAGS);
+	    WQ_PERCPU | WQ_MPSAFE);
 	if (error) {
 		aprint_error_dev(dev,
 		    "couldn't create workqueue for deferred Tx\n");
@@ -7022,7 +7003,7 @@ ixgbe_allocate_msix(struct ixgbe_softc *sc, const struct pci_attach_args *pa)
 	snprintf(wqname, sizeof(wqname), "%sTxRx", device_xname(dev));
 	error = workqueue_create(&sc->que_wq, wqname,
 	    ixgbe_handle_que_work, sc, IXGBE_WORKQUEUE_PRI, IPL_NET,
-	    IXGBE_WORKQUEUE_FLAGS);
+	    WQ_PERCPU | WQ_MPSAFE);
 	if (error) {
 		aprint_error_dev(dev, "couldn't create workqueue for Tx/Rx\n");
 		goto err_out;
@@ -7034,10 +7015,8 @@ ixgbe_allocate_msix(struct ixgbe_softc *sc, const struct pci_attach_args *pa)
 	sc->vector = vector;
 	intrstr = pci_intr_string(pc, sc->osdep.intrs[vector], intrbuf,
 	    sizeof(intrbuf));
-#ifdef IXGBE_MPSAFE
-	pci_intr_setattr(pc, &sc->osdep.intrs[vector], PCI_INTR_MPSAFE,
-	    true);
-#endif
+	pci_intr_setattr(pc, &sc->osdep.intrs[vector], PCI_INTR_MPSAFE, true);
+
 	/* Set the link handler function */
 	sc->osdep.ihs[vector] = pci_intr_establish_xname(pc,
 	    sc->osdep.intrs[vector], IPL_NET, ixgbe_msix_admin, sc,

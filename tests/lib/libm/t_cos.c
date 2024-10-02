@@ -1,4 +1,4 @@
-/* $NetBSD: t_cos.c,v 1.9 2019/05/27 00:10:36 maya Exp $ */
+/* $NetBSD: t_cos.c,v 1.12 2024/06/09 16:53:12 riastradh Exp $ */
 
 /*-
  * Copyright (c) 2011 The NetBSD Foundation, Inc.
@@ -60,7 +60,6 @@ static const struct {
 	{  360,  6.283185307179586,  1.0000000000000000, 999 },
 };
 
-#ifdef __HAVE_LONG_DOUBLE
 /*
  * cosl(3)
  */
@@ -115,9 +114,10 @@ ATF_TC_HEAD(cosl_inf_neg, tc)
 
 ATF_TC_BODY(cosl_inf_neg, tc)
 {
-	const long double x = -1.0L / 0.0L;
+	const volatile long double x = -1.0L / 0.0L;
+	const long double y = cosl(x);
 
-	ATF_CHECK(isnan(cosl(x)) != 0);
+	ATF_CHECK_MSG(isnan(y), "y=%La", y);
 }
 
 ATF_TC(cosl_inf_pos);
@@ -128,11 +128,11 @@ ATF_TC_HEAD(cosl_inf_pos, tc)
 
 ATF_TC_BODY(cosl_inf_pos, tc)
 {
-	const long double x = 1.0L / 0.0L;
+	const volatile long double x = 1.0L / 0.0L;
+	const long double y = cosl(x);
 
-	ATF_CHECK(isnan(cosl(x)) != 0);
+	ATF_CHECK_MSG(isnan(y), "y=%La", y);
 }
-
 
 ATF_TC(cosl_zero_neg);
 ATF_TC_HEAD(cosl_zero_neg, tc)
@@ -159,7 +159,6 @@ ATF_TC_BODY(cosl_zero_pos, tc)
 
 	ATF_CHECK(cosl(x) == 1.0);
 }
-#endif
 
 /*
  * cos(3)
@@ -211,9 +210,10 @@ ATF_TC_HEAD(cos_inf_neg, tc)
 
 ATF_TC_BODY(cos_inf_neg, tc)
 {
-	const double x = -1.0L / 0.0L;
+	const volatile double x = -1.0 / 0.0;
+	const double y = cos(x);
 
-	ATF_CHECK(isnan(cos(x)) != 0);
+	ATF_CHECK_MSG(isnan(y), "y=%a", y);
 }
 
 ATF_TC(cos_inf_pos);
@@ -224,11 +224,11 @@ ATF_TC_HEAD(cos_inf_pos, tc)
 
 ATF_TC_BODY(cos_inf_pos, tc)
 {
-	const double x = 1.0L / 0.0L;
+	const volatile double x = 1.0 / 0.0;
+	const double y = cos(x);
 
-	ATF_CHECK(isnan(cos(x)) != 0);
+	ATF_CHECK_MSG(isnan(y), "y=%a", y);
 }
-
 
 ATF_TC(cos_zero_neg);
 ATF_TC_HEAD(cos_zero_neg, tc)
@@ -281,9 +281,10 @@ ATF_TC_BODY(cosf_angles, tc)
 		 *
 		 * The volatile should not be necessary, by C99 Sec.
 		 * 5.2.4.2.2. para. 8 on p. 24 which specifies that
-		 * assignment and cast remove all extra range and precision,
-		 * but seems to be needed to work around a compiler bug.
-		 */ 
+		 * assignment and cast remove all extra range and
+		 * precision, but is needed when we compile with
+		 * -std=gnu99 which doesn't implement this semantics.
+		 */
 		volatile float result = cosf(theta);
 
 		if (cos_theta == 999)
@@ -319,12 +320,10 @@ ATF_TC_HEAD(cosf_inf_neg, tc)
 
 ATF_TC_BODY(cosf_inf_neg, tc)
 {
-	const float x = -1.0L / 0.0L;
+	const volatile float x = -1.0f / 0.0f;
+	const float y = cosf(x);
 
-	if (isnan(cosf(x)) == 0) {
-		atf_tc_expect_fail("PR lib/45362");
-		atf_tc_fail("cosf(-Inf) != NaN");
-	}
+	ATF_CHECK_MSG(isnan(y), "y=%a", y);
 }
 
 ATF_TC(cosf_inf_pos);
@@ -335,12 +334,10 @@ ATF_TC_HEAD(cosf_inf_pos, tc)
 
 ATF_TC_BODY(cosf_inf_pos, tc)
 {
-	const float x = 1.0L / 0.0L;
+	const volatile float x = 1.0f / 0.0f;
+	const float y = cosf(x);
 
-	if (isnan(cosf(x)) == 0) {
-		atf_tc_expect_fail("PR lib/45362");
-		atf_tc_fail("cosf(+Inf) != NaN");
-	}
+	ATF_CHECK_MSG(isnan(y), "y=%a", y);
 }
 
 
@@ -372,14 +369,13 @@ ATF_TC_BODY(cosf_zero_pos, tc)
 
 ATF_TP_ADD_TCS(tp)
 {
-#ifdef __HAVE_LONG_DOUBLE
+
 	ATF_TP_ADD_TC(tp, cosl_angles);
 	ATF_TP_ADD_TC(tp, cosl_nan);
 	ATF_TP_ADD_TC(tp, cosl_inf_neg);
 	ATF_TP_ADD_TC(tp, cosl_inf_pos);
 	ATF_TP_ADD_TC(tp, cosl_zero_neg);
 	ATF_TP_ADD_TC(tp, cosl_zero_pos);
-#endif
 
 	ATF_TP_ADD_TC(tp, cos_angles);
 	ATF_TP_ADD_TC(tp, cos_nan);

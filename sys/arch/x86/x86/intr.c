@@ -1,4 +1,4 @@
-/*	$NetBSD: intr.c,v 1.167 2024/03/05 20:58:05 andvar Exp $	*/
+/*	$NetBSD: intr.c,v 1.169 2024/09/11 05:17:45 mrg Exp $	*/
 
 /*
  * Copyright (c) 2007, 2008, 2009, 2019 The NetBSD Foundation, Inc.
@@ -133,11 +133,12 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: intr.c,v 1.167 2024/03/05 20:58:05 andvar Exp $");
+__KERNEL_RCSID(0, "$NetBSD: intr.c,v 1.169 2024/09/11 05:17:45 mrg Exp $");
 
+#include "opt_acpi.h"
 #include "opt_intrdebug.h"
 #include "opt_multiprocessor.h"
-#include "opt_acpi.h"
+#include "opt_pci.h"
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -658,21 +659,25 @@ intr_source_free(struct cpu_info *ci, int slot, struct pic *pic, int idtvec)
 
 #ifdef MULTIPROCESSOR
 static int intr_biglock_wrapper(void *);
+static int intr_wrapper(void *);
 
 /*
+ * intr_wrapper: perform diagnostic checks before and after calling the
+ * real handler.
  * intr_biglock_wrapper: grab biglock and call a real interrupt handler.
  */
 
 static int
-intr_biglock_wrapper(void *vp)
+intr_wrapper(void *vp)
 {
 	struct intrhand *ih = vp;
+	struct lwp *l = curlwp;
 	int locks;
+	int nopreempt;
 	int ret;
 
-	KERNEL_LOCK(1, NULL);
-
 	locks = curcpu()->ci_biglock_count;
+	nopreempt = l->l_nopreempt;
 	SDT_PROBE3(sdt, kernel, intr, entry,
 	    ih->ih_realfun, ih->ih_realarg, ih);
 	ret = (*ih->ih_realfun)(ih->ih_realarg);
@@ -681,11 +686,28 @@ intr_biglock_wrapper(void *vp)
 	KASSERTMSG(locks == curcpu()->ci_biglock_count,
 	    "%s @ %p slipped locks %d -> %d",
 	    ih->ih_xname, ih->ih_realfun, locks, curcpu()->ci_biglock_count);
+	KASSERTMSG(nopreempt == l->l_nopreempt,
+	    "%s @ %p slipped nopreempt %d -> %d lwp %p/%p func %p",
+	    ih->ih_xname, ih->ih_realfun, nopreempt, l->l_nopreempt, l, curlwp,
+	    ih->ih_realfun);
+
+	return ret;
+}
+
+static int
+intr_biglock_wrapper(void *vp)
+{
+	int ret;
+
+	KERNEL_LOCK(1, NULL);
+
+	ret = intr_wrapper(vp);
 
 	KERNEL_UNLOCK_ONE(NULL);
 
 	return ret;
 }
+
 #endif /* MULTIPROCESSOR */
 
 #ifdef KDTRACE_HOOKS
@@ -693,13 +715,19 @@ static int
 intr_kdtrace_wrapper(void *vp)
 {
 	struct intrhand *ih = vp;
+	struct lwp *l = curlwp;
 	int ret;
 
+	int nopreempt;
+	nopreempt = l->l_nopreempt;
 	SDT_PROBE3(sdt, kernel, intr, entry,
 	    ih->ih_realfun, ih->ih_realarg, ih);
 	ret = (*ih->ih_realfun)(ih->ih_realarg);
 	SDT_PROBE4(sdt, kernel, intr, return,
 	    ih->ih_realfun, ih->ih_realarg, ih, ret);
+	KASSERTMSG(nopreempt == l->l_nopreempt,
+	    "%s @ %p slipped nopreempt %d -> %d  lwp %p/%p",
+	    ih->ih_xname, ih->ih_realfun, nopreempt, l->l_nopreempt, l, curlwp);
 
 	return ret;
 }
@@ -965,6 +993,15 @@ intr_establish_xname(int legacy_irq, struct pic *pic, int pin, int type,
 		    __FPTRCAST(int (*)(void *), i8254_clockintr));
 		ih->ih_fun = intr_biglock_wrapper;
 		ih->ih_arg = ih;
+	} else {
+		if (handler !=
+		    __FPTRCAST(int (*)(void *), i8254_clockintr)) { /* XXX */
+#ifdef DIAGNOSTIC
+			/* wrap all interrupts */
+			ih->ih_fun = intr_wrapper;
+			ih->ih_arg = ih;
+#endif
+		}
 	}
 #endif /* MULTIPROCESSOR */
 
@@ -1366,18 +1403,13 @@ redzone_const_or_zero(int x)
 void
 cpu_intr_init(struct cpu_info *ci)
 {
-#if (NLAPIC > 0) || defined(MULTIPROCESSOR) || \
-    (NHYPERV > 0)
-	struct intrsource *isp;
-#endif
 #if NLAPIC > 0
+	struct intrsource *isp;
 	static int first = 1;
 #if defined(MULTIPROCESSOR)
 	int i;
 #endif
-#endif
 
-#if NLAPIC > 0
 	isp = kmem_zalloc(sizeof(*isp), KM_SLEEP);
 	isp->is_recurse = Xrecurse_lapic_ltimer;
 	isp->is_resume = Xresume_lapic_ltimer;
@@ -1404,7 +1436,7 @@ cpu_intr_init(struct cpu_info *ci)
 	for (i = 0; i < X86_NIPI; i++)
 		evcnt_attach_dynamic(&ci->ci_ipi_events[i], EVCNT_TYPE_MISC,
 		    NULL, device_xname(ci->ci_dev), x86_ipi_names[i]);
-#endif
+#endif /* MULTIPROCESSOR */
 
 #if NHYPERV > 0
 	if (hyperv_hypercall_enabled()) {
@@ -1418,8 +1450,8 @@ cpu_intr_init(struct cpu_info *ci)
 		evcnt_attach_dynamic(&isp->is_evcnt, EVCNT_TYPE_INTR, NULL,
 		    device_xname(ci->ci_dev), "Hyper-V hypercall");
 	}
-#endif
-#endif
+#endif /* NHYPERV > 0 */
+#endif /* NLAPIC > 0 */
 
 #if defined(__HAVE_PREEMPTION)
 	x86_init_preempt(ci);

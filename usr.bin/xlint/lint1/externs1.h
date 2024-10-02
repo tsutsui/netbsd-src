@@ -1,4 +1,4 @@
-/*	$NetBSD: externs1.h,v 1.221 2024/03/29 08:35:32 rillig Exp $	*/
+/*	$NetBSD: externs1.h,v 1.233 2024/09/28 15:51:40 rillig Exp $	*/
 
 /*
  * Copyright (c) 1994, 1995 Jochen Pohl
@@ -46,7 +46,6 @@ extern bool eflag;
 extern bool hflag;
 extern bool pflag;
 extern bool rflag;
-extern bool uflag;
 extern bool vflag;
 extern bool wflag;
 extern bool yflag;
@@ -72,6 +71,7 @@ extern int yydebug;
 
 int yyerror(const char *);
 int yyparse(void);
+extern char *yytext;
 
 /*
  * lex.c
@@ -131,11 +131,14 @@ void expr_restore_memory(memory_pool);
  */
 
 #ifdef DEBUG
+extern bool debug_enabled;
 const char *decl_level_kind_name(decl_level_kind);
 const char *scl_name(scl_t);
 const char *symbol_kind_name(symbol_kind);
 const char *type_qualifiers_string(type_qualifiers);
+const char *type_attributes_string(type_attributes);
 const char *function_specifier_name(function_specifier);
+const char *named_constant_name(named_constant);
 void debug_dcs(void);
 void debug_dcs_all(void);
 void debug_node(const tnode_t *);
@@ -151,6 +154,7 @@ void debug_pop_indented(bool);
 void debug_enter_func(const char *);
 void debug_step(const char *fmt, ...) __printflike(1, 2);
 void debug_leave_func(const char *);
+void debug_attribute_list(const attribute_list *);
 #define	debug_enter()		debug_enter_func(__func__)
 #define	debug_leave()		debug_leave_func(__func__)
 #else
@@ -170,6 +174,7 @@ void debug_leave_func(const char *);
 #define	debug_enter()		debug_noop()
 #define	debug_step(...)		debug_noop()
 #define	debug_leave()		debug_noop()
+#define	debug_attribute_list(list) debug_noop()
 #endif
 
 /*
@@ -215,6 +220,7 @@ void dcs_add_function_specifier(function_specifier);
 void dcs_add_storage_class(scl_t);
 void dcs_add_type(type_t *);
 void dcs_add_qualifiers(type_qualifiers);
+void dcs_add_alignas(tnode_t *);
 void dcs_add_packed(void);
 void dcs_set_used(void);
 void begin_declaration_level(decl_level_kind);
@@ -223,7 +229,7 @@ void dcs_set_asm(void);
 void dcs_begin_type(void);
 void dcs_end_type(void);
 int length_in_bits(const type_t *, const char *);
-unsigned int alignment_in_bits(const type_t *);
+unsigned int alignment(const type_t *);
 sym_t *concat_symbols(sym_t *, sym_t *);
 void check_type(sym_t *);
 sym_t *declare_unnamed_member(void);
@@ -243,11 +249,11 @@ type_t *complete_struct_or_union(sym_t *);
 type_t *complete_enum(sym_t *);
 sym_t *enumeration_constant(sym_t *, int, bool);
 void declare(sym_t *, bool, sbuf_t *);
-void copy_usage_info(sym_t *, sym_t *);
+void copy_usage_info(sym_t *, const sym_t *);
 bool check_redeclaration(sym_t *, bool *);
 bool pointer_types_are_compatible(const type_t *, const type_t *, bool);
 bool types_compatible(const type_t *, const type_t *, bool, bool, bool *);
-void complete_type(sym_t *, sym_t *);
+void complete_type(sym_t *, const sym_t *);
 sym_t *declare_parameter(sym_t *, bool);
 void check_func_lint_directives(void);
 void check_func_old_style_parameters(void);
@@ -283,7 +289,7 @@ tnode_t *build_binary(tnode_t *, op_t, bool, tnode_t *);
 tnode_t *build_unary(op_t, bool, tnode_t *);
 tnode_t *build_member_access(tnode_t *, op_t, bool, sbuf_t *);
 tnode_t *cconv(tnode_t *);
-bool is_typeok_bool_compares_with_zero(const tnode_t *);
+bool is_typeok_bool_compares_with_zero(const tnode_t *, bool);
 bool typeok(op_t, int, const tnode_t *, const tnode_t *);
 tnode_t *promote(op_t, bool, tnode_t *);
 tnode_t *convert(op_t, int, type_t *, tnode_t *);
@@ -302,6 +308,7 @@ buffer *cat_strings(buffer *, buffer *);
 unsigned int type_size_in_bits(const type_t *);
 sym_t *find_member(const struct_or_union *, const char *);
 uint64_t possible_bits(const tnode_t *);
+bool attributes_contain(const attribute_list *, const char *);
 
 void begin_statement_expr(void);
 void do_statement_expr(tnode_t *);
@@ -398,6 +405,7 @@ void lex_slash_slash_comment(void);
 void lex_unknown_character(int);
 int lex_input(void);
 bool quoted_next(const buffer *, quoted_iterator *);
+balanced_token_sequence lex_balanced(void);
 
 /*
  * ckbool.c
@@ -422,4 +430,4 @@ void check_getopt_end_switch(void);
 void check_getopt_end_while(void);
 
 /* cksnprintb.c */
-void check_snprintb(const tnode_t *);
+void check_snprintb(const function_call *);

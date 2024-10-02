@@ -1,0 +1,4 @@
+# $NetBSD: ad.powerpc64,v 1.10 2024/07/11 08:13:49 riastradh Exp $
+#
+./libexec/ld.elf_so-powerpc			base-compat-shlib	compat,pic
+./usr/libexec/ld.elf_so-powerpc			base-sys-shlib		compat,pic

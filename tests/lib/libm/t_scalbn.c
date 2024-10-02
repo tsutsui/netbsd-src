@@ -1,4 +1,4 @@
-/* $NetBSD: t_scalbn.c,v 1.16 2018/11/07 03:59:36 riastradh Exp $ */
+/* $NetBSD: t_scalbn.c,v 1.18 2024/06/09 16:53:12 riastradh Exp $ */
 
 /*-
  * Copyright (c) 2011 The NetBSD Foundation, Inc.
@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <sys/cdefs.h>
-__RCSID("$NetBSD: t_scalbn.c,v 1.16 2018/11/07 03:59:36 riastradh Exp $");
+__RCSID("$NetBSD: t_scalbn.c,v 1.18 2024/06/09 16:53:12 riastradh Exp $");
 
 #include <math.h>
 #include <limits.h>
@@ -376,9 +376,6 @@ ATF_TC_HEAD(scalbnl_val, tc)
 
 ATF_TC_BODY(scalbnl_val, tc)
 {
-#ifndef __HAVE_LONG_DOUBLE
-	atf_tc_skip("Requires long double support");
-#else
 	const struct testcase *tests = test_vals;
 	const size_t tcnt = __arraycount(test_vals);
 	size_t i;
@@ -397,7 +394,6 @@ ATF_TC_BODY(scalbnl_val, tc)
 		    i, rv, (long double)tests[i].result,
 		    fabsl(((long double)tests[i].result - rv)/tests[i].result));
 	}
-#endif
 }
 
 ATF_TC(scalbnl_nan);
@@ -408,23 +404,16 @@ ATF_TC_HEAD(scalbnl_nan, tc)
 
 ATF_TC_BODY(scalbnl_nan, tc)
 {
-#ifndef __HAVE_LONG_DOUBLE
-	atf_tc_skip("Requires long double support");
-#else
 	const long double x = 0.0L / 0.0L;
 	long double y;
 	size_t i;
 
-	if (isnan(x) == 0) {
-		atf_tc_expect_fail("PR lib/45362");
-		atf_tc_fail("(0.0L / 0.0L) != NaN");
-	}
+	ATF_CHECK_MSG(isnan(x), "x=%La", x);
 
 	for (i = 0; i < __arraycount(exps); i++) {
 		y = scalbnl(x, exps[i]);
-		ATF_CHECK(isnan(y) != 0);
+		ATF_CHECK_MSG(isnan(y), "y=%La", y);
 	}
-#endif
 }
 
 ATF_TC(scalbnl_inf_neg);
@@ -435,15 +424,11 @@ ATF_TC_HEAD(scalbnl_inf_neg, tc)
 
 ATF_TC_BODY(scalbnl_inf_neg, tc)
 {
-#ifndef __HAVE_LONG_DOUBLE
-	atf_tc_skip("Requires long double support");
-#else
 	const long double x = -1.0L / 0.0L;
 	size_t i;
 
 	for (i = 0; i < __arraycount(exps); i++)
 		ATF_CHECK(scalbnl(x, exps[i]) == x);
-#endif
 }
 
 ATF_TC(scalbnl_inf_pos);
@@ -454,15 +439,11 @@ ATF_TC_HEAD(scalbnl_inf_pos, tc)
 
 ATF_TC_BODY(scalbnl_inf_pos, tc)
 {
-#ifndef __HAVE_LONG_DOUBLE
-	atf_tc_skip("Requires long double support");
-#else
 	const long double x = 1.0L / 0.0L;
 	size_t i;
 
 	for (i = 0; i < __arraycount(exps); i++)
 		ATF_CHECK(scalbnl(x, exps[i]) == x);
-#endif
 }
 
 ATF_TC(scalbnl_zero_neg);
@@ -473,9 +454,6 @@ ATF_TC_HEAD(scalbnl_zero_neg, tc)
 
 ATF_TC_BODY(scalbnl_zero_neg, tc)
 {
-#ifndef __HAVE_LONG_DOUBLE
-	atf_tc_skip("Requires long double support");
-#else
 	const long double x = -0.0L;
 	long double y;
 	size_t i;
@@ -487,7 +465,6 @@ ATF_TC_BODY(scalbnl_zero_neg, tc)
 		ATF_CHECK(x == y);
 		ATF_CHECK(signbit(y) != 0);
 	}
-#endif
 }
 
 ATF_TC(scalbnl_zero_pos);
@@ -498,9 +475,6 @@ ATF_TC_HEAD(scalbnl_zero_pos, tc)
 
 ATF_TC_BODY(scalbnl_zero_pos, tc)
 {
-#ifndef __HAVE_LONG_DOUBLE
-	atf_tc_skip("Requires long double support");
-#else
 	const long double x = 0.0L;
 	long double y;
 	size_t i;
@@ -512,7 +486,6 @@ ATF_TC_BODY(scalbnl_zero_pos, tc)
 		ATF_CHECK(x == y);
 		ATF_CHECK(signbit(y) == 0);
 	}
-#endif
 }
 
 ATF_TP_ADD_TCS(tp)

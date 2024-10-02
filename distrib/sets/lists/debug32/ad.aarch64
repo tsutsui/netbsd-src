@@ -1,0 +1,11 @@
+# $NetBSD: ad.aarch64,v 1.14 2024/07/11 08:13:49 riastradh Exp $
+#
+./usr/lib/eabi/libarm_g.a				comp-c-debuglib		debuglib,compat
+./usr/lib/eabihf/libarm_g.a				comp-c-debuglib		debuglib,compat
+./usr/libdata/debug/libexec/ld.elf_so-eabi.debug	comp-sys-debug		debug,compat
+./usr/libdata/debug/libexec/ld.elf_so-eabihf.debug	comp-sys-debug		debug,compat
+./usr/libdata/debug/usr/lib/eabi/libarm.so.0.0.debug	comp-sys-debug		debug,pic,compat
+./usr/libdata/debug/usr/lib/eabi/libc_vfp.so.0.0.debug	comp-sys-debug		debug,pic,compat
+./usr/libdata/debug/usr/lib/eabihf/libarm.so.0.0.debug	comp-sys-debug		debug,pic,compat
+./usr/libdata/debug/usr/libexec/ld.elf_so-eabi.debug	comp-sys-debug		debug,compat
+./usr/libdata/debug/usr/libexec/ld.elf_so-eabihf.debug	comp-sys-debug		debug,compat

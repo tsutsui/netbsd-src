@@ -46,7 +46,8 @@ mod-subst-delimiter:
 mod-subst-chain:
 A B c.
 make: Unknown modifier "i"
-.
+	while evaluating "${:Uvalue:S,a,x,i}." with value "vxlue"
+	in target "mod-subst-chain"
 mod-subst-dollar:$1:
 mod-subst-dollar:$2:
 mod-subst-dollar:$3:
@@ -59,4 +60,4 @@ mod-subst-dollar:$40:
 mod-subst-dollar:U8:
 mod-subst-dollar:$$$$:
 mod-subst-dollar:$$$good3
-exit status 0
+exit status 2

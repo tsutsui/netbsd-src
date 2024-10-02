@@ -1,0 +1,4 @@
+# $NetBSD: ad.mips64eb,v 1.9 2024/07/11 08:13:49 riastradh Exp $
+#
+./libexec/ld.elf_so-64			base-compat-shlib	compat,pic
+./usr/libexec/ld.elf_so-64			base-sys-shlib		compat,pic

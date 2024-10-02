@@ -1,4 +1,4 @@
-# $NetBSD: cond-func-defined.mk,v 1.11 2023/11/19 21:47:52 rillig Exp $
+# $NetBSD: cond-func-defined.mk,v 1.13 2024/08/06 17:46:01 rillig Exp $
 #
 # Tests for the defined() function in .if conditions.
 
@@ -20,7 +20,7 @@ ${:UA B}=	variable name with spaces
 .endif
 
 # The argument of a function must not directly contain whitespace.
-# expect+1: Missing closing parenthesis for defined()
+# expect+1: Missing ')' after argument 'A' for 'defined'
 .if !defined(A B)
 .  error
 .endif
@@ -30,7 +30,7 @@ ${:UA B}=	variable name with spaces
 .  error
 .endif
 
-# expect+1: Missing closing parenthesis for defined()
+# expect+1: Missing ')' after argument 'DEF' for 'defined'
 .if defined(DEF
 .  error
 .else
@@ -43,12 +43,9 @@ ${:UA B}=	variable name with spaces
 .  if defined(var)
 .    error
 .  else
-# expect+1: In .for loops, expressions for the loop variables are
-.    info In .for loops, expressions for the loop variables are
-# expect+1: substituted at evaluation time.  There is no actual variable
-.    info substituted at evaluation time.  There is no actual variable
-# expect+1: involved, even if it feels like it.
-.    info involved, even if it feels like it.
+# In .for loops, expressions based on the loop variables are substituted at
+# evaluation time.  There is no actual variable involved, even if the code in
+# the makefiles looks like it.
 .  endif
 .endfor
 

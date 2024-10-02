@@ -1,4 +1,4 @@
-/*	$NetBSD: cpu.c,v 1.5 2023/09/03 08:48:20 skrll Exp $	*/
+/*	$NetBSD: cpu.c,v 1.7 2024/08/10 07:27:04 skrll Exp $	*/
 
 /*-
  * Copyright (c) 2023 The NetBSD Foundation, Inc.
@@ -32,7 +32,7 @@
 #include "opt_multiprocessor.h"
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: cpu.c,v 1.5 2023/09/03 08:48:20 skrll Exp $");
+__KERNEL_RCSID(0, "$NetBSD: cpu.c,v 1.7 2024/08/10 07:27:04 skrll Exp $");
 
 #include <sys/param.h>
 
@@ -69,6 +69,8 @@ u_int   riscv_dcache_align_mask = CACHE_LINE_SIZE - 1;
 
 #define CPU_ARCH_7SERIES	0x8000000000000007
 
+#define CPU_VENDOR_THEAD	0x5b7
+
 struct cpu_arch {
 	uint64_t	 ca_id;
 	const char	*ca_name;
@@ -82,6 +84,14 @@ struct cpu_arch cpu_arch_sifive[] = {
     { },	// terminator
 };
 
+struct cpu_arch cpu_arch_thead[] = {
+    {
+	.ca_id = 0,
+	.ca_name = "9-Series Processor (C9, E9 series)",
+    },
+    { },	// terminator
+};
+
 struct cpu_vendor {
 	uint32_t	 	 cv_id;
 	const char		*cv_name;
@@ -91,6 +101,11 @@ struct cpu_vendor {
 	.cv_id = CPU_VENDOR_SIFIVE,
 	.cv_name = "SiFive",
 	.cv_arch = cpu_arch_sifive,
+    },
+    {
+	.cv_id = CPU_VENDOR_THEAD,
+	.cv_name = "T-Head",
+	.cv_arch = cpu_arch_thead,
     },
 };
 
@@ -184,6 +199,7 @@ cpu_attach(device_t dv, cpuid_t hartid)
 		ci = curcpu();
 		KASSERTMSG(ci == &cpu_info_store[0], "ci %p", ci);
 		ci->ci_cpuid = hartid;
+		ci->ci_cpu_freq = riscv_timer_frequency_get();
 	} else {
 #ifdef MULTIPROCESSOR
 		if ((boothowto & RB_MD1) != 0) {

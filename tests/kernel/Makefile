@@ -1,4 +1,4 @@
-# $NetBSD: Makefile,v 1.77 2023/10/17 13:51:52 rjs Exp $
+# $NetBSD: Makefile,v 1.79 2024/08/09 23:24:15 bad Exp $
 
 NOMAN=		# defined
 
@@ -18,12 +18,16 @@ TESTS_C+=	t_pty
 TESTS_C+=	t_memfd_create
 TESTS_C+=	t_mqueue
 TESTS_C+=	t_proccwd
+TESTS_C+=	t_signal_and_sp
 TESTS_C+=	t_sysv
 TESTS_C+=	t_subr_prf
 TESTS_C+=	t_kauth_pr_47598
 TESTS_C+=	t_ksem
 TESTS_C+=	t_sysctl
 TESTS_C+=	t_timeleft
+.if ${MKRUMP} != "no"
+TESTS_C+=	t_unmount
+.endif
 TESTS_C+=	t_zombie
 TESTS_C+=	t_open_pr_57260
 
@@ -62,6 +66,9 @@ LDADD.t_fdrestart+=	${LIBRUMPBASE}
 
 LDADD.t_mqueue+= -lrt
 
+LDADD.t_unmount+=	-lrumpfs_tmpfs
+LDADD.t_unmount+=	${LIBRUMPBASE}
+
 
 .if (${MKRUMP} != "no") && !defined(BSD_MK_COMPAT_FILE)
 TESTS_SUBDIRS+=	tty
@@ -78,6 +85,12 @@ LDADD.t_rnd+=  -lrumpdev_rnd -lrumpdev ${LIBRUMPBASE}
 LDADD.t_timeleft+=	-lpthread
 
 CPPFLAGS+=	-D_KERNTYPES
+CPPFLAGS.t_unmount.c+=	-D_KMEMUSER -D__EXPOSE_MOUNT
+
+ARCH_INCS_DIR:=	${.PARSEDIR}/arch/${MACHINE_ARCH}
+.if exists(${ARCH_INCS_DIR}/stack_pointer.h)
+CPPFLAGS+=	-I${ARCH_INCS_DIR} -DHAVE_STACK_POINTER_H
+.endif
 
 .PATH:			${NETBSDSRCDIR}/sys/kern
 TESTS_C+=		t_extent

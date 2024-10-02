@@ -1,4 +1,4 @@
-/*	$NetBSD: vfs_mount.c,v 1.104 2024/01/17 10:17:29 hannken Exp $	*/
+/*	$NetBSD: vfs_mount.c,v 1.107 2024/08/11 13:09:58 bad Exp $	*/
 
 /*-
  * Copyright (c) 1997-2020 The NetBSD Foundation, Inc.
@@ -67,7 +67,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: vfs_mount.c,v 1.104 2024/01/17 10:17:29 hannken Exp $");
+__KERNEL_RCSID(0, "$NetBSD: vfs_mount.c,v 1.107 2024/08/11 13:09:58 bad Exp $");
 
 #include "veriexec.h"
 
@@ -936,7 +936,8 @@ err_mounted:
 int
 dounmount(struct mount *mp, int flags, struct lwp *l)
 {
-	vnode_t *coveredvp, *vp;
+	struct vnode *coveredvp, *vp;
+	struct vnode_impl *vip;
 	int error, async, used_syncer, used_extattr;
 	const bool was_suspended = fstrans_is_owner(mp);
 
@@ -960,6 +961,10 @@ dounmount(struct mount *mp, int flags, struct lwp *l)
 
 	mp->mnt_iflag |= IMNT_UNMOUNT;
 	mutex_enter(mp->mnt_updating);
+	/*
+	 * Temporarily clear the MNT_ASYNC flags so that bwrite() doesn't
+	 * convert the sync writes to delayed writes.
+	 */
 	async = mp->mnt_flag & MNT_ASYNC;
 	mp->mnt_flag &= ~MNT_ASYNC;
 	cache_purgevfs(mp);	/* remove cache entries for this file sys */
@@ -974,9 +979,9 @@ dounmount(struct mount *mp, int flags, struct lwp *l)
 	}
 	if (error) {
 		mp->mnt_iflag &= ~IMNT_UNMOUNT;
+		mp->mnt_flag |= async;
 		if ((mp->mnt_flag & (MNT_RDONLY | MNT_ASYNC)) == 0)
 			vfs_syncer_add_to_worklist(mp);
-		mp->mnt_flag |= async;
 		mutex_exit(mp->mnt_updating);
 		if (!was_suspended)
 			vfs_resume(mp);
@@ -1003,7 +1008,9 @@ dounmount(struct mount *mp, int flags, struct lwp *l)
 		vfs_resume(mp);
 
 	mountlist_remove(mp);
-	if ((vp = VIMPL_TO_VNODE(TAILQ_FIRST(&mp->mnt_vnodelist))) != NULL) {
+
+	if ((vip = TAILQ_FIRST(&mp->mnt_vnodelist)) != NULL) {
+		vp = VIMPL_TO_VNODE(vip);
 		vprint("dangling", vp);
 		panic("unmount: dangling vnode");
 	}

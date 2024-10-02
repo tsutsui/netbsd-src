@@ -1,4 +1,4 @@
-#	$NetBSD: mi,v 1.2457 2024/03/07 22:15:52 christos Exp $
+#	$NetBSD: mi,v 1.2473 2024/09/09 11:30:05 riastradh Exp $
 #
 # Note: don't delete entries from here - mark them as "obsolete" instead.
 ./etc/mtree/set.comp				comp-sys-root
@@ -1201,6 +1201,7 @@
 ./usr/include/g++/bits/random.tcc		comp-cxx-include	gcc,cxx,libstdcxx
 ./usr/include/g++/bits/range_access.h		comp-cxx-include	gcc,cxx,libstdcxx
 ./usr/include/g++/bits/range_cmp.h		comp-cxx-include	gcc,cxx,libstdcxx,gcc=10
+./usr/include/g++/bits/range_cmp.h		comp-cxx-include	gcc,cxx,libstdcxx,obsolete,gcc=12
 ./usr/include/g++/bits/ranges_algo.h		comp-cxx-include	gcc,cxx,libstdcxx
 ./usr/include/g++/bits/ranges_algobase.h	comp-cxx-include	gcc,cxx,libstdcxx
 ./usr/include/g++/bits/ranges_base.h		comp-cxx-include	gcc,cxx,libstdcxx,gcc=12
@@ -1336,6 +1337,7 @@
 ./usr/include/g++/cxxabi-forced.h		comp-obsolete 		obsolete
 ./usr/include/g++/cxxabi.h			comp-cxx-include	gcc,cxx,libstdcxx
 ./usr/include/g++/debug/array			comp-cxx-include	gcc,cxx,libstdcxx,gcc=10
+./usr/include/g++/debug/array			comp-cxx-include	gcc,cxx,libstdcxx,obsolete,gcc=12
 ./usr/include/g++/debug/assertions.h		comp-cxx-include	gcc,cxx,libstdcxx
 ./usr/include/g++/debug/bitset			comp-cxx-include	gcc,cxx,libstdcxx
 ./usr/include/g++/debug/debug.h			comp-cxx-include	gcc,cxx,libstdcxx
@@ -2371,15 +2373,25 @@
 ./usr/include/g++/vector.h			comp-obsolete		obsolete
 ./usr/include/g++/version			comp-cxx-include	gcc,cxx,libstdcxx
 ./usr/include/gcc-10/omp.h				comp-gcc-include	gcc=10
+./usr/include/gcc-10/omp.h				comp-obsolete	obsolete,gcc=12
 ./usr/include/gcc-10/openacc.h				comp-gcc-include	gcc=10
+./usr/include/gcc-10/openacc.h				comp-obsolete	obsolete,gcc=12
 ./usr/include/gcc-10/sanitizer/allocator_interface.h	comp-gcc-include	gcc=10
+./usr/include/gcc-10/sanitizer/allocator_interface.h	comp-obsolete	obsolete,gcc=12
 ./usr/include/gcc-10/sanitizer/asan_interface.h		comp-gcc-include	gcc=10
+./usr/include/gcc-10/sanitizer/asan_interface.h		comp-obsolete	obsolete,gcc=12
 ./usr/include/gcc-10/sanitizer/common_interface_defs.h	comp-gcc-include	gcc=10
+./usr/include/gcc-10/sanitizer/common_interface_defs.h	comp-obsolete	obsolete,gcc=12
 ./usr/include/gcc-10/sanitizer/lsan_interface.h		comp-gcc-include	gcc=10
+./usr/include/gcc-10/sanitizer/lsan_interface.h		comp-obsolete	obsolete,gcc=12
 ./usr/include/gcc-10/sanitizer/netbsd_syscall_hooks.h	comp-gcc-include	gcc=10
+./usr/include/gcc-10/sanitizer/netbsd_syscall_hooks.h	comp-obsolete	obsolete,gcc=12
 ./usr/include/gcc-10/sanitizer/tsan_interface.h		comp-gcc-include	gcc=10
+./usr/include/gcc-10/sanitizer/tsan_interface.h		comp-obsolete	obsolete,gcc=12
 ./usr/include/gcc-10/sanitizer/tsan_interface_atomic.h	comp-gcc-include	gcc=10
+./usr/include/gcc-10/sanitizer/tsan_interface_atomic.h	comp-obsolete	obsolete,gcc=12
 ./usr/include/gcc-10/stdatomic.h			comp-gcc-include	gcc=10
+./usr/include/gcc-10/stdatomic.h			comp-obsolete	obsolete,gcc=12
 ./usr/include/gcc-12/omp.h				comp-gcc-include	gcc=12
 ./usr/include/gcc-12/openacc.h				comp-gcc-include	gcc=12
 ./usr/include/gcc-12/sanitizer				comp-gcc-include	gcc=12
@@ -3573,6 +3585,7 @@
 ./usr/include/sys/specificdata.h		comp-c-include
 ./usr/include/sys/stat.h			comp-c-include
 ./usr/include/sys/statvfs.h			comp-c-include
+./usr/include/sys/stdalign.h			comp-c-include
 ./usr/include/sys/stdarg.h			comp-c-include
 ./usr/include/sys/stdbool.h			comp-c-include
 ./usr/include/sys/stdint.h			comp-c-include
@@ -3667,6 +3680,7 @@
 ./usr/include/tss/tss_typedef.h			comp-c-include		tpm
 ./usr/include/ttyent.h				comp-c-include
 ./usr/include/tzfile.h				comp-c-include
+./usr/include/uchar.h				comp-c-include
 ./usr/include/ucontext.h			comp-c-include
 ./usr/include/ufs/ext2fs/ext2fs.h		comp-c-include
 ./usr/include/ufs/ext2fs/ext2fs_dinode.h	comp-c-include
@@ -3839,8 +3853,8 @@
 ./usr/lib/libamu_p.a				comp-obsolete		obsolete
 ./usr/lib/libarchive.a				comp-c-lib		compatfile
 ./usr/lib/libarchive_p.a			comp-c-proflib		compatfile,profile
-./usr/lib/libasan.a				comp-c-lib		compatfile,cxx,gcc
-./usr/lib/libasan_p.a				comp-c-proflib		compatfile,profile,cxx,gcc
+./usr/lib/libasan.a				comp-c-lib		compatfile,cxx,gcccmds,gcc
+./usr/lib/libasan_p.a				comp-c-proflib		compatfile,profile,cxx,gcccmds,gcc
 ./usr/lib/libasn1.a				comp-krb5-lib		compatfile,kerberos
 ./usr/lib/libasn1_p.a				comp-krb5-proflib	compatfile,kerberos,profile
 ./usr/lib/libatf-c++.a				comp-atf-lib		compatfile,atf
@@ -4000,8 +4014,8 @@
 ./usr/lib/libldap_p.a				comp-ldap-proflib	compatfile,ldap,profile
 ./usr/lib/libldap_r.a				comp-ldap-lib		compatfile,ldap
 ./usr/lib/libldap_r_p.a				comp-ldap-proflib	compatfile,ldap,profile
-./usr/lib/liblsan.a				comp-c-lib		compatfile,cxx,gcc
-./usr/lib/liblsan_p.a				comp-c-proflib		compatfile,profile,cxx,gcc
+./usr/lib/liblsan.a				comp-c-lib		compatfile,cxx,gcccmds,gcc
+./usr/lib/liblsan_p.a				comp-c-proflib		compatfile,profile,cxx,gcccmds,gcc
 ./usr/lib/liblua.a				comp-c-lib		compatfile
 ./usr/lib/liblua_p.a				comp-c-proflib		compatfile,profile
 ./usr/lib/liblutok.a				comp-c-lib		compatfile,kyua
@@ -4346,8 +4360,8 @@
 ./usr/lib/libtre_p.a				comp-c-proflib		compatfile,profile
 ./usr/lib/libtspi.a				comp-c-lib		compatfile,tpm
 ./usr/lib/libtspi_p.a				comp-c-proflib		compatfile,tpm,profile
-./usr/lib/libubsan.a				comp-c-lib		compatfile,cxx,gcc
-./usr/lib/libubsan_p.a				comp-c-proflib		compatfile,profile,cxx,gcc
+./usr/lib/libubsan.a				comp-c-lib		compatfile,cxx,gcccmds,gcc
+./usr/lib/libubsan_p.a				comp-c-proflib		compatfile,profile,cxx,gcccmds,gcc
 ./usr/lib/libukfs.a				comp-c-lib		compatfile,rump
 ./usr/lib/libukfs_p.a				comp-c-proflib		compatfile,rump,profile
 ./usr/lib/libumem.a				comp-zfs-lib		compatfile,zfs
@@ -4737,14 +4751,13 @@
 ./usr/share/man/cat1/nm.0			comp-util-catman	binutils,.cat
 ./usr/share/man/cat1/objcopy.0			comp-util-catman	binutils,.cat
 ./usr/share/man/cat1/objdump.0			comp-util-catman	binutils,.cat
-./usr/share/man/cat1/openssl.0	comp-c-catman	.cat
-./usr/share/man/cat1/openssl_engine.0		comp-c-catman		.cat
-./usr/share/man/cat1/openssl_list.0		comp-c-catman		.cat
-./usr/share/man/cat1/openssl_ocsp.0		comp-c-catman		.cat
-./usr/share/man/cat1/openssl_prime.0	comp-c-catman	.cat
-./usr/share/man/cat1/openssl_rehash.0		comp-c-catman		.cat
-./usr/share/man/cat1/openssl_srp.0	comp-c-catman	.cat
-./usr/share/man/cat1/openssl_storeutl.0	comp-c-catman	.cat
+./usr/share/man/cat1/openssl_engine.0		comp-obsolete		obsolete
+./usr/share/man/cat1/openssl_list.0		comp-obsolete		obsolete
+./usr/share/man/cat1/openssl_ocsp.0		comp-obsolete		obsolete
+./usr/share/man/cat1/openssl_prime.0		comp-obsolete		obsolete
+./usr/share/man/cat1/openssl_rehash.0		comp-obsolete		obsolete
+./usr/share/man/cat1/openssl_srp.0		comp-obsolete		obsolete
+./usr/share/man/cat1/openssl_storeutl.0		comp-obsolete		obsolete
 ./usr/share/man/cat1/ranlib.0			comp-util-catman	binutils,.cat
 ./usr/share/man/cat1/rcs2log.0			comp-cvs-catman		cvs,.cat
 ./usr/share/man/cat1/readelf.0			comp-util-catman	binutils,.cat
@@ -5208,6 +5221,7 @@
 ./usr/share/man/cat3/CMS_get1_ReceiptRequest.0	comp-c-catman		.cat
 ./usr/share/man/cat3/CMS_sign.0			comp-c-catman		.cat
 ./usr/share/man/cat3/CMS_sign_receipt.0		comp-c-catman		.cat
+./usr/share/man/cat3/CMS_signed_get_attr.0		comp-c-catman	.cat
 ./usr/share/man/cat3/CMS_uncompress.0		comp-c-catman		.cat
 ./usr/share/man/cat3/CMS_verify.0		comp-c-catman		.cat
 ./usr/share/man/cat3/CMS_verify_receipt.0	comp-c-catman		.cat
@@ -5309,6 +5323,7 @@
 ./usr/share/man/cat3/EVP_PKEY_encapsulate.0	comp-c-catman		.cat,openssl=30
 ./usr/share/man/cat3/EVP_PKEY_encrypt.0		comp-c-catman		.cat
 ./usr/share/man/cat3/EVP_PKEY_fromdata.0	comp-c-catman		.cat,openssl=30
+./usr/share/man/cat3/EVP_PKEY_get_attr.0		comp-c-catman	.cat
 ./usr/share/man/cat3/EVP_PKEY_get_default_digest_nid.0	comp-c-catman	.cat
 ./usr/share/man/cat3/EVP_PKEY_get_field_type.0	comp-c-catman		.cat,openssl=30
 ./usr/share/man/cat3/EVP_PKEY_get_group_name.0	comp-c-catman		.cat,openssl=30
@@ -6073,6 +6088,7 @@
 ./usr/share/man/cat3/X509V3_get_d2i.0	comp-c-catman	.cat
 ./usr/share/man/cat3/X509V3_set_ctx.0		comp-c-catman		.cat,openssl=30
 ./usr/share/man/cat3/X509_ALGOR_dup.0	comp-c-catman	.cat
+./usr/share/man/cat3/X509_ATTRIBUTE.0		comp-c-catman	.cat
 ./usr/share/man/cat3/X509_CRL_get0_by_serial.0	comp-c-catman	.cat
 ./usr/share/man/cat3/X509_EXTENSION_set_object.0	comp-c-catman	.cat
 ./usr/share/man/cat3/X509_LOOKUP.0		comp-c-catman		.cat,openssl=30
@@ -6084,6 +6100,8 @@
 ./usr/share/man/cat3/X509_NAME_get_index_by_NID.0	comp-c-catman		.cat
 ./usr/share/man/cat3/X509_NAME_print_ex.0		comp-c-catman		.cat
 ./usr/share/man/cat3/X509_PUBKEY_new.0	comp-c-catman	.cat
+./usr/share/man/cat3/X509_REQ_get_attr.0		comp-c-catman	.cat
+./usr/share/man/cat3/X509_REQ_get_extensions.0		comp-c-catman	.cat
 ./usr/share/man/cat3/X509_SIG_get0.0	comp-c-catman	.cat
 ./usr/share/man/cat3/X509_STORE_CTX_get_error.0		comp-c-catman		.cat
 ./usr/share/man/cat3/X509_STORE_CTX_new.0		comp-c-catman		.cat
@@ -6825,6 +6843,9 @@
 ./usr/share/man/cat3/bufferevent_write_buffer.0 comp-obsolete		obsolete
 ./usr/share/man/cat3/byteorder.0		comp-c-catman		.cat
 ./usr/share/man/cat3/bzero.0			comp-c-catman		.cat
+./usr/share/man/cat3/c16rtomb.0			comp-c-catman		.cat
+./usr/share/man/cat3/c32rtomb.0			comp-c-catman		.cat
+./usr/share/man/cat3/c8rtomb.0			comp-c-catman		.cat
 ./usr/share/man/cat3/cabs.0			comp-c-catman		complex,.cat
 ./usr/share/man/cat3/cabsf.0			comp-c-catman		complex,.cat
 ./usr/share/man/cat3/cabsl.0			comp-c-catman		complex,.cat
@@ -9187,8 +9208,12 @@
 ./usr/share/man/cat3/math.0			comp-c-catman		.cat
 ./usr/share/man/cat3/mblen.0			comp-c-catman		.cat
 ./usr/share/man/cat3/mbrlen.0			comp-c-catman		.cat
+./usr/share/man/cat3/mbrtoc16.0			comp-c-catman		.cat
+./usr/share/man/cat3/mbrtoc32.0			comp-c-catman		.cat
+./usr/share/man/cat3/mbrtoc8.0			comp-c-catman		.cat
 ./usr/share/man/cat3/mbrtowc.0			comp-c-catman		.cat
 ./usr/share/man/cat3/mbsinit.0			comp-c-catman		.cat
+./usr/share/man/cat3/mbsnrtowcs.0		comp-c-catman		.cat
 ./usr/share/man/cat3/mbsrtowcs.0		comp-c-catman		.cat
 ./usr/share/man/cat3/mbstowcs.0			comp-c-catman		.cat
 ./usr/share/man/cat3/mbtowc.0			comp-c-catman		.cat
@@ -9421,8 +9446,8 @@
 ./usr/share/man/cat3/openssl_MD2.0		comp-c-catman		.cat
 ./usr/share/man/cat3/openssl_MD4.0		comp-c-catman		.cat
 ./usr/share/man/cat3/openssl_MD5.0		comp-c-catman		.cat
-./usr/share/man/cat3/openssl_bio.0		comp-c-catman		.cat
-./usr/share/man/cat3/openssl_evp.0		comp-c-catman		.cat
+./usr/share/man/cat3/openssl_bio.0		comp-obsolete		obsolete
+./usr/share/man/cat3/openssl_evp.0		comp-obsolete		obsolete
 ./usr/share/man/cat3/openssl_x509.0		comp-obsolete		obsolete
 ./usr/share/man/cat3/orcmd.0			comp-c-catman		.cat
 ./usr/share/man/cat3/orcmd_af.0			comp-c-catman		.cat
@@ -10884,6 +10909,7 @@
 ./usr/share/man/cat3/strtof.0			comp-c-catman		.cat
 ./usr/share/man/cat3/strtoi.0			comp-c-catman		.cat
 ./usr/share/man/cat3/strtoimax.0		comp-c-catman		.cat
+./usr/share/man/cat3/strtoi_l.0			comp-c-catman		.cat
 ./usr/share/man/cat3/strtok.0			comp-c-catman		.cat
 ./usr/share/man/cat3/strtok_r.0			comp-c-catman		.cat
 ./usr/share/man/cat3/strtol.0			comp-c-catman		.cat
@@ -10896,6 +10922,7 @@
 ./usr/share/man/cat3/strtoull.0			comp-c-catman		.cat
 ./usr/share/man/cat3/strtoumax.0		comp-c-catman		.cat
 ./usr/share/man/cat3/strtouq.0			comp-c-catman		.cat
+./usr/share/man/cat3/strtou_l.0			comp-c-catman		.cat
 ./usr/share/man/cat3/strunvis.0			comp-c-catman		.cat
 ./usr/share/man/cat3/strunvisx.0		comp-c-catman		.cat
 ./usr/share/man/cat3/strvis.0			comp-c-catman		.cat
@@ -10965,9 +10992,10 @@
 ./usr/share/man/cat3/sysexits.0			comp-c-catman		.cat
 ./usr/share/man/cat3/syslog.0			comp-c-catman		.cat
 ./usr/share/man/cat3/syslog_r.0			comp-c-catman		.cat
-./usr/share/man/cat3/syslog_ss.0		comp-obsolete		obsolete
+./usr/share/man/cat3/syslog_ss.0		comp-c-catman		.cat
 ./usr/share/man/cat3/syslogp.0			comp-c-catman		.cat
 ./usr/share/man/cat3/syslogp_r.0		comp-c-catman		.cat
+./usr/share/man/cat3/syslogp_ss.0		comp-c-catman		.cat
 ./usr/share/man/cat3/system.0			comp-c-catman		.cat
 ./usr/share/man/cat3/t_freent.0			comp-obsolete		obsolete
 ./usr/share/man/cat3/t_getent.0			comp-obsolete		obsolete
@@ -11128,6 +11156,7 @@
 ./usr/share/man/cat3/tzset.0			comp-c-catman		.cat
 ./usr/share/man/cat3/tzsetwall.0		comp-c-catman		.cat
 ./usr/share/man/cat3/ualarm.0			comp-c-catman		.cat
+./usr/share/man/cat3/uchar.0			comp-c-catman		.cat
 ./usr/share/man/cat3/uid_from_user.0		comp-c-catman		.cat
 ./usr/share/man/cat3/ukfs.0			comp-c-catman		.cat,rump
 ./usr/share/man/cat3/ulimit.0			comp-c-catman		.cat
@@ -11207,9 +11236,10 @@
 ./usr/share/man/cat3/vswscanf.0			comp-c-catman		.cat
 ./usr/share/man/cat3/vsyslog.0			comp-c-catman		.cat
 ./usr/share/man/cat3/vsyslog_r.0		comp-c-catman		.cat
-./usr/share/man/cat3/vsyslog_ss.0		comp-obsolete		obsolete
+./usr/share/man/cat3/vsyslog_ss.0		comp-c-catman		.cat
 ./usr/share/man/cat3/vsyslogp.0			comp-c-catman		.cat
 ./usr/share/man/cat3/vsyslogp_r.0		comp-c-catman		.cat
+./usr/share/man/cat3/vsyslogp_ss.0		comp-c-catman		.cat
 ./usr/share/man/cat3/vtimes.0			comp-obsolete		obsolete
 ./usr/share/man/cat3/vwarn.0			comp-c-catman		.cat
 ./usr/share/man/cat3/vwarnc.0			comp-c-catman		.cat
@@ -11257,6 +11287,7 @@
 ./usr/share/man/cat3/wcsncmp.0			comp-c-catman		.cat
 ./usr/share/man/cat3/wcsncpy.0			comp-c-catman		.cat
 ./usr/share/man/cat3/wcsnlen.0			comp-c-catman		.cat
+./usr/share/man/cat3/wcsnrtombs.0		comp-c-catman		.cat
 ./usr/share/man/cat3/wcspbrk.0			comp-c-catman		.cat
 ./usr/share/man/cat3/wcsrchr.0			comp-c-catman		.cat
 ./usr/share/man/cat3/wcsrtombs.0		comp-c-catman		.cat
@@ -11394,13 +11425,15 @@
 ./usr/share/man/cat5/config.samples.0		comp-util-catman	.cat
 ./usr/share/man/cat5/cpio.0			comp-util-catman	.cat
 ./usr/share/man/cat5/cvs.0			comp-cvs-catman		cvs,.cat
+./usr/share/man/cat5/gdbinit.0			comp-debug-catman	gdb,.cat
 ./usr/share/man/cat5/ldap.conf.0		comp-ldap-catman	ldap,.cat
 ./usr/share/man/cat5/ldif.0			comp-ldap-catman	ldap,.cat
 ./usr/share/man/cat5/libarchive-formats.0	comp-util-catman	.cat
 ./usr/share/man/cat5/mech.0			comp-krb5-catman	kerberos,.cat
 ./usr/share/man/cat5/mk.conf.0			comp-util-catman	.cat
 ./usr/share/man/cat5/mtree.0			comp-util-catman	.cat
-./usr/share/man/cat5/openssl_config.0	comp-c-catman	.cat
+./usr/share/man/cat5/openssl-config.0		comp-c-catman	.cat
+./usr/share/man/cat5/openssl_config.0		comp-obsolete		obsolete
 ./usr/share/man/cat5/ranlib.0			comp-util-catman	.cat
 ./usr/share/man/cat5/statvfs.0			comp-util-catman	.cat
 ./usr/share/man/cat5/tar.0			comp-util-catman	.cat
@@ -11416,6 +11449,7 @@
 ./usr/share/man/cat7/crypto.0	comp-c-catman	.cat
 ./usr/share/man/cat7/ct.0	comp-c-catman	.cat
 ./usr/share/man/cat7/evp.0	comp-c-catman	.cat
+./usr/share/man/cat7/openssl_user_macros.0		comp-c-catman	.cat
 ./usr/share/man/cat7/operator.0			comp-c-catman		.cat
 ./usr/share/man/cat7/ossl_store-file.0	comp-c-catman	.cat
 ./usr/share/man/cat7/ossl_store.0	comp-c-catman	.cat
@@ -11611,6 +11645,7 @@
 ./usr/share/man/cat9/accf_data.0		comp-sys-catman		.cat
 ./usr/share/man/cat9/accf_http.0		comp-sys-catman		.cat
 ./usr/share/man/cat9/acl.0			comp-sys-catman		.cat
+./usr/share/man/cat9/acct_process.0		comp-sys-catman		.cat
 ./usr/share/man/cat9/allocbuf.0			comp-sys-catman		.cat
 ./usr/share/man/cat9/altq.0			comp-sys-catman		.cat
 ./usr/share/man/cat9/aprint_debug.0		comp-sys-catman		.cat
@@ -11926,6 +11961,7 @@
 ./usr/share/man/cat9/crypto_newsession.0	comp-sys-catman		.cat
 ./usr/share/man/cat9/crypto_register.0		comp-sys-catman		.cat
 ./usr/share/man/cat9/crypto_unregister.0	comp-sys-catman		.cat
+./usr/share/man/cat9/crashme.0			comp-sys-catman		.cat
 ./usr/share/man/cat9/csf.0			comp-sys-catman		.cat
 ./usr/share/man/cat9/ctob.0			comp-sys-catman		.cat
 ./usr/share/man/cat9/ctod.0			comp-sys-catman		.cat
@@ -12279,6 +12315,8 @@
 ./usr/share/man/cat9/le64enc.0			comp-sys-catman		.cat
 ./usr/share/man/cat9/le64toh.0			comp-sys-catman		.cat
 ./usr/share/man/cat9/linedisc.0			comp-sys-catman		.cat
+./usr/share/man/cat9/lmax.0			comp-sys-catman		.cat
+./usr/share/man/cat9/lmin.0			comp-sys-catman		.cat
 ./usr/share/man/cat9/localcount.0		comp-sys-catman		.cat
 ./usr/share/man/cat9/lock.0			comp-sys-catman		.cat
 ./usr/share/man/cat9/locking.0			comp-sys-catman		.cat
@@ -12973,7 +13011,11 @@
 ./usr/share/man/cat9/ufetch_long.0		comp-sys-catman		.cat
 ./usr/share/man/cat9/ufetch_ptr.0		comp-sys-catman		.cat
 ./usr/share/man/cat9/ufetch_short.0		comp-sys-catman		.cat
+./usr/share/man/cat9/uimax.0			comp-sys-catman		.cat
+./usr/share/man/cat9/uimin.0			comp-sys-catman		.cat
 ./usr/share/man/cat9/uiomove.0			comp-sys-catman		.cat
+./usr/share/man/cat9/ulmax.0			comp-sys-catman		.cat
+./usr/share/man/cat9/ulmin.0			comp-sys-catman		.cat
 ./usr/share/man/cat9/ungetnewvnode.0		comp-obsolete		obsolete
 ./usr/share/man/cat9/untimeout.0		comp-sys-catman		.cat
 ./usr/share/man/cat9/uprintf.0			comp-sys-catman		.cat
@@ -13020,6 +13062,8 @@
 ./usr/share/man/cat9/uvm_map_pageable.0		comp-sys-catman		.cat
 ./usr/share/man/cat9/uvm_map_protect.0		comp-sys-catman		.cat
 ./usr/share/man/cat9/uvm_meter.0		comp-sys-catman		.cat
+./usr/share/man/cat9/uvm_obj_unwirepages.0	comp-sys-catman		.cat
+./usr/share/man/cat9/uvm_obj_wirepages.0	comp-sys-catman		.cat
 ./usr/share/man/cat9/uvm_page_physload.0	comp-sys-catman		.cat
 ./usr/share/man/cat9/uvm_pagealloc.0		comp-sys-catman		.cat
 ./usr/share/man/cat9/uvm_pagefree.0		comp-sys-catman		.cat
@@ -13283,15 +13327,14 @@
 ./usr/share/man/html1/nm.html			comp-util-htmlman	binutils,html
 ./usr/share/man/html1/objcopy.html		comp-util-htmlman	binutils,html
 ./usr/share/man/html1/objdump.html		comp-util-htmlman	binutils,html
-./usr/share/man/html1/openssl.html	comp-htmlman	html
 ./usr/share/man/html1/openssl_c_rehash.html	comp-obsolete		obsolete
-./usr/share/man/html1/openssl_engine.html	comp-c-htmlman	html
-./usr/share/man/html1/openssl_list.html	comp-c-htmlman	html
-./usr/share/man/html1/openssl_ocsp.html		comp-c-htmlman		html
-./usr/share/man/html1/openssl_prime.html	comp-htmlman	html
-./usr/share/man/html1/openssl_rehash.html	comp-c-htmlman	html
-./usr/share/man/html1/openssl_srp.html	comp-htmlman	html
-./usr/share/man/html1/openssl_storeutl.html	comp-htmlman	html
+./usr/share/man/html1/openssl_engine.html	comp-obsolete		obsolete
+./usr/share/man/html1/openssl_list.html		comp-obsolete		obsolete
+./usr/share/man/html1/openssl_ocsp.html		comp-obsolete		obsolete
+./usr/share/man/html1/openssl_prime.html	comp-obsolete		obsolete
+./usr/share/man/html1/openssl_rehash.html	comp-obsolete		obsolete
+./usr/share/man/html1/openssl_srp.html		comp-obsolete		obsolete
+./usr/share/man/html1/openssl_storeutl.html	comp-obsolete		obsolete
 ./usr/share/man/html1/ranlib.html		comp-util-htmlman	binutils,html
 ./usr/share/man/html1/rcs2log.html		comp-cvs-htmlman	cvs,html
 ./usr/share/man/html1/readelf.html		comp-util-htmlman	binutils,html
@@ -13748,6 +13791,7 @@
 ./usr/share/man/html3/CMS_get1_ReceiptRequest.html	comp-c-htmlman	html
 ./usr/share/man/html3/CMS_sign.html		comp-c-htmlman	html
 ./usr/share/man/html3/CMS_sign_receipt.html	comp-c-htmlman	html
+./usr/share/man/html3/CMS_signed_get_attr.html	comp-c-htmlman	html
 ./usr/share/man/html3/CMS_uncompress.html	comp-c-htmlman	html
 ./usr/share/man/html3/CMS_verify.html		comp-c-htmlman	html
 ./usr/share/man/html3/CMS_verify_receipt.html	comp-c-htmlman	html
@@ -13852,6 +13896,7 @@
 ./usr/share/man/html3/EVP_PKEY_encapsulate.html	comp-c-htmlman		html,openssl=30
 ./usr/share/man/html3/EVP_PKEY_encrypt.html	comp-c-htmlman	html
 ./usr/share/man/html3/EVP_PKEY_fromdata.html	comp-c-htmlman		html,openssl=30
+./usr/share/man/html3/EVP_PKEY_get_attr.html	comp-c-htmlman	html
 ./usr/share/man/html3/EVP_PKEY_get_default_digest.html	comp-obsolete	obsolete
 ./usr/share/man/html3/EVP_PKEY_get_default_digest_nid.html	comp-c-htmlman	html
 ./usr/share/man/html3/EVP_PKEY_get_field_type.html	comp-c-htmlman		html,openssl=30
@@ -14622,6 +14667,7 @@
 ./usr/share/man/html3/X509V3_get_d2i.html	comp-c-htmlman	html
 ./usr/share/man/html3/X509V3_set_ctx.html	comp-c-htmlman		html,openssl=30
 ./usr/share/man/html3/X509_ALGOR_dup.html	comp-c-htmlman	html
+./usr/share/man/html3/X509_ATTRIBUTE.html	comp-c-htmlman	html
 ./usr/share/man/html3/X509_CRL_get0_by_serial.html	comp-c-htmlman	html
 ./usr/share/man/html3/X509_EXTENSION_set_object.html	comp-c-htmlman	html
 ./usr/share/man/html3/X509_LOOKUP.html		comp-c-htmlman		html,openssl=30
@@ -14633,6 +14679,8 @@
 ./usr/share/man/html3/X509_NAME_get_index_by_NID.html	comp-c-htmlman		html
 ./usr/share/man/html3/X509_NAME_print_ex.html	comp-c-htmlman		html
 ./usr/share/man/html3/X509_PUBKEY_new.html	comp-c-htmlman	html
+./usr/share/man/html3/X509_REQ_get_attr.html	comp-c-htmlman	html
+./usr/share/man/html3/X509_REQ_get_extensions.html	comp-c-htmlman	html
 ./usr/share/man/html3/X509_SIG_get0.html	comp-c-htmlman	html
 ./usr/share/man/html3/X509_STORE_CTX_get_error.html		comp-c-htmlman		html
 ./usr/share/man/html3/X509_STORE_CTX_get_ex_new_index.html	comp-obsolete	obsolete
@@ -15365,6 +15413,9 @@
 ./usr/share/man/html3/bufferevent_write_buffer.html	comp-obsolete		obsolete
 ./usr/share/man/html3/byteorder.html		comp-c-htmlman		html
 ./usr/share/man/html3/bzero.html		comp-c-htmlman		html
+./usr/share/man/html3/c16rtomb.html		comp-c-htmlman		html
+./usr/share/man/html3/c32rtomb.html		comp-c-htmlman		html
+./usr/share/man/html3/c8rtomb.html		comp-c-htmlman		html
 ./usr/share/man/html3/cabs.html			comp-c-htmlman		complex,html
 ./usr/share/man/html3/cabsf.html		comp-c-htmlman		complex,html
 ./usr/share/man/html3/cabsl.html		comp-c-htmlman		complex,html
@@ -17659,8 +17710,12 @@
 ./usr/share/man/html3/math.html			comp-c-htmlman		html
 ./usr/share/man/html3/mblen.html		comp-c-htmlman		html
 ./usr/share/man/html3/mbrlen.html		comp-c-htmlman		html
+./usr/share/man/html3/mbrtoc16.html		comp-c-htmlman		html
+./usr/share/man/html3/mbrtoc32.html		comp-c-htmlman		html
+./usr/share/man/html3/mbrtoc8.html		comp-c-htmlman		html
 ./usr/share/man/html3/mbrtowc.html		comp-c-htmlman		html
 ./usr/share/man/html3/mbsinit.html		comp-c-htmlman		html
+./usr/share/man/html3/mbsnrtowcs.html		comp-c-htmlman		html
 ./usr/share/man/html3/mbsrtowcs.html		comp-c-htmlman		html
 ./usr/share/man/html3/mbstowcs.html		comp-c-htmlman		html
 ./usr/share/man/html3/mbtowc.html		comp-c-htmlman		html
@@ -17889,21 +17944,21 @@
 ./usr/share/man/html3/openssl_MD2.html		comp-c-htmlman		html
 ./usr/share/man/html3/openssl_MD4.html		comp-c-htmlman		html
 ./usr/share/man/html3/openssl_MD5.html		comp-c-htmlman		html
-./usr/share/man/html3/openssl_bio.html		comp-c-htmlman		html
+./usr/share/man/html3/openssl_bio.html		comp-obsolete		obsolete
 ./usr/share/man/html3/openssl_blowfish.html	comp-obsolete		obsolete
-./usr/share/man/html3/openssl_bn.html	comp-obsolete		obsolete
+./usr/share/man/html3/openssl_bn.html		comp-obsolete		obsolete
 ./usr/share/man/html3/openssl_bn_internal.html	comp-obsolete		obsolete
 ./usr/share/man/html3/openssl_buffer.html	comp-obsolete		obsolete
-./usr/share/man/html3/openssl_des.html	comp-obsolete		obsolete
-./usr/share/man/html3/openssl_dh.html	comp-obsolete		obsolete
-./usr/share/man/html3/openssl_dsa.html	comp-obsolete		obsolete
+./usr/share/man/html3/openssl_des.html		comp-obsolete		obsolete
+./usr/share/man/html3/openssl_dh.html		comp-obsolete		obsolete
+./usr/share/man/html3/openssl_dsa.html		comp-obsolete		obsolete
 ./usr/share/man/html3/openssl_ecdsa.html	comp-obsolete		obsolete
 ./usr/share/man/html3/openssl_engine.html	comp-obsolete		obsolete
-./usr/share/man/html3/openssl_err.html	comp-obsolete		obsolete
-./usr/share/man/html3/openssl_evp.html		comp-c-htmlman		html
-./usr/share/man/html3/openssl_hmac.html	comp-obsolete		obsolete
+./usr/share/man/html3/openssl_err.html		comp-obsolete		obsolete
+./usr/share/man/html3/openssl_evp.html		comp-obsolete		obsolete
+./usr/share/man/html3/openssl_hmac.html		comp-obsolete		obsolete
 ./usr/share/man/html3/openssl_lhash.html	comp-obsolete		obsolete
-./usr/share/man/html3/openssl_md5.html	comp-obsolete		obsolete
+./usr/share/man/html3/openssl_md5.html		comp-obsolete		obsolete
 ./usr/share/man/html3/openssl_mdc2.html	comp-obsolete		obsolete
 ./usr/share/man/html3/openssl_pem.html	comp-obsolete		obsolete
 ./usr/share/man/html3/openssl_rand.html	comp-obsolete		obsolete
@@ -19351,6 +19406,7 @@
 ./usr/share/man/html3/strtof.html		comp-c-htmlman		html
 ./usr/share/man/html3/strtoi.html		comp-c-htmlman		html
 ./usr/share/man/html3/strtoimax.html		comp-c-htmlman		html
+./usr/share/man/html3/strtoi_l.html		comp-c-htmlman		html
 ./usr/share/man/html3/strtok.html		comp-c-htmlman		html
 ./usr/share/man/html3/strtok_r.html		comp-c-htmlman		html
 ./usr/share/man/html3/strtol.html		comp-c-htmlman		html
@@ -19363,6 +19419,7 @@
 ./usr/share/man/html3/strtoull.html		comp-c-htmlman		html
 ./usr/share/man/html3/strtoumax.html		comp-c-htmlman		html
 ./usr/share/man/html3/strtouq.html		comp-c-htmlman		html
+./usr/share/man/html3/strtou_l.html		comp-c-htmlman		html
 ./usr/share/man/html3/strunvis.html		comp-c-htmlman		html
 ./usr/share/man/html3/strunvisx.html		comp-c-htmlman		html
 ./usr/share/man/html3/strvis.html		comp-c-htmlman		html
@@ -19430,8 +19487,10 @@
 ./usr/share/man/html3/sysexits.html		comp-c-htmlman		html
 ./usr/share/man/html3/syslog.html		comp-c-htmlman		html
 ./usr/share/man/html3/syslog_r.html		comp-c-htmlman		html
+./usr/share/man/html3/syslog_ss.html		comp-c-htmlman		html
 ./usr/share/man/html3/syslogp.html		comp-c-htmlman		html
 ./usr/share/man/html3/syslogp_r.html		comp-c-htmlman		html
+./usr/share/man/html3/syslogp_ss.html		comp-c-htmlman		html
 ./usr/share/man/html3/system.html		comp-c-htmlman		html
 ./usr/share/man/html3/t_freent.html		comp-obsolete		obsolete
 ./usr/share/man/html3/t_getent.html		comp-obsolete		obsolete
@@ -19580,6 +19639,7 @@
 ./usr/share/man/html3/tzset.html		comp-c-htmlman		html
 ./usr/share/man/html3/tzsetwall.html		comp-c-htmlman		html
 ./usr/share/man/html3/ualarm.html		comp-c-htmlman		html
+./usr/share/man/html3/uchar.html		comp-c-htmlman		html
 ./usr/share/man/html3/uid_from_user.html	comp-c-htmlman		html
 ./usr/share/man/html3/ukfs.html			comp-c-htmlman		html,rump
 ./usr/share/man/html3/ulimit.html		comp-c-htmlman		html
@@ -19657,8 +19717,10 @@
 ./usr/share/man/html3/vswscanf.html		comp-c-htmlman		html
 ./usr/share/man/html3/vsyslog.html		comp-c-htmlman		html
 ./usr/share/man/html3/vsyslog_r.html		comp-c-htmlman		html
+./usr/share/man/html3/vsyslog_ss.html		comp-c-htmlman		html
 ./usr/share/man/html3/vsyslogp.html		comp-c-htmlman		html
 ./usr/share/man/html3/vsyslogp_r.html		comp-c-htmlman		html
+./usr/share/man/html3/vsyslogp_ss.html		comp-c-htmlman		html
 ./usr/share/man/html3/vwarn.html		comp-c-htmlman		html
 ./usr/share/man/html3/vwarnc.html		comp-c-htmlman		html
 ./usr/share/man/html3/vwarnx.html		comp-c-htmlman		html
@@ -19705,6 +19767,7 @@
 ./usr/share/man/html3/wcsncmp.html		comp-c-htmlman		html
 ./usr/share/man/html3/wcsncpy.html		comp-c-htmlman		html
 ./usr/share/man/html3/wcsnlen.html		comp-c-htmlman		html
+./usr/share/man/html3/wcsnrtombs.html		comp-c-htmlman		html
 ./usr/share/man/html3/wcspbrk.html		comp-c-htmlman		html
 ./usr/share/man/html3/wcsrchr.html		comp-c-htmlman		html
 ./usr/share/man/html3/wcsrtombs.html		comp-c-htmlman		html
@@ -19842,13 +19905,15 @@
 ./usr/share/man/html5/config.samples.html	comp-util-htmlman	html
 ./usr/share/man/html5/cpio.html			comp-util-htmlman	html
 ./usr/share/man/html5/cvs.html			comp-cvs-htmlman	cvs,html
+./usr/share/man/html5/gdbinit.html		comp-debug-htmlman	gdb,html
 ./usr/share/man/html5/ldap.conf.html		comp-ldap-htmlman	ldap,html
 ./usr/share/man/html5/ldif.html			comp-ldap-htmlman	ldap,html
 ./usr/share/man/html5/libarchive-formats.html	comp-util-htmlman	html
 ./usr/share/man/html5/mech.html			comp-krb5-htmlman	kerberos,html
 ./usr/share/man/html5/mk.conf.html		comp-util-htmlman	html
 ./usr/share/man/html5/mtree.html			comp-util-htmlman	html
-./usr/share/man/html5/openssl_config.html	comp-htmlman	html
+./usr/share/man/html5/openssl-config.html	comp-c-htmlman	html
+./usr/share/man/html5/openssl_config.html	comp-obsolete		obsolete
 ./usr/share/man/html5/ranlib.html		comp-util-htmlman	html
 ./usr/share/man/html5/statvfs.html		comp-util-htmlman	html
 ./usr/share/man/html5/tar.html			comp-util-htmlman	html
@@ -19864,6 +19929,7 @@
 ./usr/share/man/html7/crypto.html	comp-htmlman	html
 ./usr/share/man/html7/ct.html	comp-htmlman	html
 ./usr/share/man/html7/evp.html	comp-htmlman	html
+./usr/share/man/html7/openssl_user_macros.html	comp-c-htmlman	html
 ./usr/share/man/html7/operator.html		comp-c-htmlman		html
 ./usr/share/man/html7/ossl_store-file.html	comp-htmlman	html
 ./usr/share/man/html7/ossl_store.html	comp-htmlman	html
@@ -20042,6 +20108,7 @@
 ./usr/share/man/html9/accf_data.html		comp-sys-htmlman	html
 ./usr/share/man/html9/accf_http.html		comp-sys-htmlman	html
 ./usr/share/man/html9/acl.html			comp-sys-htmlman	html
+./usr/share/man/html9/acct_process.html		comp-sys-htmlman	html
 ./usr/share/man/html9/allocbuf.html		comp-sys-htmlman	html
 ./usr/share/man/html9/altq.html			comp-sys-htmlman	html
 ./usr/share/man/html9/aprint_debug.html		comp-sys-htmlman	html
@@ -20341,6 +20408,7 @@
 ./usr/share/man/html9/crypto_newsession.html	comp-sys-htmlman	html
 ./usr/share/man/html9/crypto_register.html	comp-sys-htmlman	html
 ./usr/share/man/html9/crypto_unregister.html	comp-sys-htmlman	html
+./usr/share/man/html9/crashme.html		comp-sys-htmlman	html
 ./usr/share/man/html9/csf.html			comp-sys-htmlman	html
 ./usr/share/man/html9/ctob.html			comp-sys-htmlman	html
 ./usr/share/man/html9/ctod.html			comp-sys-htmlman	html
@@ -20686,6 +20754,8 @@
 ./usr/share/man/html9/le64enc.html		comp-sys-htmlman	html
 ./usr/share/man/html9/le64toh.html		comp-sys-htmlman	html
 ./usr/share/man/html9/linedisc.html		comp-sys-htmlman	html
+./usr/share/man/html9/lmax.html			comp-sys-htmlman	html
+./usr/share/man/html9/lmin.html			comp-sys-htmlman	html
 ./usr/share/man/html9/localcount.html		comp-sys-htmlman	html
 ./usr/share/man/html9/lock.html			comp-sys-htmlman	html
 ./usr/share/man/html9/locking.html		comp-sys-htmlman	html
@@ -21353,7 +21423,11 @@
 ./usr/share/man/html9/ufetch_long.html		comp-sys-htmlman	html
 ./usr/share/man/html9/ufetch_ptr.html		comp-sys-htmlman	html
 ./usr/share/man/html9/ufetch_short.html		comp-sys-htmlman	html
+./usr/share/man/html9/uimax.html		comp-sys-htmlman	html
+./usr/share/man/html9/uimin.html		comp-sys-htmlman	html
 ./usr/share/man/html9/uiomove.html		comp-sys-htmlman	html
+./usr/share/man/html9/ulmax.html		comp-sys-htmlman	html
+./usr/share/man/html9/ulmin.html		comp-sys-htmlman	html
 ./usr/share/man/html9/ungetnewvnode.html	comp-obsolete		obsolete
 ./usr/share/man/html9/untimeout.html		comp-sys-htmlman	html
 ./usr/share/man/html9/uprintf.html		comp-sys-htmlman	html
@@ -21392,6 +21466,8 @@
 ./usr/share/man/html9/uvm_map_pageable.html	comp-sys-htmlman	html
 ./usr/share/man/html9/uvm_map_protect.html	comp-sys-htmlman	html
 ./usr/share/man/html9/uvm_meter.html		comp-sys-htmlman	html
+./usr/share/man/html9/uvm_obj_unwirepages.html	comp-sys-htmlman	html
+./usr/share/man/html9/uvm_obj_wirepages.html	comp-sys-htmlman	html
 ./usr/share/man/html9/uvm_page_physload.html	comp-sys-htmlman	html
 ./usr/share/man/html9/uvm_pagealloc.html	comp-sys-htmlman	html
 ./usr/share/man/html9/uvm_pagefree.html		comp-sys-htmlman	html
@@ -21653,15 +21729,14 @@
 ./usr/share/man/man1/nm.1			comp-util-man		binutils,.man
 ./usr/share/man/man1/objcopy.1			comp-util-man		binutils,.man
 ./usr/share/man/man1/objdump.1			comp-util-man		binutils,.man
-./usr/share/man/man1/openssl.1	comp-c-man	.man
-./usr/share/man/man1/openssl_c_rehash.1	comp-obsolete		obsolete
-./usr/share/man/man1/openssl_engine.1	comp-c-man	.man
-./usr/share/man/man1/openssl_list.1	comp-c-man	.man
-./usr/share/man/man1/openssl_ocsp.1		comp-c-man		.man
-./usr/share/man/man1/openssl_prime.1	comp-c-man	.man
-./usr/share/man/man1/openssl_rehash.1	comp-c-man	.man
-./usr/share/man/man1/openssl_srp.1	comp-c-man	.man
-./usr/share/man/man1/openssl_storeutl.1	comp-c-man	.man
+./usr/share/man/man1/openssl_c_rehash.1		comp-obsolete		obsolete
+./usr/share/man/man1/openssl_engine.1		comp-obsolete		obsolete
+./usr/share/man/man1/openssl_list.1		comp-obsolete		obsolete
+./usr/share/man/man1/openssl_ocsp.1		comp-obsolete		obsolete
+./usr/share/man/man1/openssl_prime.1		comp-obsolete		obsolete
+./usr/share/man/man1/openssl_rehash.1		comp-obsolete		obsolete
+./usr/share/man/man1/openssl_srp.1		comp-obsolete		obsolete
+./usr/share/man/man1/openssl_storeutl.1		comp-obsolete		obsolete
 ./usr/share/man/man1/ranlib.1			comp-util-man		binutils,.man
 ./usr/share/man/man1/rcs2log.1			comp-cvs-man		cvs,.man
 ./usr/share/man/man1/readelf.1			comp-util-man		binutils,.man
@@ -22133,6 +22208,7 @@
 ./usr/share/man/man3/CMS_get1_ReceiptRequest.3		comp-c-man	.man
 ./usr/share/man/man3/CMS_sign.3				comp-c-man	.man
 ./usr/share/man/man3/CMS_sign_receipt.3			comp-c-man	.man
+./usr/share/man/man3/CMS_signed_get_attr.3	comp-c-man	.man
 ./usr/share/man/man3/CMS_uncompress.3			comp-c-man	.man
 ./usr/share/man/man3/CMS_verify.3			comp-c-man	.man
 ./usr/share/man/man3/CMS_verify_receipt.3		comp-c-man	.man
@@ -22237,6 +22313,7 @@
 ./usr/share/man/man3/EVP_PKEY_encapsulate.3	comp-c-man		.man,openssl=30
 ./usr/share/man/man3/EVP_PKEY_encrypt.3			comp-c-man	.man
 ./usr/share/man/man3/EVP_PKEY_fromdata.3	comp-c-man		.man,openssl=30
+./usr/share/man/man3/EVP_PKEY_get_attr.3	comp-c-man	.man
 ./usr/share/man/man3/EVP_PKEY_get_default_digest.3	comp-obsolete		obsolete
 ./usr/share/man/man3/EVP_PKEY_get_default_digest_nid.3	comp-c-man	.man
 ./usr/share/man/man3/EVP_PKEY_get_field_type.3	comp-c-man		.man,openssl=30
@@ -23009,6 +23086,7 @@
 ./usr/share/man/man3/X509V3_get_d2i.3	comp-c-man	.man
 ./usr/share/man/man3/X509V3_set_ctx.3		comp-c-man		.man,openssl=30
 ./usr/share/man/man3/X509_ALGOR_dup.3	comp-c-man	.man
+./usr/share/man/man3/X509_ATTRIBUTE.3	comp-c-man	.man
 ./usr/share/man/man3/X509_CRL_get0_by_serial.3	comp-c-man	.man
 ./usr/share/man/man3/X509_EXTENSION_set_object.3	comp-c-man	.man
 ./usr/share/man/man3/X509_LOOKUP.3		comp-c-man		.man,openssl=30
@@ -23020,6 +23098,8 @@
 ./usr/share/man/man3/X509_NAME_get_index_by_NID.3	comp-c-man		.man
 ./usr/share/man/man3/X509_NAME_print_ex.3		comp-c-man		.man
 ./usr/share/man/man3/X509_PUBKEY_new.3	comp-c-man	.man
+./usr/share/man/man3/X509_REQ_get_attr.3	comp-c-man	.man
+./usr/share/man/man3/X509_REQ_get_extensions.3	comp-c-man	.man
 ./usr/share/man/man3/X509_SIG_get0.3	comp-c-man	.man
 ./usr/share/man/man3/X509_STORE_CTX_get_error.3		comp-c-man		.man
 ./usr/share/man/man3/X509_STORE_CTX_get_ex_new_index.3	comp-obsolete		obsolete
@@ -23762,6 +23842,9 @@
 ./usr/share/man/man3/bufferevent_write_buffer.3 comp-obsolete		obsolete
 ./usr/share/man/man3/byteorder.3		comp-c-man		.man
 ./usr/share/man/man3/bzero.3			comp-c-man		.man
+./usr/share/man/man3/c16rtomb.3			comp-c-man		.man
+./usr/share/man/man3/c32rtomb.3			comp-c-man		.man
+./usr/share/man/man3/c8rtomb.3			comp-c-man		.man
 ./usr/share/man/man3/cabs.3			comp-c-man		complex,.man
 ./usr/share/man/man3/cabsf.3			comp-c-man		complex,.man
 ./usr/share/man/man3/cabsl.3			comp-c-man		complex,.man
@@ -26136,8 +26219,12 @@
 ./usr/share/man/man3/math.3			comp-c-man		.man
 ./usr/share/man/man3/mblen.3			comp-c-man		.man
 ./usr/share/man/man3/mbrlen.3			comp-c-man		.man
+./usr/share/man/man3/mbrtoc16.3			comp-c-man		.man
+./usr/share/man/man3/mbrtoc32.3			comp-c-man		.man
+./usr/share/man/man3/mbrtoc8.3			comp-c-man		.man
 ./usr/share/man/man3/mbrtowc.3			comp-c-man		.man
 ./usr/share/man/man3/mbsinit.3			comp-c-man		.man
+./usr/share/man/man3/mbsnrtowcs.3		comp-c-man		.man
 ./usr/share/man/man3/mbsrtowcs.3		comp-c-man		.man
 ./usr/share/man/man3/mbstowcs.3			comp-c-man		.man
 ./usr/share/man/man3/mbtowc.3			comp-c-man		.man
@@ -26370,30 +26457,30 @@
 ./usr/share/man/man3/openssl_MD2.3		comp-c-man		.man
 ./usr/share/man/man3/openssl_MD4.3		comp-c-man		.man
 ./usr/share/man/man3/openssl_MD5.3		comp-c-man		.man
-./usr/share/man/man3/openssl_bio.3		comp-c-man		.man
-./usr/share/man/man3/openssl_blowfish.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_bn.3	comp-obsolete		obsolete
+./usr/share/man/man3/openssl_bio.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_blowfish.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_bn.3		comp-obsolete		obsolete
 ./usr/share/man/man3/openssl_bn_internal.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_buffer.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_des.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_dh.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_dsa.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_ecdsa.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_engine.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_err.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_evp.3		comp-c-man		.man
-./usr/share/man/man3/openssl_hmac.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_lhash.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_md5.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_mdc2.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_pem.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_rand.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_rc4.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_ripemd.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_rsa.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_sha.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_threads.3	comp-obsolete		obsolete
-./usr/share/man/man3/openssl_ui.3	comp-obsolete		obsolete
+./usr/share/man/man3/openssl_buffer.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_des.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_dh.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_dsa.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_ecdsa.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_engine.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_err.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_evp.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_hmac.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_lhash.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_md5.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_mdc2.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_pem.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_rand.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_rc4.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_ripemd.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_rsa.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_sha.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_threads.3		comp-obsolete		obsolete
+./usr/share/man/man3/openssl_ui.3		comp-obsolete		obsolete
 ./usr/share/man/man3/openssl_ui_compat.3	comp-obsolete		obsolete
 ./usr/share/man/man3/openssl_x509.3		comp-obsolete		obsolete
 ./usr/share/man/man3/orcmd.3			comp-c-man		.man
@@ -27852,6 +27939,7 @@
 ./usr/share/man/man3/strtof.3			comp-c-man		.man
 ./usr/share/man/man3/strtoi.3			comp-c-man		.man
 ./usr/share/man/man3/strtoimax.3		comp-c-man		.man
+./usr/share/man/man3/strtoi_l.3			comp-c-man		.man
 ./usr/share/man/man3/strtok.3			comp-c-man		.man
 ./usr/share/man/man3/strtok_r.3			comp-c-man		.man
 ./usr/share/man/man3/strtol.3			comp-c-man		.man
@@ -27864,6 +27952,7 @@
 ./usr/share/man/man3/strtoull.3			comp-c-man		.man
 ./usr/share/man/man3/strtoumax.3		comp-c-man		.man
 ./usr/share/man/man3/strtouq.3			comp-c-man		.man
+./usr/share/man/man3/strtou_l.3			comp-c-man		.man
 ./usr/share/man/man3/strunvis.3			comp-c-man		.man
 ./usr/share/man/man3/strunvisx.3		comp-c-man		.man
 ./usr/share/man/man3/strvis.3			comp-c-man		.man
@@ -27933,9 +28022,10 @@
 ./usr/share/man/man3/sysexits.3			comp-c-man		.man
 ./usr/share/man/man3/syslog.3			comp-c-man		.man
 ./usr/share/man/man3/syslog_r.3			comp-c-man		.man
-./usr/share/man/man3/syslog_ss.3		comp-obsolete		obsolete
+./usr/share/man/man3/syslog_ss.3		comp-c-man		.man
 ./usr/share/man/man3/syslogp.3			comp-c-man		.man
 ./usr/share/man/man3/syslogp_r.3		comp-c-man		.man
+./usr/share/man/man3/syslogp_ss.3		comp-c-man		.man
 ./usr/share/man/man3/system.3			comp-c-man		.man
 ./usr/share/man/man3/t_freent.3			comp-obsolete		obsolete
 ./usr/share/man/man3/t_getent.3			comp-obsolete		obsolete
@@ -28096,6 +28186,7 @@
 ./usr/share/man/man3/tzset.3			comp-c-man		.man
 ./usr/share/man/man3/tzsetwall.3		comp-c-man		.man
 ./usr/share/man/man3/ualarm.3			comp-c-man		.man
+./usr/share/man/man3/uchar.3			comp-c-man		.man
 ./usr/share/man/man3/uid_from_user.3		comp-c-man		.man
 ./usr/share/man/man3/ukfs.3			comp-c-man		.man,rump
 ./usr/share/man/man3/ulimit.3			comp-c-man		.man
@@ -28175,9 +28266,10 @@
 ./usr/share/man/man3/vswscanf.3			comp-c-man		.man
 ./usr/share/man/man3/vsyslog.3			comp-c-man		.man
 ./usr/share/man/man3/vsyslog_r.3		comp-c-man		.man
-./usr/share/man/man3/vsyslog_ss.3		comp-obsolete		obsolete
+./usr/share/man/man3/vsyslog_ss.3		comp-c-man		.man
 ./usr/share/man/man3/vsyslogp.3			comp-c-man		.man
 ./usr/share/man/man3/vsyslogp_r.3		comp-c-man		.man
+./usr/share/man/man3/vsyslogp_ss.3		comp-c-man		.man
 ./usr/share/man/man3/vtimes.3			comp-obsolete		obsolete
 ./usr/share/man/man3/vwarn.3			comp-c-man		.man
 ./usr/share/man/man3/vwarnc.3			comp-c-man		.man
@@ -28225,6 +28317,7 @@
 ./usr/share/man/man3/wcsncmp.3			comp-c-man		.man
 ./usr/share/man/man3/wcsncpy.3			comp-c-man		.man
 ./usr/share/man/man3/wcsnlen.3			comp-c-man		.man
+./usr/share/man/man3/wcsnrtombs.3		comp-c-man		.man
 ./usr/share/man/man3/wcspbrk.3			comp-c-man		.man
 ./usr/share/man/man3/wcsrchr.3			comp-c-man		.man
 ./usr/share/man/man3/wcsrtombs.3		comp-c-man		.man
@@ -28362,13 +28455,15 @@
 ./usr/share/man/man5/config.samples.5		comp-util-man		.man
 ./usr/share/man/man5/cpio.5			comp-util-man		.man
 ./usr/share/man/man5/cvs.5			comp-cvs-man		cvs,.man
+./usr/share/man/man5/gdbinit.5			comp-debug-catman	gdb,.man
 ./usr/share/man/man5/ldap.conf.5		comp-ldap-man		ldap,.man
 ./usr/share/man/man5/ldif.5			comp-ldap-man		ldap,.man
 ./usr/share/man/man5/libarchive-formats.5	comp-util-man		.man
 ./usr/share/man/man5/mech.5			comp-krb5-man		kerberos,.man
 ./usr/share/man/man5/mk.conf.5			comp-util-man		.man
 ./usr/share/man/man5/mtree.5			comp-util-man		.man
-./usr/share/man/man5/openssl_config.5	comp-c-man	.man
+./usr/share/man/man5/openssl-config.5	comp-c-man	.man
+./usr/share/man/man5/openssl_config.5		comp-obsolete		obsolete
 ./usr/share/man/man5/ranlib.5			comp-util-man		.man
 ./usr/share/man/man5/statvfs.5			comp-util-man		.man
 ./usr/share/man/man5/tar.5			comp-util-man		.man
@@ -28384,6 +28479,7 @@
 ./usr/share/man/man7/crypto.7	comp-c-man	.man
 ./usr/share/man/man7/ct.7	comp-c-man	.man
 ./usr/share/man/man7/evp.7	comp-c-man	.man
+./usr/share/man/man7/openssl_user_macros.7	comp-c-man	.man
 ./usr/share/man/man7/operator.7			comp-c-man		.man
 ./usr/share/man/man7/ossl_store-file.7	comp-c-man	.man
 ./usr/share/man/man7/ossl_store.7	comp-c-man	.man
@@ -28578,6 +28674,7 @@
 ./usr/share/man/man9/accf_data.9		comp-sys-man		.man
 ./usr/share/man/man9/accf_http.9		comp-sys-man		.man
 ./usr/share/man/man9/acl.9			comp-sys-man		.man
+./usr/share/man/man9/acct_process.9		comp-sys-man		.man
 ./usr/share/man/man9/allocbuf.9			comp-sys-man		.man
 ./usr/share/man/man9/altq.9			comp-sys-man		.man
 ./usr/share/man/man9/aprint_debug.9		comp-sys-man		.man
@@ -28893,6 +28990,7 @@
 ./usr/share/man/man9/crypto_newsession.9	comp-sys-man		.man
 ./usr/share/man/man9/crypto_register.9		comp-sys-man		.man
 ./usr/share/man/man9/crypto_unregister.9	comp-sys-man		.man
+./usr/share/man/man9/crashme.9			comp-sys-man		.man
 ./usr/share/man/man9/csf.9			comp-sys-man		.man
 ./usr/share/man/man9/ctob.9			comp-sys-man		.man
 ./usr/share/man/man9/ctod.9			comp-sys-man		.man
@@ -29246,6 +29344,8 @@
 ./usr/share/man/man9/le64enc.9			comp-sys-man		.man
 ./usr/share/man/man9/le64toh.9			comp-sys-man		.man
 ./usr/share/man/man9/linedisc.9			comp-sys-man		.man
+./usr/share/man/man9/lmax.9			comp-sys-man		.man
+./usr/share/man/man9/lmin.9			comp-sys-man		.man
 ./usr/share/man/man9/localcount.9		comp-sys-man		.man
 ./usr/share/man/man9/lock.9			comp-sys-man		.man
 ./usr/share/man/man9/locking.9			comp-sys-man		.man
@@ -29940,7 +30040,11 @@
 ./usr/share/man/man9/ufetch_long.9		comp-sys-man		.man
 ./usr/share/man/man9/ufetch_ptr.9		comp-sys-man		.man
 ./usr/share/man/man9/ufetch_short.9		comp-sys-man		.man
+./usr/share/man/man9/uimax.9			comp-sys-man		.man
+./usr/share/man/man9/uimin.9			comp-sys-man		.man
 ./usr/share/man/man9/uiomove.9			comp-sys-man		.man
+./usr/share/man/man9/ulmax.9			comp-sys-man		.man
+./usr/share/man/man9/ulmin.9			comp-sys-man		.man
 ./usr/share/man/man9/ungetnewvnode.9		comp-obsolete		obsolete
 ./usr/share/man/man9/untimeout.9		comp-sys-man		.man
 ./usr/share/man/man9/uprintf.9			comp-sys-man		.man
@@ -29987,6 +30091,8 @@
 ./usr/share/man/man9/uvm_map_pageable.9		comp-sys-man		.man
 ./usr/share/man/man9/uvm_map_protect.9		comp-sys-man		.man
 ./usr/share/man/man9/uvm_meter.9		comp-sys-man		.man
+./usr/share/man/man9/uvm_obj_unwirepages.9	comp-sys-man		.man
+./usr/share/man/man9/uvm_obj_wirepages.9	comp-sys-man		.man
 ./usr/share/man/man9/uvm_page_physload.9	comp-sys-man		.man
 ./usr/share/man/man9/uvm_pagealloc.9		comp-sys-man		.man
 ./usr/share/man/man9/uvm_pagefree.9		comp-sys-man		.man

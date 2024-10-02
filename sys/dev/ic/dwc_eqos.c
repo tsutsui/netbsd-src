@@ -1,4 +1,4 @@
-/* $NetBSD: dwc_eqos.c,v 1.36 2024/02/10 15:55:00 skrll Exp $ */
+/* $NetBSD: dwc_eqos.c,v 1.39 2024/09/14 07:30:41 skrll Exp $ */
 
 /*-
  * Copyright (c) 2022 Jared McNeill <jmcneill@invisible.ca>
@@ -36,7 +36,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: dwc_eqos.c,v 1.36 2024/02/10 15:55:00 skrll Exp $");
+__KERNEL_RCSID(0, "$NetBSD: dwc_eqos.c,v 1.39 2024/09/14 07:30:41 skrll Exp $");
 
 #include <sys/param.h>
 #include <sys/bus.h>
@@ -572,8 +572,7 @@ eqos_init_rings(struct eqos_softc *sc, int qid)
 	sc->sc_tx.cur = sc->sc_tx.next = sc->sc_tx.queued = 0;
 
 	sc->sc_rx_discarding = false;
-	if (sc->sc_rx_receiving_m != NULL)
-		m_freem(sc->sc_rx_receiving_m);
+	m_freem(sc->sc_rx_receiving_m);
 	sc->sc_rx_receiving_m = NULL;
 	sc->sc_rx_receiving_m_last = NULL;
 
@@ -1235,6 +1234,7 @@ eqos_ioctl(struct ifnet *ifp, u_long cmd, void *data)
 			error = (*ifp->if_init)(ifp);
 		else if (cmd == SIOCADDMULTI || cmd == SIOCDELMULTI) {
 			EQOS_LOCK(sc);
+			sc->sc_promisc = ifp->if_flags & IFF_PROMISC;
 			if (sc->sc_running)
 				eqos_setup_rxfilter(sc);
 			EQOS_UNLOCK(sc);
@@ -1266,7 +1266,7 @@ eqos_get_eaddr(struct eqos_softc *sc, uint8_t *eaddr)
 	machi = RD4(sc, GMAC_MAC_ADDRESS0_HIGH) & 0xFFFF;
 	if ((maclo & 0x00000001) != 0) {
 		aprint_error_dev(sc->sc_dev,
-		    "Wrong MAC address. Clear the multicast bit.\n");
+		    "Wrong MAC address. Clearing the multicast bit.\n");
 		maclo &= ~0x00000001;
 	}
 

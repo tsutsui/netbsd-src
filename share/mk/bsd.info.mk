@@ -1,4 +1,4 @@
-#	$NetBSD: bsd.info.mk,v 1.43 2023/05/01 20:22:18 christos Exp $
+#	$NetBSD: bsd.info.mk,v 1.46 2024/08/18 03:49:23 rin Exp $
 
 .include <bsd.init.mk>
 
@@ -13,6 +13,7 @@ INFOFILES?=
 ##### Build rules
 .if ${MKINFO} != "no"
 
+.if defined(TEXINFO)
 INFOFILES=	${TEXINFO:C/\.te?xi(nfo)?$/.info/}
 
 realall:	${INFOFILES}
@@ -23,6 +24,7 @@ realall:	${INFOFILES}
 .txi.info .texi.info .texinfo.info:
 	${_MKTARGET_CREATE}
 	${TOOL_MAKEINFO} ${INFOFLAGS} --no-split --no-version-header -o ${.TARGET} ${.IMPSRC}
+.endif # defined(TEXINFO)
 
 .endif # ${MKINFO} != "no"
 
@@ -45,6 +47,7 @@ __infoinstall: .USE
 	@[ -f ${INFODIRFILE} ] || touch ${INFODIRFILE}; 		\
 	while ! ln ${INFODIRFILE} ${INFODIRFILE}.lock 2> /dev/null;	\
 		do sleep 1; done;					\
+	! [ -s ${INFODIRFILE} ] && rm -f ${INFODIRFILE} ||		\
 	${TOOL_INSTALL_INFO} -d ${INFODIRFILE} -r ${.TARGET} 2> /dev/null; \
 	${TOOL_INSTALL_INFO} -d ${INFODIRFILE} ${.TARGET};		\
 	${TOOL_SORTINFO} < ${INFODIRFILE} > ${INFODIRFILE}.tmp;		\
@@ -79,7 +82,9 @@ infoinstall::	${_F}
 .endif # ${MKINFO} != "no"
 
 ##### Clean rules
+.if defined(TEXINFO)
 CLEANDIRFILES+=	${INFOFILES}
+.endif
 
 ##### Pull in related .mk logic
 .include <bsd.obj.mk>

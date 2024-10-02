@@ -1,5 +1,5 @@
 #
-#	$NetBSD: GENERIC.common,v 1.11 2024/02/11 09:07:49 skrll Exp $
+#	$NetBSD: GENERIC.common,v 1.15 2024/07/16 12:01:19 riastradh Exp $
 #
 #	GENERIC common RISC-V kernel config items shared between 32 and 64
 #	kernels
@@ -17,8 +17,8 @@ options 	NTP		# NTP phase/frequency locked loop
 options 	KTRACE		# system call tracing via ktrace(1)
 
 # Heartbeat checks
-#options 	HEARTBEAT
-#options 	HEARTBEAT_MAX_PERIOD_DEFAULT=15
+options 	HEARTBEAT
+options 	HEARTBEAT_MAX_PERIOD_DEFAULT=15
 
 # Note: SysV IPC parameters could be changed dynamically, see sysctl(8).
 options 	SYSVMSG		# System V-like message queues
@@ -66,6 +66,7 @@ options 	DKWEDGE_METHOD_BSDLABEL	# Support disklabel entries as wedges
 options 	DKWEDGE_METHOD_MBR	# Support MBR partitions as wedges
 options 	DKWEDGE_METHOD_APPLE    # Support Apple partitions as wedges
 #options 	DKWEDGE_METHOD_RDB	# Support RDB partitions as wedges
+#options 	DKWEDGE_METHOD_TOS	# Support Atari "TOS" partitions as wedges
 
 include 	"conf/filesystems.config"
 
@@ -143,7 +144,7 @@ plic* 		at fdt? pass 2
 com* 		at fdt?			# UART
 
 # Firmware devices
-#qemufwcfg* 	at fdt?			# QEMU Firmware Configuration device
+qemufwcfg* 	at fdt?			# QEMU Firmware Configuration device
 
 # RTC devices
 gfrtc* 		at fdt?			# Google Goldfish RTC
@@ -160,6 +161,7 @@ pseudo-device 	sequencer		# MIDI sequencer
 virtio* 	at fdt?			# Virtio MMIO device
 #viomb* 	at virtio?		# Virtio memory balloon device
 ld* 		at virtio?		# Virtio disk device
+viocon* 	at virtio?		# Virtio serial device
 vioif* 		at virtio?		# Virtio network device
 viornd* 	at virtio?		# Virtio entropy device
 #vioscsi* 	at virtio?		# Virtio SCSI device

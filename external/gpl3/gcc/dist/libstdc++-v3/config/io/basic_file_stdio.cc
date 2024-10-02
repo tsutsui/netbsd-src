@@ -128,7 +128,7 @@ namespace
     for (;;)
       {
 #ifdef _GLIBCXX_USE_STDIO_PURE
-	const std::streamsize __ret = fwrite(__file, 1, __nleft, __file);
+	const std::streamsize __ret = fwrite(__s, 1, __nleft, __file);
 #else
 	const std::streamsize __ret = write(__fd, __s, __nleft);
 #endif
@@ -204,7 +204,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   { this->close(); }
 
   __basic_file<char>*
-  __basic_file<char>::sys_open(__c_file* __file, ios_base::openmode)
+  __basic_file<char>::sys_open(__c_file* __file, ios_base::openmode __mode)
   {
     __basic_file* __ret = NULL;
     if (!this->is_open() && __file)
@@ -213,7 +213,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	// POSIX guarantees that fflush sets errno on error, but C doesn't.
 	errno = 0;
 	do
-	  __err = fflush(__file);
+	  __err = (__mode == std::ios_base::in ? 0 : fflush(__file));
 	while (__err && errno == EINTR);
 	errno = __save_errno;
 	if (!__err)

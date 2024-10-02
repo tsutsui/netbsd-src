@@ -1,4 +1,4 @@
-#	$NetBSD: bsd.prog.mk,v 1.348 2024/02/19 20:39:38 christos Exp $
+#	$NetBSD: bsd.prog.mk,v 1.350 2024/09/24 14:25:43 christos Exp $
 #	@(#)bsd.prog.mk	8.2 (Berkeley) 4/2/94
 
 .ifndef HOSTPROG
@@ -244,10 +244,11 @@ PAM_STATIC_DPADD=
 
 #	NB:	If you are a library here, add it in bsd.README
 #	This list is sorted with -f so that it matches the order in bsd.README
-_X11LIBLIST= dps fntstubs fontcache fontconfig fontenc freetype FS GL GLU \
-    ICE lbxutil SM X11 X11_xcb Xau Xaw xcb xcvt Xdmcp Xext Xfont Xfont2 Xft Xi \
+_X11LIBLIST= dps EGL fntstubs fontcache fontconfig fontenc freetype FS GL GLU \
+    GLw I810XvMC  ICE IntelXvMC lbxutil SM X11 X11_xcb Xres Xau Xau7 Xaw xcb \
+    Xcomposite Xcursor xcvt Xdamage Xdmcp Xext Xfixes Xfont Xfont2 Xft Xi \
     Xinerama xkbfile Xmu Xmuu Xpm Xrandr Xrender Xss Xt XTrap Xtst Xv Xxf86dga \
-    Xxf86misc Xxf86vm Xcomposite Xdamage Xfixes
+    Xxf86misc Xxf86vm
 _XCBLIBLIST= \
     atom aux composite damage dpms dri2 dri3 event glx icccm image keysyms \
     present property randr record render_util render reply res screensaver \
@@ -506,8 +507,9 @@ ${_P}.ro: ${OBJS.${_P}} ${_DPADD.${_P}}
 .if defined(_PROGDEBUG.${_P})
 ${_PROGDEBUG.${_P}}: ${_P}
 	${_MKTARGET_CREATE}
-	(  ${OBJCOPY} --only-keep-debug ${_P} ${_PROGDEBUG.${_P}} \
-	&& ${OBJCOPY} --strip-debug -p -R .gnu_debuglink \
+	( ${OBJCOPY} --only-keep-debug --compress-debug-sections \
+	    ${_P} ${_PROGDEBUG.${_P}} && \
+	  ${OBJCOPY} --strip-debug -p -R .gnu_debuglink \
 		--add-gnu-debuglink=${_PROGDEBUG.${_P}} ${_P} \
 	) || (rm -f ${_PROGDEBUG.${_P}}; false)
 .endif

@@ -1,4 +1,4 @@
-/* $NetBSD: vmt_subr.c,v 1.8 2024/03/20 23:34:24 msaitoh Exp $ */
+/* $NetBSD: vmt_subr.c,v 1.10 2024/05/09 12:09:59 pho Exp $ */
 /* $OpenBSD: vmt.c,v 1.11 2011/01/27 21:29:25 dtucker Exp $ */
 
 /*
@@ -20,7 +20,8 @@
 
 /*
  * Protocol reverse engineered by Ken Kato:
- * https://sites.google.com/site/chitchatvmback/backdoor
+ * https://sites.google.com/site/chitchatvmback/backdoor (dead link)
+ * https://web.archive.org/web/20230325103442/https://sites.google.com/site/chitchatvmback/backdoor (archive)
  */
 
 #include <sys/param.h>
@@ -108,7 +109,6 @@ struct vmt_tclo_rpc {
 	{ "Set_Option broadcastIP 1",	vmt_tclo_broadcastip },
 	{ "ping",			vmt_tclo_ping },
 	{ "reset",			vmt_tclo_reset },
-	{ NULL },
 #if 0
 	/* Various unsupported commands */
 	{ "Set_Option autohide 0" },
@@ -130,6 +130,7 @@ struct vmt_tclo_rpc {
 	{ "Time_Synchronize 0" },
 	{ "Vix_1_Relayed_Command \"38cdcae40e075d66\"" },
 #endif
+	{ NULL, NULL },
 };
 
 extern char hostname[MAXHOSTNAMELEN];

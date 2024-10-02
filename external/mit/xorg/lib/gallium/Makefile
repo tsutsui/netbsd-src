@@ -1,9 +1,11 @@
-# $NetBSD: Makefile,v 1.53 2023/11/25 20:00:25 rjs Exp $
+# $NetBSD: Makefile,v 1.57 2024/09/30 02:55:44 kalvisd Exp $
 
 # Link the gallium mega driver.
 
 LIBISMODULE=	yes
 LIBISCXX=     yes
+
+NOLINT=		# Lots of "Unsupported platform" due to undefined __GNUC__
 
 .include <bsd.own.mk>
 
@@ -17,7 +19,7 @@ DRIDEBUGDIR=	${DEBUGDIR}${X11USRLIBDIR}/modules/dri
 
 LLVM_INCLUDE_OBJDIR!=	cd ${NETBSDSRCDIR}/external/apache2/llvm/include && ${PRINTOBJDIR}
 
-CWARNFLAGS.clang += -Wno-atomic-alignment -Wno-unknown-warning-option -Wno-implicit-int-float-conversion
+CWARNFLAGS.clang += -Wno-atomic-alignment -Wno-unknown-warning-option -Wno-implicit-int-float-conversion -Wno-c99-designator
 
 CXXFLAGS+=	-std=c++14
 CFLAGS+=	-std=gnu11
@@ -1438,6 +1440,15 @@ COPTS+=	${${ACTIVE_CC} == "clang":? -Wa,-Av8plus  :}
 .endif
 
 COPTS.u_atomic.c+=	${${ACTIVE_CC} == "gcc" && ${HAVE_GCC:U0} >= 10:? -Wno-builtin-declaration-mismatch :}
+
+.if ${MACHINE} == "vax"
+COPTS.sp_quad_depth_test.c+=	-O0
+COPTS.u_format_table.c+=	-O0
+.endif
+
+.if ${MACHINE_CPU} == "m68k" && ${HAVE_GCC:U0} == 12
+COPTS.vl_bicubic_filter.c+=	-O1
+.endif
 
 .include <bsd.lib.mk>
 # Don't regenerate c files

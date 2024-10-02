@@ -1,4 +1,4 @@
-$NetBSD: pcidevs,v 1.1503 2024/02/28 18:51:34 jakllsch Exp $
+$NetBSD: pcidevs,v 1.1510 2024/08/20 22:44:04 dogcow Exp $
 
 /*
  * Copyright (c) 1995, 1996 Christopher G. Demetriou
@@ -545,6 +545,7 @@ vendor FORTEMEDIA	0x1319	Forte Media
 vendor SIIG		0x131f	Siig
 vendor MICROMEMORY	0x1332	Micro Memory
 vendor DOMEX		0x134a	Domex
+vendor BRAINBOXES	0x135a	Brainboxes Ltd
 vendor QUATECH		0x135c	Quatech
 vendor LMC		0x1376	LAN Media
 vendor NETGEAR		0x1385	Netgear
@@ -651,6 +652,7 @@ vendor SYMPHONY2	0x1c1c	Symphony Labs (2nd PCI Vendor ID)
 vendor HGST		0x1c58	HGST, Inc.
 vendor BEIJING_MEMBLAZE	0x1c5f	Beijing Memblaze Technology Co. Ltd.
 vendor AMAZON		0x1d0f	Amazon.com, Inc.
+vendor ZHAOXIN		0x1d17	Zhaoxin
 vendor AQUANTIA		0x1d6a	Aquantia
 vendor ROCKCHIP		0x1d87	Rockchip
 vendor TEKRAM2		0x1de1	Tekram Technology (2nd PCI Vendor ID)
@@ -1492,6 +1494,7 @@ product ARECA ARC1203		0x1203	ARC-1203
 product ARECA ARC1210		0x1210	ARC-1210
 product ARECA ARC1214 		0x1214	ARC-1214
 product ARECA ARC1220		0x1220	ARC-1220
+product ARECA ARC1224		0x1224	ARC-1224
 product ARECA ARC1230		0x1230	ARC-1230
 product ARECA ARC1260		0x1260	ARC-1260
 product ARECA ARC1270		0x1270	ARC-1270
@@ -2504,6 +2507,59 @@ product BIT3 PCIVME2706		0x0300	PCI-VME Interface Mod. 2706
 /* Bluesteel Networks */
 product BLUESTEEL 5501		0x0000	5501
 product BLUESTEEL 5601		0x5601	5601
+
+/* Brainboxes products */
+product BRAINBOXES UC268	0x0841	Brainboxes UC-268
+product BRAINBOXES UC257	0x0861	Brainboxes UC-257
+product BRAINBOXES UC257R3	0x0862	Brainboxes UC-257
+product BRAINBOXES UC257R4	0x0863	Brainboxes UC-257
+product BRAINBOXES UC279	0x0881	Brainboxes UC-279
+product BRAINBOXES UC313	0x08a1	Brainboxes UC-313
+product BRAINBOXES UC313R3	0x08a2	Brainboxes UC-313
+product BRAINBOXES UC313R4	0x08a3	Brainboxes UC-313
+product BRAINBOXES UC310	0x08c1	Brainboxes UC-310
+product BRAINBOXES UC302	0x08e1	Brainboxes UC-302
+product BRAINBOXES UC302R3	0x08e2	Brainboxes UC-302
+product BRAINBOXES UC302R4	0x08e3	Brainboxes UC-302
+product BRAINBOXES UC431	0x0901	Brainboxes UC-431
+product BRAINBOXES UC420	0x0921	Brainboxes UC-420
+product BRAINBOXES UC475	0x0981	Brainboxes UC-475
+product BRAINBOXES UC475R3	0x0982	Brainboxes UC-475
+product BRAINBOXES UC607	0x09a1	Brainboxes UC-607
+product BRAINBOXES UC607R3	0x09a2	Brainboxes UC-607
+product BRAINBOXES UC607R4	0x09a3	Brainboxes UC-607
+product BRAINBOXES UC324	0x0a61	Brainboxes UC-324
+product BRAINBOXES UC357	0x0a81	Brainboxes UC-357
+product BRAINBOXES UC357R3	0x0a82	Brainboxes UC-357
+product BRAINBOXES UC357R4	0x0a83	Brainboxes UC-357
+product BRAINBOXES UC246	0x0aa1	Brainboxes UC-246
+product BRAINBOXES UC246R3	0x0aa2	Brainboxes UC-246
+product BRAINBOXES UP189	0x0ac1	Brainboxes UP-189
+product BRAINBOXES UP189R3	0x0ac2	Brainboxes UP-189
+product BRAINBOXES UP189R4	0x0ac3	Brainboxes UP-189
+product BRAINBOXES UC346	0x0b01	Brainboxes UC-346
+product BRAINBOXES UC346R3	0x0b02	Brainboxes UC-346
+product BRAINBOXES UP200	0x0b21	Brainboxes UP-200
+product BRAINBOXES UP200R3	0x0b22	Brainboxes UP-200
+product BRAINBOXES UP200R4	0x0b23	Brainboxes UP-200
+product BRAINBOXES UC101	0x0ba1	Brainboxes UC-101
+product BRAINBOXES UC203	0x0bc1	Brainboxes UC-203
+product BRAINBOXES UC203R3	0x0bc2	Brainboxes UC-203
+product BRAINBOXES UP869	0x0c01	Brainboxes UP-869
+product BRAINBOXES UP869R3	0x0c02	Brainboxes UP-869
+product BRAINBOXES UP869R4	0x0c03	Brainboxes UP-869
+product BRAINBOXES UP880	0x0c21	Brainboxes UP-880
+product BRAINBOXES UP880R3	0x0c22	Brainboxes UP-880
+product BRAINBOXES UP880R4	0x0c23	Brainboxes UP-880
+product BRAINBOXES UC368	0x0c41	Brainboxes UC-368
+product BRAINBOXES UC253	0x0ca1	Brainboxes UC-253
+product BRAINBOXES UC260	0x0d21	Brainboxes UC-260
+product BRAINBOXES UC836	0x0d41	Brainboxes UC-836
+product BRAINBOXES IS100	0x0d60	Intashield IS-100
+product BRAINBOXES IS200	0x0d80	Intashield IS-200
+product BRAINBOXES IS300	0x0da0	Intashield IS-300
+product BRAINBOXES IS400	0x0dc0	Intashield IS-400
+product BRAINBOXES UC414	0x0e61	Brainboxes UC-414
 
 /* Broadcom products */
 product BROADCOM BCM5752	0x1600	BCM5752 NetXtreme 1000baseT Ethernet
@@ -6311,6 +6367,26 @@ product INTEL I219_LM20		0x550e	I219-LM (20) Ethernet Connection
 product INTEL I219_V20		0x550f	I219-V (20) Ethernet Connection
 product INTEL I219_LM21		0x5510	I219-LM (21) Ethernet Connection
 product INTEL I219_V21		0x5511	I219-V (21) Ethernet Connection
+product INTEL ARC_A770M		0x5690	Arc A770M Graphics
+product INTEL ARC_A730M		0x5691	Arc A730M Graphics
+product INTEL ARC_A550M		0x5692	Arc A550M Graphics
+product INTEL ARC_A370M		0x5693	Arc A370M Graphics
+product INTEL ARC_A350M		0x5694	Arc A350M Graphics
+product INTEL ARC_A570M		0x5696	Arc A570M Graphics
+product INTEL ARC_A530M		0x5697	Arc A530M Graphics
+product INTEL ARC_A770		0x56A0	Arc A770 Graphics
+product INTEL ARC_A750		0x56A1	Arc A750 Graphics
+product INTEL ARC_A580		0x56A2	Arc A580 Graphics
+product INTEL ARC_A380		0x56A5	Arc A380 Graphics
+product INTEL ARC_A310		0x56A6	Arc A310 Graphics
+product INTEL ARC_PRO_A30M	0x56B0	Arc Pro A30M Graphics
+product INTEL ARC_PRO_A40	0x56B1	Arc Pro A40/A50 Graphics
+product INTEL ARC_PRO_A60M	0x56B2	Arc Pro A60M Graphics
+product INTEL ARC_PRO_A60	0x56B3	Arc Pro A60 Graphics
+product INTEL ARC_A810E		0x56BA	Arc A810E Graphics
+product INTEL ARC_A310E		0x56BB	Arc A310E Graphics
+product INTEL ARC_A370E		0x56BC	Arc A370E Graphics
+product INTEL ARC_A350E		0x56BD	Arc A350E Graphics
 product INTEL CORE7G_H_M_D_HOST_DRAM 0x5900 Core 7G (H, Mobile, Dual) Host Bridge, DRAM
 product INTEL CORE7G_PCIE_X16	0x5901	Core 7G PCIe x16
 product INTEL CORE7G_S_GT1	0x5902	HD Graphics 610 (GT1)
@@ -7475,6 +7551,9 @@ product INTEL RPL_IGD_6		0xa7a0	Raptor Lake Graphics (96 or 80EU)
 product INTEL RPL_IGD_7		0xa7a1	Raptor Lake Graphics (96 or 80EU)
 product INTEL RPL_IGD_8		0xa7a8	Raptor Lake Graphics (64 or 48EU)
 product INTEL RPL_IGD_9		0xa7a9	Raptor Lake Graphics (64 or 48EU)
+product INTEL RPL_IGD_10	0xa7aa	Raptor Lake Graphics (96 or 80EU)
+product INTEL RPL_IGD_11	0xa7ac	Raptor Lake Graphics (96 or 80EU)
+product INTEL RPL_IGD_12	0xa7ad	Raptor Lake Graphics (64EU)
 product INTEL 21152		0xb152	S21152BB PCI-PCI Bridge
 product INTEL 21154		0xb154	S21152BA,S21154AE/BE PCI-PCI Bridge
 product INTEL 21555		0xb555	21555 Non-Transparent PCI-PCI Bridge
@@ -7855,8 +7934,10 @@ product PHILIPS SAA7135HL	0x7135	SAA7135HL PCI A/V Broadcast Decoder
 product PHILIPS SAA7146AH	0x7146	SAA7146AH PCI Multimedia Bridge
 
 /* Phison products */
-product PHISON PS5000		0x5000 PS5000
-product PHISON PS5016		0x5016 PS5016
+product PHISON PS5000		0x5000	PS5000
+product PHISON PS5016		0x5016	PS5016
+product PHISON PS5021		0x5021	PS5021
+product PHISON PS5026		0x5026	PS5026
 
 /* NCR/Symbios Logic products */
 product SYMBIOS 810			0x0001	53c810
@@ -9206,6 +9287,7 @@ product REALTEK RT8029		0x8029	8029 Ethernet
 product REALTEK RT8139D		0x8039	8139D 10/100 Ethernet
 product REALTEK RT8100		0x8100	8100 10/100 Ethernet
 product REALTEK RT8125		0x8125	8125 10/100/1G/2.5G Ethernet
+product REALTEK RT8126		0x8126	8126 10/100/1G/2.5G/5G Ethernet
 product REALTEK RT8129		0x8129	8129 10/100 Ethernet
 product REALTEK RT8101E		0x8136	8100E/8101E/8102E 10/100 Ethernet
 product REALTEK RT8138		0x8138	8138 10/100 Ethernet
@@ -10172,6 +10254,47 @@ product ZEINET 1221	0x0001	1221
 
 /* Ziatech products */
 product ZIATECH ZT8905	0x8905 PCI-ST32 Bridge
+
+/* Zhaoxin products */
+product ZHAOXIN ZX100_PCIE		0x0708	ZX-100 PCI Express Root Port
+product ZHAOXIN ZX200_PCIE_0		0x0710	ZX-100/ZX-200 PCI Express Root Port
+product ZHAOXIN ZX200_PCIE_1		0x0711	ZX-100/ZX-200 PCI Express Root Port
+product ZHAOXIN ZX200_PCIE_2		0x0712	ZX-100/ZX-200 PCI Express Root Port
+product ZHAOXIN ZX200_PCIE_3		0x0713	ZX-100/ZX-200 PCI Express Root Port
+product ZHAOXIN ZX200_PCIE_4		0x0714	ZX-100/ZX-200 PCI Express Root Port
+product ZHAOXIN ZX200_PCIE_5		0x0715	ZX-100/ZX-200 PCI Express Root Port
+product ZHAOXIN ZXD_PCIE		0x0716	ZX-D PCI Express Root Port
+product ZHAOXIN KX_PCIE_0		0x0717	KX-5000|6000(G)|7000 / KH-40000 PCI Express Root Port
+product ZHAOXIN KX_PCIE_1		0x0718	KX-5000|6000(G)|7000 / KH-40000 PCI Express Root Port
+product ZHAOXIN KX_PCIE_2		0x0719	KX-5000|6000(G)|7000 / KH-40000 PCI Express Root Port
+product ZHAOXIN KX_PCIE_3		0x071a	KX-5000|6000(G) / KH-40000 PCI Express Root Port
+product ZHAOXIN KX_PCIE_4		0x071b	KX-5000|6000(G)|7000 / KH-40000 PCI Express Root Port
+product ZHAOXIN KX_PCIE_5		0x071c	KX-5000|6000(G)|7000 / KH-40000 PCI Express Root Port
+product ZHAOXIN KX_PCIE_6		0x071d	KX-5000|6000(G) / KH-40000 PCI Express Root Port
+product ZHAOXIN KX_PCIE_7		0x071e	KX-5000|6000(G)|7000 / KH-40000 PCI Express Root Port
+product ZHAOXIN ZX200_UP_PCIE_SWITCH	0x071f	ZX-200 Upstream Port of PCI Express Switch
+product ZHAOXIN ZX200_DP_PCIE_SWITCH	0x0721	ZX-200 Downstream Port of PCI Express Switch
+product ZHAOXIN ZX200_PCIE_PC2_BRIDGE	0x0722	ZX-200 PCIE P2C bridge
+product ZHAOXIN ZX_MISC_BUS		0x1001	ZX-D/ZX-E/KH-40000/KX-7000 Miscellaneous Bus
+product ZHAOXIN ZX_PCHB_0		0x1003	ZX-E Standard Host Bridge
+product ZHAOXIN ZX_UHCI			0x3038	USB UHCI Controller
+product ZHAOXIN ZX_EHCI			0x3104	USB EHCI Controller
+product ZHAOXIN ZX_PCHB_1		0x31b0	ZX-100 / KX-5000|6000(G)|7000 / KH-40000 Standard Host Bridge
+product ZHAOXIN ZX_PCHB_2		0x31b1	ZX-100 / KX-5000|6000(G)|7000 / KH-40000 Standard Host Bridge
+product ZHAOXIN ZX_DRAM			0x31b2	ZX-100 / KX-5000|6000(G)|7000 / KH-40000 DRAM Controller
+product ZHAOXIN ZX_PMC			0x31b3	ZX-100 / KX-5000|6000(G)|7000 / KH-40000 Power Management Controller
+product ZHAOXIN ZX_IOAPIC		0x31b4	ZX-100 / KX-5000|6000(G)|7000 / KH-40000 I/O APIC
+product ZHAOXIN ZX_SCRATCH		0x31b5	ZX-100 / KX-5000|6000(G)|7000 / KH-40000 Scratch Device
+product ZHAOXIN ZX_PCHB_3		0x31b7	ZX-100 / KX-5000|6000(G)|7000 / KH-40000 Standard Host Bridge
+product ZHAOXIN C320_GPU		0x3a02	ZX-100 C-320 GPU
+product ZHAOXIN C860_GPU		0x3a03	ZX-D C-860 Integrated Graphics
+product ZHAOXIN C960_GPU		0x3a04	KX-6000 C-960 Integrated Graphics
+product ZHAOXIN C1190_GPU		0x3a05	KX-7000 C-1190 Integrated Graphics
+product ZHAOXIN ZX200_AHCI		0x9083	StorX AHCI Controller
+product ZHAOXIN ZXE_HDAUDIO 		0x9144	ZX-E High Definition Audio Controller
+product ZHAOXIN ZX100_XHCI		0x9202	ZX-100 USB xHCI Controller
+product ZHAOXIN ZX200_XHCI		0x9203	ZX-200 USB xHCI Controller
+product ZHAOXIN KX_XHCI			0x9204	KX-6000(G)|7000 USB xHCI Controller
 
 /* Zoran products */
 product ZORAN ZR36057	0x6057 ZR36057 Multimedia Controller

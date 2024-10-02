@@ -1,4 +1,4 @@
-/*	$NetBSD: util.c,v 1.74 2023/11/20 18:03:55 martin Exp $	*/
+/*	$NetBSD: util.c,v 1.77 2024/04/25 11:25:08 hannken Exp $	*/
 
 /*
  * Copyright 1997 Piermont Information Systems Inc.
@@ -122,6 +122,12 @@ distinfo dist_list[] = {
 	{"modules",		SET_MODULES,		false, MSG_set_modules, NULL},
 #endif
 	{"base",		SET_BASE,		false, MSG_set_base, NULL},
+#ifdef HAVE_BASE32
+	{"base32",		SET_BASE32,		false, MSG_set_base32, NULL},
+#endif
+#ifdef HAVE_BASE64
+	{"base64",		SET_BASE64,		false, MSG_set_base64, NULL},
+#endif
 #ifdef HAVE_DTB
 	{"dtb",			SET_DTB,		false, MSG_set_dtb, NULL},
 #endif
@@ -130,6 +136,7 @@ distinfo dist_list[] = {
 	{"games",		SET_GAMES,		false, MSG_set_games, NULL},
 	{"gpufw",		SET_GPUFW,		false, MSG_set_gpufw, NULL},
 	{"man",			SET_MAN_PAGES,		false, MSG_set_man_pages, NULL},
+	{"manhtml",		SET_MAN_PAGES_HTML,	false, MSG_set_man_pages_html, NULL},
 	{"misc",		SET_MISC,		false, MSG_set_misc, NULL},
 	{"rescue",		SET_RESCUE,		false, MSG_set_rescue, NULL},
 	{"tests",		SET_TESTS,		false, MSG_set_tests, NULL},
@@ -163,6 +170,12 @@ distinfo dist_list[] = {
 	{"gnusrc",		SET_GNUSRC,		true, MSG_set_gnusrc, NULL},
 	{"xsrc",		SET_XSRC,		true, MSG_set_xsrc, NULL},
 	{"debug",		SET_DEBUG,		false, MSG_set_debug, NULL},
+#ifdef HAVE_DEBUG32
+	{"debug32",		SET_DEBUG32,		false, MSG_set_debug32, NULL},
+#endif
+#ifdef HAVE_DEBUG64
+	{"debug64",		SET_DEBUG64,		false, MSG_set_debug64, NULL},
+#endif
 	{"xdebug",		SET_X11_DEBUG,		false, MSG_set_xdebug, NULL},
 	{NULL,			SET_GROUP_END,		false, NULL, NULL},
 
@@ -233,7 +246,7 @@ init_set_status(int flags)
 	i = strlen(msg_all); if (i > len) {len = i; longest = msg_all; }
 	i = strlen(msg_some); if (i > len) {len = i; longest = msg_some; }
 	i = strlen(msg_none); if (i > len) {len = i; longest = msg_none; }
-	select_menu_width = snprintf(NULL, 0, "%-30s %s", "", longest);
+	select_menu_width = snprintf(NULL, 0, "%-40s %s", "", longest);
 
 	/* Give the md code a chance to choose the right kernel, etc. */
 	md_init_set_status(flags);
@@ -857,7 +870,7 @@ set_label(menudesc *menu, int opt, void *arg)
 		}
 	}
 
-	wprintw(menu->mw, "%-30s %s", msg_string(desc), selected);
+	wprintw(menu->mw, "%-40s %s", msg_string(desc), selected);
 }
 
 static int set_sublist(menudesc *menu, void *arg);

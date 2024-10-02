@@ -1,4 +1,4 @@
-/*	$NetBSD: hd64570reg.h,v 1.11 2005/12/11 12:21:26 christos Exp $	*/
+/*	$NetBSD: hd64570reg.h,v 1.14 2024/09/14 21:12:10 andvar Exp $	*/
 
 /*
  * Copyright (c) 1998 Vixie Enterprises
@@ -79,7 +79,7 @@ struct hdlc_llc_header {
 };
 
 /*
- * Hitachi HD64570  defininitions
+ * Hitachi HD64570  definitions
  */
 
 /*  SCA Control Registers  */
@@ -340,7 +340,7 @@ struct hdlc_llc_header {
 #define SCA_RXS_CLK_ADPLL_OUT   0x60	/* BRG out for ADPLL clock */
 #define SCA_RXS_CLK_ADPLL_IN    0x70	/* line input for ADPLL clock */
 
-#define SCA_TXS_DIV_MASK	0x0F	/* BRG divisor is 2^(valud) */
+#define SCA_TXS_DIV_MASK	0x0F	/* BRG divisor is 2^(value) */
 #define SCA_TXS_DIV_1		0x00	/* 1 */
 #define SCA_TXS_DIV_2		0x01	/* 2 */
 #define SCA_TXS_DIV_4		0x02	/* 4 */
@@ -434,7 +434,7 @@ struct hdlc_llc_header {
 #define	SCA_ISR2_TIMER_IRQ3	0x80	/* timer channel 3 int */
 
 /* masks/values for the Interrupt Control Register (ITCR) */
-#define SCA_ITCR_INTR_PRI_MASK	0x80	/* priority of intrerrupts */
+#define SCA_ITCR_INTR_PRI_MASK	0x80	/* priority of interrupts */
 #define	SCA_ITCR_INTR_PRI_MSCI	0x00	/* msci over dmac */
 #define	SCA_ITCR_INTR_PRI_DMAC	0x80	/* dmac over msci */
 #define	SCA_ITCR_ACK_MASK	0x60	/* mask for intr ack cycle setting */

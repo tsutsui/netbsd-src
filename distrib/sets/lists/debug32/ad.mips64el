@@ -1,0 +1,4 @@
+# $NetBSD: ad.mips64el,v 1.15 2024/07/11 08:13:49 riastradh Exp $
+#
+./usr/libdata/debug/libexec/ld.elf_so-o32.debug	comp-sys-debug		debug,compat
+./usr/libdata/debug/usr/libexec/ld.elf_so-o32.debug	comp-sys-debug		debug,compat

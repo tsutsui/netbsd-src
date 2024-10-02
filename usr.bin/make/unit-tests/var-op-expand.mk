@@ -1,4 +1,4 @@
-# $NetBSD: var-op-expand.mk,v 1.19 2023/11/19 21:47:52 rillig Exp $
+# $NetBSD: var-op-expand.mk,v 1.22 2024/08/29 20:20:36 rillig Exp $
 #
 # Tests for the := variable assignment operator, which expands its
 # right-hand side.

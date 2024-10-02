@@ -1,5 +1,5 @@
 /*	$KAME: sctputil.h,v 1.15 2005/03/06 16:04:19 itojun Exp $	*/
-/*	$NetBSD: sctputil.h,v 1.3 2020/01/19 20:51:13 riastradh Exp $ */
+/*	$NetBSD: sctputil.h,v 1.5 2024/07/05 04:26:50 rin Exp $ */
 
 #ifndef __SCTPUTIL_H__
 #define __SCTPUTIL_H__
@@ -37,9 +37,10 @@
 
 #ifdef SCTP_MBUF_DEBUG
 #define sctp_m_freem(m) do { \
+    struct mbuf *_m = (m);
     printf("m_freem(%p) m->nxtpkt:%p at %s[%d]\n", \
-	   (m), (m)->m_next, __FILE__, __LINE__); \
-    m_freem(m); \
+	   _m, _m != NULL ? _m->m_next : NULL, __FILE__, __LINE__); \
+    m_freem(_m); \
 } while (0);
 #else
 #define sctp_m_freem m_freem
@@ -85,7 +86,7 @@
 	pool_init(&(zone), size, 0, 0, 0, name, NULL, IPL_NET);
 #else
 	/* don't know this OS! */
-	force_comile_error;
+	force_compile_error;
 #endif
 
 /* SCTP_ZONE_GET: allocate element from the zone */
@@ -105,7 +106,7 @@
 	pool_get(&zone, PR_NOWAIT);
 #else
 	/* don't know this OS! */
-	force_comile_error;
+	force_compile_error;
 #endif
 
 /* SCTP_ZONE_FREE: free element from the zone */
@@ -125,7 +126,7 @@
 	pool_put(&zone, element);
 #else
 	/* don't know this OS! */
-	force_comile_error;
+	force_compile_error;
 #endif
 
 #define sctp_get_associd(stcb) ((sctp_assoc_t)stcb->asoc.my_vtag)

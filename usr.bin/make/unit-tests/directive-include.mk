@@ -1,4 +1,4 @@
-# $NetBSD: directive-include.mk,v 1.13 2023/08/19 10:52:14 rillig Exp $
+# $NetBSD: directive-include.mk,v 1.16 2024/08/29 20:20:36 rillig Exp $
 #
 # Tests for the .include directive, which includes another file.
 

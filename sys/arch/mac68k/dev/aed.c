@@ -1,6 +1,9 @@
-/*	$NetBSD: aed.c,v 1.38 2021/09/26 16:36:18 thorpej Exp $	*/
+/*	$NetBSD: aed.c,v 1.40 2024/09/14 20:59:45 nat Exp $	*/
 
 /*
+ * Copyright (c) 2024 Nathanial Sloss <nathanialsloss@yahoo.com.au>
+ * All rights reserved.
+ *
  * Copyright (C) 1994	Bradley A. Grantham
  * All rights reserved.
  *
@@ -26,7 +29,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: aed.c,v 1.38 2021/09/26 16:36:18 thorpej Exp $");
+__KERNEL_RCSID(0, "$NetBSD: aed.c,v 1.40 2024/09/14 20:59:45 nat Exp $");
 
 #include "opt_adb.h"
 
@@ -48,6 +51,11 @@ __KERNEL_RCSID(0, "$NetBSD: aed.c,v 1.38 2021/09/26 16:36:18 thorpej Exp $");
 #include <mac68k/dev/adbvar.h>
 #include <mac68k/dev/aedvar.h>
 #include <mac68k/dev/akbdvar.h>
+#include <mac68k/dev/pm_direct.h>
+
+#define BRIGHTNESS_MAX	31
+#define BRIGHTNESS_MIN	0
+#define BRIGHTNESS_STEP	4
 
 /*
  * Function declarations.
@@ -60,11 +68,15 @@ static void	aed_dokeyupdown(adb_event_t *);
 static void	aed_handoff(adb_event_t *);
 static void	aed_enqevent(adb_event_t *);
 
+static void	aed_brightness_down(device_t);
+static void	aed_brightness_up(device_t);
+
 /*
  * Local variables.
  */
 static struct aed_softc *aed_sc;
 static int aed_options = 0 | AED_MSEMUL;
+static int brightness = BRIGHTNESS_MAX;
 
 /* Driver definition */
 CFATTACH_DECL_NEW(aed, sizeof(struct aed_softc),
@@ -139,6 +151,11 @@ aedattach(device_t parent, device_t self, void *aux)
 
 	aed_sc = sc;
 
+	pmf_event_register(self, PMFE_DISPLAY_BRIGHTNESS_UP,
+	    aed_brightness_up, TRUE);
+	pmf_event_register(self, PMFE_DISPLAY_BRIGHTNESS_DOWN,
+	    aed_brightness_down, TRUE);
+
 	printf("ADB Event device\n");
 
 	return;
@@ -164,6 +181,7 @@ aed_input(adb_event_t *event)
 			aed_dokeyupdown(&new_event);
 		break;
 	case ADBADDR_MS:
+		event->u.m.buttons |= aed_sc->sc_buttons;
 		new_event.u.m.buttons |= aed_sc->sc_buttons;
 		aed_handoff(&new_event);
 		break;
@@ -266,6 +284,12 @@ aed_emulate_mouse(adb_event_t *event)
 			new_event.u.m.dx = new_event.u.m.dy = 0;
 			microtime(&new_event.timestamp);
 			aed_handoff(&new_event);
+			break;
+		case ADBK_KEYUP(ADBK_UP):
+			pmf_event_inject(NULL, PMFE_DISPLAY_BRIGHTNESS_UP);
+			break;
+		case ADBK_KEYUP(ADBK_DOWN):
+			pmf_event_inject(NULL, PMFE_DISPLAY_BRIGHTNESS_DOWN);
 			break;
 		case ADBK_KEYUP(ADBK_SHIFT):
 		case ADBK_KEYDOWN(ADBK_SHIFT):
@@ -626,4 +650,34 @@ aedkqfilter(dev_t dev, struct knote *kn)
 	}
 
 	return (0);
+}
+
+static void
+aed_brightness_down(device_t dev)
+{
+	int level, step;
+
+	level = brightness;
+	if (level <= 4) 	 /* logarithmic brightness curve. */
+		step = 1;
+	else
+		step = BRIGHTNESS_STEP;
+
+	level = uimax(BRIGHTNESS_MIN, level - step);
+	brightness = pm_set_brightness(level);
+}
+
+static void
+aed_brightness_up(device_t dev)
+{
+	int level, step;
+
+	level = brightness;
+	if (level <= 4) 	 /* logarithmic brightness curve. */
+		step = 1;
+	else
+		step = BRIGHTNESS_STEP;
+
+	level = uimin(BRIGHTNESS_MAX, level + step);
+	brightness = pm_set_brightness(level);
 }

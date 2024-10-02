@@ -1,4 +1,4 @@
-/* $NetBSD: t_snprintb.c,v 1.31 2024/03/25 20:39:27 rillig Exp $ */
+/* $NetBSD: t_snprintb.c,v 1.36 2024/04/08 21:28:35 rillig Exp $ */
 
 /*
  * Copyright (c) 2002, 2004, 2008, 2010, 2024 The NetBSD Foundation, Inc.
@@ -32,7 +32,7 @@
 #include <sys/cdefs.h>
 __COPYRIGHT("@(#) Copyright (c) 2008, 2010, 2024\
  The NetBSD Foundation, inc. All rights reserved.");
-__RCSID("$NetBSD: t_snprintb.c,v 1.31 2024/03/25 20:39:27 rillig Exp $");
+__RCSID("$NetBSD: t_snprintb.c,v 1.36 2024/04/08 21:28:35 rillig Exp $");
 
 #include <stdio.h>
 #include <string.h>
@@ -42,19 +42,16 @@ __RCSID("$NetBSD: t_snprintb.c,v 1.31 2024/03/25 20:39:27 rillig Exp $");
 #include <atf-c.h>
 
 static const char *
-vis_arr(const char *arr, size_t arrsize)
+vis_arr(char *buf, size_t bufsize, const char *arr, size_t arrsize)
 {
-	static char buf[3][1024];
-	static size_t i;
-
-	i = (i + 1) % (sizeof(buf) / sizeof(buf[0]));
-	int rv = strnvisx(buf[i] + 1, sizeof(buf[i]) - 2, arr, arrsize,
+	ATF_REQUIRE(bufsize >= 2);
+	int rv = strnvisx(buf + 1, bufsize - 2, arr, arrsize,
 	    VIS_WHITE | VIS_OCTAL);
 	ATF_REQUIRE_MSG(rv >= 0, "buffer too small for size %zu", arrsize);
-	buf[i][0] = '"';
-	buf[i][1 + rv] = '"';
-	buf[i][1 + rv + 1] = '\0';
-	return buf[i];
+	buf[0] = '"';
+	buf[1 + rv] = '"';
+	buf[1 + rv + 1] = '\0';
+	return buf;
 }
 
 static void
@@ -63,7 +60,7 @@ check_snprintb_m(const char *file, size_t line,
     size_t line_max,
     int want_rv, const char *want_buf, size_t want_bufsize)
 {
-	char buf[1024];
+	char buf[1024], vis_bitfmt[1024], vis_want_buf[1024], vis_buf[1024];
 
 	ATF_REQUIRE(bufsize <= sizeof(buf));
 	ATF_REQUIRE(want_bufsize <= sizeof(buf));
@@ -103,11 +100,12 @@ check_snprintb_m(const char *file, size_t line,
 	    "\twant: %d bytes %s\n"
 	    "\thave: %d bytes %s\n",
 	    file, line,
-	    vis_arr(bitfmt, bitfmtlen),
+	    vis_arr(vis_bitfmt, sizeof(vis_bitfmt), bitfmt, bitfmtlen),
 	    (uintmax_t)val,
 	    line_max,
-	    want_rv, vis_arr(want_buf, want_bufsize),
-	    rv, vis_arr(buf, have_bufsize));
+	    want_rv, vis_arr(vis_want_buf, sizeof(vis_want_buf),
+		want_buf, want_bufsize),
+	    rv, vis_arr(vis_buf, sizeof(vis_buf), buf, have_bufsize));
 }
 
 #define	h_snprintb_m_len(bufsize, bitfmt, val, line_max,		\
@@ -124,6 +122,9 @@ check_snprintb_m(const char *file, size_t line,
 
 #define	h_snprintb_error(bitfmt, want_buf)				\
 	h_snprintb_m_len(1024, bitfmt, 0x00, 0, -1, want_buf)
+
+#define	h_snprintb_val_error(bitfmt, val, want_buf)			\
+	h_snprintb_m_len(1024, bitfmt, val, 0, -1, want_buf)
 
 #define	h_snprintb_m(bitfmt, val, line_max, want_buf)			\
 	h_snprintb_m_len(1024, bitfmt, val, line_max,			\
@@ -308,16 +309,16 @@ ATF_TC_BODY(snprintb, tc)
 
 	// old style, empty description
 	//
-	// Empty descriptions result in multiple commas in a row, which is a
-	// mistake.
-	h_snprintb(
+	// The description of a bit in the old format must not be empty,
+	// to prevent multiple commas in a row.
+	h_snprintb_val_error(
 	    "\020"
 	    "\001lsb"
 	    "\004"
 	    "\005"
 	    "\010msb",
 	    0xff,
-	    "0xff<lsb,,,msb>");
+	    "0xff<lsb#");
 
 	// old style, buffer size 0, null buffer
 	//
@@ -417,16 +418,18 @@ ATF_TC_BODY(snprintb, tc)
 	    0xff,
 	    "0xff<lsb,lsb,lsb>");
 
-	// new style single bits, empty description
-	h_snprintb(
+	// new style single bits, 'b' with empty description
+	//
+	// The description of a 'b' conversion must not be empty, as the
+	// output would contain several commas in a row.
+	h_snprintb_val_error(
 	    "\177\020"
 	    "b\000lsb\0"
 	    "b\001\0"
 	    "b\002\0"
-	    "b\007msb\0"
-	    ,
+	    "b\007msb\0",
 	    0xff,
-	    "0xff<lsb,,,msb>");
+	    "0xff<lsb#");
 
 	// new style single bits, bit number too large
 	h_snprintb_error(
@@ -585,16 +588,16 @@ ATF_TC_BODY(snprintb, tc)
 	    "f\101\000uint0\0",
 	    "0#");
 
-	// new style bit-field, empty field description
+	// new style bit-field, 'f' with empty description
 	//
-	// An empty field description results in an isolated '=', which is a
-	// mistake.
-	h_snprintb(
+	// The description of an 'f' conversion must not be empty, as the
+	// output would contain an isolated '='.
+	h_snprintb_val_error(
 	    "\177\020"
 	    "f\000\004\0"
 		"=\001one\0",
 	    0x1,
-	    "0x1<=0x1=one>");
+	    "0x1#");
 
 	// new style bit-field, non-printable description
 	//
@@ -614,41 +617,42 @@ ATF_TC_BODY(snprintb, tc)
 
 	// new style bit-field, '=' with empty description
 	//
-	// The description of a '=' directive should not be empty, as the
-	// outputs contains several '=' in a row.
-	h_snprintb(
+	// The description of a '=' conversion must not be empty, as the
+	// output would contain several '=' in a row.
+	h_snprintb_val_error(
 	    "\177\020"
 	    "f\000\004f\0"
 		"=\001one\0"
 		"=\001\0"
 		"=\001\0",
 	    0x1,
-	    "0x1<f=0x1=one==>");
+	    "0x1<f=0x1=one#");
 
 	// new style bit-field, 'F' followed by ':' with empty description
 	//
-	// An empty description of a ':' directive that doesn't match results
-	// in empty angle brackets, which is a mistake.
-	h_snprintb(
+	// The description of a ':' conversion must not be empty, as the
+	// output would contain empty angle brackets.
+	h_snprintb_val_error(
 	    "\177\020"
 	    "F\000\004\0"
 		":\001\0"
 		"*default\0",
 	    0x1,
-	    "0x1<>");
+	    "0x1<#");
 
 	// new style bit-field, 'F', ':' with empty description, '*'
 	//
-	// An empty description of a ':' directive that matches results in
-	// normal-looking output, but if it didn't match, the output would
-	// contain empty angle brackets, which is a mistake.
-	h_snprintb(
+	// The description of a ':' conversion must not be empty, as the
+	// output would contain empty angle brackets. Not in this particular
+	// test case, as the value is different, but the structural error is
+	// detected nevertheless.
+	h_snprintb_val_error(
 	    "\177\020"
 	    "F\000\004\0"
 		":\001\0"
 		"*default\0",
 	    0x2,
-	    "0x2<default>");
+	    "0x2<#");
 
 	// new style bit-field, 'f' with non-exhaustive '='
 	h_snprintb(
@@ -675,8 +679,8 @@ ATF_TC_BODY(snprintb, tc)
 	// new style bit-field, 'F' with non-exhaustive ':'
 	//
 	// A bit-field that does not match any values generates multiple commas
-	// in a row, which looks confusing. The ':' directives should either be
-	// exhaustive, or there should be a '*' catch-all directive.
+	// in a row, which looks confusing. The ':' conversions should either be
+	// exhaustive, or there should be a '*' catch-all conversion.
 	h_snprintb(
 	    "\177\020"
 	    "b\000bit0\0"
@@ -737,7 +741,7 @@ ATF_TC_BODY(snprintb, tc)
 
 	// new style bit-field, difference between '=' and ':'
 	//
-	// The ':' directive can almost emulate the '=' directive, without the
+	// The ':' conversion can almost emulate the '=' conversion, without the
 	// numeric output and with a different separator. It's best to use
 	// either 'f' with '=', or 'F' with ':', but not mix them.
 	h_snprintb(
@@ -753,9 +757,9 @@ ATF_TC_BODY(snprintb, tc)
 
 	// new style bit-field default, fixed string
 	//
-	// The 'f' directive pairs up with the '=' directive,
-	// the 'F' directive pairs up with the ':' directive,
-	// but there's only one 'default' directive for both variants,
+	// The 'f' conversion pairs up with the '=' conversion,
+	// the 'F' conversion pairs up with the ':' conversion,
+	// but there's only one 'default' conversion for both variants,
 	// so its description should include the '=' when used with 'f' but
 	// not with 'F'.
 	h_snprintb(
@@ -783,7 +787,7 @@ ATF_TC_BODY(snprintb, tc)
 
 	// new style bit-field default, can never match
 	//
-	// The '=' directive are exhaustive, making the '*' redundant.
+	// The '=' conversion are exhaustive, making the '*' redundant.
 	h_snprintb(
 	    "\177\020"
 	    "f\010\002f\0"
@@ -807,30 +811,25 @@ ATF_TC_BODY(snprintb, tc)
 	    0xff,
 	    "0xff<f=0xff=000000000000000000000000000255%>");
 
-	// new style unknown directive, at the beginning
-	h_snprintb_len(
-	    128,
+	// new style unknown conversion, at the beginning
+	h_snprintb_val_error(
 	    "\177\020"
 	    "unknown\0",
 	    0xff,
-	    -1,
 	    "0xff#");
 
-	// new style unknown directive, after a known directive
-	h_snprintb_len(
-	    128,
+	// new style unknown conversion, after a known conversion
+	h_snprintb_val_error(
 	    "\177\020"
 	    "b\007msb\0"
 	    "unknown\0",
 	    0xff,
-	    -1,
 	    "0xff<msb#");
 
 	// new style combinations, 'b' '='
 	//
-	// A '=' directive without a preceding 'f' or 'F' directive generates
-	// misleading output outside the angle brackets, which is a mistake.
-	h_snprintb(
+	// A '=' conversion requires a preceding 'f' conversion.
+	h_snprintb_val_error(
 	    "\177\020"
 	    "b\004bit4\0"
 		"=\000clear\0"
@@ -841,14 +840,12 @@ ATF_TC_BODY(snprintb, tc)
 		"=\001set\0"
 		"=\245complete\0",
 	    0xa5,
-	    "0xa5=complete<bit0=complete>");
+	    "0xa5#");
 
 	// new style combinations, 'b' ':'
 	//
-	// A ':' directive without a preceding 'f' or 'F' directive generates
-	// misleading output outside or inside the angle brackets, which is a
-	// mistake.
-	h_snprintb(
+	// A ':' conversion requires a preceding 'f' or 'F' conversion.
+	h_snprintb_val_error(
 	    "\177\020"
 	    "b\004bit4\0"
 		":\000clear\0"
@@ -859,139 +856,145 @@ ATF_TC_BODY(snprintb, tc)
 		":\001set\0"
 		":\245complete\0",
 	    0xa5,
-	    "0xa5complete<bit0complete>");
+	    "0xa5#");
 
 	// new style combinations, 'b' '*'
 	//
-	// A '*' directive without a preceding 'f' or 'F' directive is ignored.
-	h_snprintb(
+	// A '*' conversion requires a preceding 'f' or 'F' conversion.
+	h_snprintb_val_error(
 	    "\177\020"
 	    "b\004bit4\0"
 		"*default(%ju)\0"
 	    "b\000bit0\0"
 		"*default(%ju)\0",
 	    0xa5,
-	    "0xa5<bit0>");
+	    "0xa5#");
 
 	// new style combinations, 'f' 'b' '='
 	//
-	// A 'b' directive that occurs between an 'f' and an '=' directive
-	// generates misleading output, which is a mistake.
-	h_snprintb(
+	// A '=' conversion requires a preceding 'f' conversion, there must
+	// not be a 'b' conversion in between.
+	h_snprintb_val_error(
 	    "\177\020"
 	    "f\000\010f\0"
 	    "b\005bit5\0"
 		"=\245match\0",
 	    0xa5,
-	    "0xa5<f=0xa5,bit5=match>");
+	    "0xa5<f=0xa5,bit5#");
 
-	// new style combinations, 'f' 'b' ':'
+	// new style combinations, 'F' 'b' ':'
 	//
-	// A 'b' directive that occurs between an 'f' and a ':' directive
-	// generates misleading output, which is a mistake.
-	h_snprintb(
+	// A ':' conversion requires a preceding 'F' conversion, there must
+	// not be a 'b' conversion in between.
+	//
+	// The isolated leading comma is produced by the non-exhaustive 'F'
+	// conversion. Detecting these at runtime would be too costly.
+	h_snprintb_val_error(
 	    "\177\020"
-	    "f\000\010f\0"
+	    "F\000\010f\0"
 	    "b\005bit5\0"
 		":\245match\0",
 	    0xa5,
-	    "0xa5<f=0xa5,bit5match>");
+	    "0xa5<,bit5#");
 
 	// new style combinations, 'f' ':'
 	//
-	// Combining the 'f' directive with the ':' directive produces the
-	// misleading output '0x1one', which is a mistake.
-	h_snprintb(
+	// The ':' conversion requires a preceding 'F' conversion, not 'f'.
+	h_snprintb_val_error(
 	    "\177\20"
 	    "f\000\004nibble\0"
 		":\001one\0",
 	    0x01,
-	    "0x1<nibble=0x1one>");
+	    "0x1<nibble=0x1#");
 
 	// new style combinations, 'F' '='
 	//
-	// Combining the 'F' and '=' directives outputs an isolated '=', which
-	// is a mistake.
-	h_snprintb(
+	// A '=' conversion requires a preceding 'f' conversion, not 'F'.
+	h_snprintb_val_error(
 	    "\177\20"
 	    "F\000\004\0"
 		"=\001one\0",
 	    0x01,
-	    "0x1<=one>");
+	    "0x1<#");
 
 	// new style combinations, '='
 	//
-	// A '=' directive without a preceding 'f' or 'F' directive generates
-	// output that doesn't match the standard '0xaa<description>' form,
-	// which is a mistake.
-	h_snprintb(
+	// A '=' conversion requires a preceding 'f' or 'F' conversion.
+	h_snprintb_val_error(
 	    "\177\020"
 		"=\245match\0",
 	    0xa5,
-	    "0xa5=match");
+	    "0xa5#");
 
 	// new style combinations, ':'
 	//
-	// A ':' directive without a preceding 'f' or 'F' directive generates
-	// misleading output, which is a mistake.
-	h_snprintb(
+	// A ':' conversion requires a preceding 'f' or 'F' conversion.
+	h_snprintb_val_error(
 	    "\177\020"
 		":\245match\0",
 	    0xa5,
-	    "0xa5match");
+	    "0xa5#");
 
 	// new style combinations, '*'
 	//
-	// A '*' directive without a preceding 'f' or 'F' is useless, which is
-	// a mistake.
-	h_snprintb(
+	// A '*' conversion requires a preceding 'f' or 'F' conversion.
+	h_snprintb_val_error(
 	    "\177\020"
 		"*match\0",
 	    0xa5,
-	    "0xa5");
+	    "0xa5#");
 
 	// new style combinations, 'f' '*' '='
 	//
-	// After a catch-all '*' directive, any following '=' directive
-	// generates misleading output, which is a mistake.
-	h_snprintb(
+	// After a catch-all '*' conversions, there must not be further '='
+	// conversions.
+	h_snprintb_val_error(
 	    "\177\020"
 	    "f\000\010f\0"
 		"*=default\0"
 		"=\245match\0",
 	    0xa5,
-	    "0xa5<f=0xa5=default=match>");
+	    "0xa5<f=0xa5=default#");
 
 	// new style combinations, 'F' '*' ':'
 	//
-	// After a catch-all '*' directive, any following ':' directive
-	// generates misleading output, which is a mistake.
-	h_snprintb(
+	// After a catch-all '*' conversion, there must not be further ':'
+	// conversions.
+	h_snprintb_val_error(
 	    "\177\020"
 	    "F\000\010F\0"
 		"*default\0"
 		":\245-match\0",
 	    0xa5,
-	    "0xa5<default-match>");
+	    "0xa5<default#");
 
-	// new style combinations, '*' '*'
+	// new style combinations, 'f' '*' '*'
 	//
-	// After a catch-all '*' directive, any further '*' directive is
-	// ignored and thus redundant, which is a mistake.
-	h_snprintb(
+	// After a catch-all '*' conversion, there must not be further '=' or
+	// '*' conversions.
+	h_snprintb_val_error(
 	    "\177\020"
 	    "f\000\010f\0"
 		"*=default-f\0"
-		"*ignored\0"
+		"*ignored\0",
+	    0xa5,
+	    "0xa5<f=0xa5=default-f#");
+
+	// new style combinations, 'F' '*' '*'
+	//
+	// After a catch-all '*' conversion, there must not be further ':' or
+	// '*' conversions.
+	h_snprintb_val_error(
+	    "\177\020"
 	    "F\000\010\0"
 		"*default-F\0"
 		"*ignored\0",
 	    0xa5,
-	    "0xa5<f=0xa5=default-f,default-F>");
+	    "0xa5<default-F#");
 
 	// example from the manual page, old style octal
 	h_snprintb(
-	    "\10\2BITTWO\1BITONE",
+	    "\010\002BITTWO\001BITONE",
 	    0x03,
 	    "03<BITTWO,BITONE>");
 
@@ -1003,21 +1006,31 @@ ATF_TC_BODY(snprintb, tc)
 	// the bit number and the description need to be written as separate
 	// string literals.
 	h_snprintb(
-	    "\20"
-	    "\x10NOTBOOT" "\x0f""FPP" "\x0eSDVMA"
-	    "\x0cVIDEO" "\x0bLORES" "\x0a""FPA" "\x09""DIAG"
-	    "\x07""CACHE" "\x06IOCACHE" "\x05LOOPBACK"
-	    "\x04""DBGCACHE",
+	    "\x10"
+	    "\x10" "NOTBOOT"
+	    "\x0f" "FPP"
+	    "\x0e" "SDVMA"
+	    "\x0c" "VIDEO"
+	    "\x0b" "LORES"
+	    "\x0a" "FPA"
+	    "\x09" "DIAG"
+	    "\x07" "CACHE"
+	    "\x06" "IOCACHE"
+	    "\x05" "LOOPBACK"
+	    "\x04" "DBGCACHE",
 	    0xe860,
 	    "0xe860<NOTBOOT,FPP,SDVMA,VIDEO,CACHE,IOCACHE>");
 
 	// example from the manual page, new style bits and fields
 	h_snprintb(
 	    "\177\020"
-	    "b\0LSB\0" "b\1BITONE\0"
-	    "f\4\4NIBBLE2\0"
-	    "f\x10\4BURST\0" "=\4FOUR\0" "=\xf""FIFTEEN\0"
-	    "b\x1fMSB\0",
+	    "b\000" "LSB\0"
+	    "b\001" "BITONE\0"
+	    "f\004\004" "NIBBLE2\0"
+	    "f\020\004" "BURST\0"
+		"=\x04" "FOUR\0"
+		"=\x0f" "FIFTEEN\0"
+	    "b\037" "MSB\0",
 	    0x800f0701,
 	    "0x800f0701<LSB,NIBBLE2=0,BURST=0xf=FIFTEEN,MSB>");
 
@@ -1481,7 +1494,7 @@ ATF_TC_BODY(snprintb_m, tc)
 	h_snprintb_m(
 	    "\177\020"
 	    "f\000\004bits\0"
-		":\000zero\0",
+		"=\000zero\0",
 	    0xff,
 	    11,
 	    "0xff<bits=#\0");
@@ -1489,17 +1502,26 @@ ATF_TC_BODY(snprintb_m, tc)
 	// example from the manual page, new style bits and fields
 	h_snprintb_m(
 	    "\177\020"
-	    "b\0LSB\0"
-	    "b\1BITONE\0"
-	    "f\4\4NIBBLE2\0"
-	    "f\x10\4BURST\0"
-		"=\4FOUR\0"
-		"=\xf""FIFTEEN\0"
-	    "b\x1fMSB\0",
+	    "b\000" "LSB\0"
+	    "b\001" "BITONE\0"
+	    "f\004\004" "NIBBLE2\0"
+	    "f\020\004" "BURST\0"
+		"=\x04" "FOUR\0"
+		"=\x0f" "FIFTEEN\0"
+	    "b\037" "MSB\0",
 	    0x800f0701,
 	    34,
 	    "0x800f0701<LSB,NIBBLE2=0>\0"
 	    "0x800f0701<BURST=0xf=FIFTEEN,MSB>\0");
+
+	// new style, missing number base
+	h_snprintb_m_len(
+	    1024,
+	    "\177",
+	    0xff,
+	    128,
+	    -1,
+	    "#\0");
 
 	// new style, buffer too small for complete number in line 2
 	h_snprintb_m_len(

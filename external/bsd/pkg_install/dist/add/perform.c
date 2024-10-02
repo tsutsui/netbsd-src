@@ -1,4 +1,4 @@
-/*	$NetBSD: perform.c,v 1.10 2021/04/10 20:07:57 nia Exp $	*/
+/*	$NetBSD: perform.c,v 1.13 2024/08/26 22:41:39 wiz Exp $	*/
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -6,7 +6,7 @@
 #if HAVE_SYS_CDEFS_H
 #include <sys/cdefs.h>
 #endif
-__RCSID("$NetBSD: perform.c,v 1.10 2021/04/10 20:07:57 nia Exp $");
+__RCSID("$NetBSD: perform.c,v 1.13 2024/08/26 22:41:39 wiz Exp $");
 
 /*-
  * Copyright (c) 2003 Grant Beattie <grant@NetBSD.org>
@@ -893,19 +893,28 @@ check_platform(struct pkg_task *pkg)
 {
 	struct utsname host_uname;
 	const char *effective_arch;
+	const char *effective_opsys;
+	const char *effective_os_version;
 	int fatal;
 
-	if (uname(&host_uname) < 0) {
-		if (Force) {
-			warnx("uname() failed, continuing.");
-			return 0;
-		} else {
-			warnx("uname() failed, aborting.");
-			return -1;
+	if (OverrideOpsys != NULL && OverrideOSVersion != NULL) {
+		effective_opsys = OverrideOpsys;
+		effective_os_version = OverrideOSVersion;
+	} else {
+		if (uname(&host_uname) < 0) {
+			if (Force) {
+				warnx("uname() failed, continuing.");
+				return 0;
+			} else {
+				warnx("uname() failed, aborting.");
+				return -1;
+			}
 		}
-	}
 
-	normalise_platform(&host_uname);
+		normalise_platform(&host_uname);
+		effective_opsys = OPSYS_NAME;
+		effective_os_version = host_uname.release;
+	}
 
 	if (OverrideMachine != NULL)
 		effective_arch = OverrideMachine;
@@ -913,14 +922,14 @@ check_platform(struct pkg_task *pkg)
 		effective_arch = PKGSRC_MACHINE_ARCH;
 
 	/* If either the OS or arch are different, bomb */
-	if (strcmp(OPSYS_NAME, pkg->buildinfo[BI_OPSYS]) ||
+	if (strcmp(effective_opsys, pkg->buildinfo[BI_OPSYS]) ||
 	    strcmp(effective_arch, pkg->buildinfo[BI_MACHINE_ARCH]) != 0)
 		fatal = 1;
 	else
 		fatal = 0;
 
 	if (fatal ||
-	    compatible_platform(OPSYS_NAME, host_uname.release,
+	    compatible_platform(effective_opsys, effective_os_version,
 				pkg->buildinfo[BI_OS_VERSION]) != 1) {
 		warnx("Warning: package `%s' was built for a platform:",
 		    pkg->pkgname);
@@ -928,9 +937,9 @@ check_platform(struct pkg_task *pkg)
 		    pkg->buildinfo[BI_OPSYS],
 		    pkg->buildinfo[BI_MACHINE_ARCH],
 		    pkg->buildinfo[BI_OS_VERSION],
-		    OPSYS_NAME,
+		    effective_opsys,
 		    effective_arch,
-		    host_uname.release);
+		    effective_os_version);
 		if (!Force && fatal)
 			return -1;
 	}
@@ -1106,6 +1115,41 @@ check_implicit_conflict(struct pkg_task *pkg)
 	return status;
 }
 
+/* check if all REQUIRES files (usually libraries) are installed */
+static int
+check_requires(struct pkg_task *pkg)
+{
+	const char *data, *eol, *next_line;
+	int ret = 0;
+
+	data = pkg->meta_data.meta_build_info;
+
+	for (; data != NULL && *data != '\0'; data = next_line) {
+		if ((eol = strchr(data, '\n')) == NULL) {
+			eol = data + strlen(data);
+			next_line = eol;
+		} else
+			next_line = eol + 1;
+
+		if (strncmp(data, "REQUIRES=", 9) == 0) {
+			char *library_name = dup_value(data, eol);
+			struct stat sb;
+			if (stat(library_name, &sb) != 0 || !S_ISREG(sb.st_mode)) {
+				warnx("Missing required library: %s", library_name);
+#ifdef __NetBSD__
+				if (strncmp(library_name, "/usr/X11R7", 10) == 0) {
+					warnx("Please make sure to install the X sets");
+				}
+#endif
+				ret = 1;
+			}
+			free(library_name);
+		}
+	}
+
+	return ret;
+}
+
 /*
  * Install a required dependency and verify its installation.
  */
@@ -1115,7 +1159,7 @@ install_depend_pkg(const char *dep)
 	/* XXX check cyclic dependencies? */
 	if (Fake || NoRecord) {
 		if (!Force) {
-			warnx("Missing dependency %s\n", dep);
+			warnx("Missing dependency %s", dep);
 			return 1;
 		}
 		warnx("Missing dependency %s, continuing", dep);
@@ -1525,13 +1569,19 @@ pkg_do(const char *pkgpath, int mark_automatic, int top_level)
 
 		if (check_dependencies(pkg))
 			goto nuke_pkgdb;
+
+		if (check_requires(pkg))
+			goto nuke_pkgdb;
 	} else {
 		/*
 		 * Normal installation.
 		 * Install/update dependencies first and
 		 * write the current package to disk afterwards.
-		 */ 
+		 */
 		if (check_dependencies(pkg))
+			goto clean_memory;
+
+		if (check_requires(pkg))
 			goto clean_memory;
 
 		if (write_meta_data(pkg))
@@ -1545,7 +1595,7 @@ pkg_do(const char *pkgpath, int mark_automatic, int top_level)
 		goto nuke_pkg;
 
 	if (run_install_script(pkg, "POST-INSTALL"))
-		goto nuke_pkgdb;
+		goto nuke_pkg;
 
 	/* XXX keep +INSTALL_INFO for updates? */
 	/* XXX keep +PRESERVE for updates? */

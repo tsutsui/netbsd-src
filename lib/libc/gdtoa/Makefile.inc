@@ -1,4 +1,4 @@
-#	$NetBSD: Makefile.inc,v 1.13 2023/10/07 12:15:53 rin Exp $
+#	$NetBSD: Makefile.inc,v 1.15 2024/06/07 20:50:13 riastradh Exp $
 
 # gdtoa sources
 .PATH: ${.CURDIR}/gdtoa
@@ -28,6 +28,7 @@ SRCS+=	strtod.c
 
 # private interfaces interfacing to libc
 SRCS+=	dtoa.c ldtoa.c hdtoa.c gdtoa.c
+LINTFLAGS.ldtoa.c+=	-X 132
 
 # local locking implementation
 SRCS+=	gdtoa_locks.c
@@ -44,3 +45,5 @@ SRCS+=	dmisc.c \
 .if ${MACHINE_ARCH} != "vax"
 SRCS+=	strtord.c
 .endif
+
+LINTFLAGS.hdtoa.c+=	-X 132	# conversion may lose accuracy

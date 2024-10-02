@@ -1,4 +1,4 @@
-#	$NetBSD: bsd.lib.mk,v 1.397 2024/03/26 18:38:52 riastradh Exp $
+#	$NetBSD: bsd.lib.mk,v 1.407 2024/06/28 21:58:24 riastradh Exp $
 #	@(#)bsd.lib.mk	8.3 (Berkeley) 4/22/94
 
 .include <bsd.init.mk>
@@ -16,9 +16,10 @@ LIBISCXX?=	no
 .if ${LIBISMODULE} != "no"
 _LIB_PREFIX?=	# empty
 MKDEBUGLIB:=	no
-MKPICINSTALL:=	no
 MKPROFILE:=	no
-MKSTATICLIB:=	no
+MKPICINSTALL:=	no
+MAKESTATICLIB?=	no
+MAKELINKLIB?=	yes
 _LINTINSTALL?=	no
 .else
 _LIB_PREFIX?=	lib
@@ -26,17 +27,21 @@ _LIB_PREFIX?=	lib
 
 .if ${LIBISPRIVATE} != "no"
 MKDEBUGLIB:=	no
+MKPROFILE:=	no
 MKPICINSTALL:=	no
 . if defined(NOSTATICLIB) && ${MKPICLIB} != "no"
-MKSTATICLIB:=	no
+MAKESTATICLIB?=	no
 . elif ${LIBISPRIVATE} != "pic"
 MKPIC:=		no
 . endif
-MKPROFILE:=	no
+MAKELINKLIB?=	no
 _LINTINSTALL?=	no
 .endif
 
 _LINTINSTALL?=	${MKLINT}
+LINKINSTALL?=	${MAKELINKLIB}
+MAKELINKLIB?=	${MKLINKLIB}
+MAKESTATICLIB?=	${MKSTATICLIB}
 
 ##### Basic targets
 .PHONY:		checkver libinstall
@@ -420,9 +425,15 @@ _DEST.LINT:=${DESTDIR}${LINTLIBDIR}
 _DEST.DEBUG:=${DESTDIR}${DEBUGDIR}${LIBDIR}
 _DEST.ODEBUG:=${DESTDIR}${DEBUGDIR}${_LIBSODIR}
 
+.if ${MKPIC} == "no" || (defined(LDSTATIC) && ${LDSTATIC} != "") \
+    || ${MAKELINKLIB} != "no" || ${MAKESTATICLIB} != "no"
+_BUILDSTATICLIB=yes
+.else
+_BUILDSTATICLIB=no
+.endif
+
 .if defined(LIB)							# {
-.if (${MKPIC} == "no" || (defined(LDSTATIC) && ${LDSTATIC} != "") \
-	|| ${MKLINKLIB} != "no") && ${MKSTATICLIB} != "no"
+.if ${_BUILDSTATICLIB} != "no"
 _LIBS=${_LIB.a}
 .else
 _LIBS=
@@ -477,8 +488,7 @@ _LIBS+=${_LIB.ln}
 .endif
 
 ALLOBJS=
-.if (${MKPIC} == "no" || (defined(LDSTATIC) && ${LDSTATIC} != "") \
-	|| ${MKLINKLIB} != "no") && ${MKSTATICLIB} != "no"
+.if ${_BUILDSTATICLIB} != "no"
 ALLOBJS+=${STOBJS}
 .endif
 ALLOBJS+=${POBJS} ${SOBJS}
@@ -602,6 +612,20 @@ LIBDPLIBS+=     stdc++	${.CURDIR}/../../../../../external/gpl3/${EXTERNAL_GCC_SU
 LIBCC:=	${CC}
 .endif
 
+# VERSION_MAP
+#
+#	Path to an ld version script to use when linking the library.
+#	Resolved from .PATH like a target prerequisite.
+#
+#	Implemented by adding -Wl,--version-script=${${VERSION_MAP}:P}
+#	to LDFLAGS, and by adding ${VERSION_MAP} to DPADD to make it a
+#	target prerequisite so :P works.
+#
+.if !empty(VERSION_MAP)
+DPADD+=			${VERSION_MAP}
+LDFLAGS+=		-Wl,--version-script=${${VERSION_MAP}:P}
+.endif
+
 _LDADD.${_LIB}=	${LDADD} ${LDADD.${_LIB}}
 _LDFLAGS.${_LIB}=	${LDFLAGS} ${LDFLAGS.${_LIB}}
 
@@ -611,15 +635,15 @@ _MAINLIBDEPS=	${SOLIB} ${DPADD} ${DPLIBC} \
 .if defined(_LIB.so.debug)
 ${_LIB.so.debug}: ${_LIB.so.link}
 	${_MKTARGET_CREATE}
-	(  ${OBJCOPY} --only-keep-debug \
-		${_LIB.so.link} ${_LIB.so.debug} \
+	( ${OBJCOPY} --only-keep-debug --compress-debug-sections \
+	    ${_LIB.so.link} ${_LIB.so.debug} \
 	) || (rm -f ${.TARGET}; false)
 ${_LIB.so.full}: ${_LIB.so.link} ${_LIB.so.debug}
 	${_MKTARGET_CREATE}
 	(  ${OBJCOPY} --strip-debug -p -R .gnu_debuglink \
-		--add-gnu-debuglink=${_LIB.so.debug} \
-		${_LIB.so.link} ${_LIB.so.full}.tmp && \
-		${MV} ${_LIB.so.full}.tmp ${_LIB.so.full} \
+	    --add-gnu-debuglink=${_LIB.so.debug} \
+	    ${_LIB.so.link} ${_LIB.so.full}.tmp && \
+	    ${MV} ${_LIB.so.full}.tmp ${_LIB.so.full} \
 	) || (rm -f ${.TARGET}; false)
 ${_LIB.so.link}: ${_MAINLIBDEPS}
 .else # aka no MKDEBUG
@@ -650,8 +674,10 @@ ${_LIB.so.full}: ${_MAINLIBDEPS}
 
 # If there's a file listing expected symbols, fail if the diff from it
 # to the actual symbols is nonempty, and show the diff in that case.
-.if exists(${.CURDIR}/${LIB}.${MACHINE_ARCH}.expsym)
-LIB_EXPSYM?=	${LIB}.${MACHINE_ARCH}.expsym
+.if exists(${.CURDIR}/${LIB}.${LIBC_MACHINE_ARCH:U${MACHINE_ARCH}}.expsym)
+LIB_EXPSYM?=	${LIB}.${LIBC_MACHINE_ARCH:U${MACHINE_ARCH}}.expsym
+.elif exists(${.CURDIR}/${LIB}.${LIBC_MACHINE_CPU:U${MACHINE_CPU}}.expsym)
+LIB_EXPSYM?=	${LIB}.${LIBC_MACHINE_CPU:U${MACHINE_CPU}}.expsym
 .elif exists(${.CURDIR}/${LIB}.expsym)
 LIB_EXPSYM?=	${LIB}.expsym
 .endif
@@ -731,7 +757,7 @@ LIBCLEANFILES5+= ${_LIB.ln} ${LOBJS}
 # Make sure it gets defined, in case MKPIC==no && MKLINKLIB==no
 libinstall::
 
-.if ${MKLINKLIB} != "no" && ${MKSTATICLIB} != "no"
+.if ${MAKELINKLIB} != "no" && ${MAKESTATICLIB} != "no" && ${LINKINSTALL} != "no"
 libinstall:: ${_DEST.LIB}/${_LIB.a}
 .PRECIOUS: ${_DEST.LIB}/${_LIB.a}
 
@@ -838,7 +864,7 @@ ${_DEST.OBJ}/${_LIB.so.full}: ${_LIB.so.full}
 	    ${_DEST.LIB}/${_LIB.so.major}
 .endif
 .endif
-.if ${MKLINKLIB} != "no"
+.if ${MAKELINKLIB} != "no" && ${LINKINSTALL} != "no"
 	${INSTALL_SYMLINK}  ${_LIB.so.full} ${_DEST.OBJ}/${_LIB.so}
 .if ${_LIBSODIR} != ${LIBDIR}
 	${INSTALL_SYMLINK} -l r ${_DEST.OBJ}/${_LIB.so.full} \

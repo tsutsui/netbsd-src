@@ -1,4 +1,4 @@
-#	$NetBSD: driver.mk,v 1.6 2023/11/22 17:48:35 rjs Exp $
+#	$NetBSD: driver.mk,v 1.8 2024/07/03 02:40:50 mrg Exp $
 
 # stuff both dri and gallium drivers need.
 
@@ -81,6 +81,9 @@ SRCS.format= \
 	u_format_yuv.c \
 	u_format_zs.c \
 	u_format_table.c
+
+CPUFLAGS.u_format_unpack_neon.c+=	\
+	${${MACHINE_CPU} == "arm" && ${ACTIVE_CC} == "clang":?-mfpu=neon -march=armv7-a:}
 
 .for _f in ${SRCS.format}
 CPPFLAGS.${_f} +=	-I${X11SRCDIR.Mesa}/src/util/format

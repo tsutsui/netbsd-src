@@ -1,4 +1,4 @@
-/*	$NetBSD: if_sk.c,v 1.111 2022/05/23 13:53:37 rin Exp $	*/
+/*	$NetBSD: if_sk.c,v 1.113 2024/07/05 04:31:51 rin Exp $	*/
 
 /*-
  * Copyright (c) 2003 The NetBSD Foundation, Inc.
@@ -115,7 +115,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: if_sk.c,v 1.111 2022/05/23 13:53:37 rin Exp $");
+__KERNEL_RCSID(0, "$NetBSD: if_sk.c,v 1.113 2024/07/05 04:31:51 rin Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -323,7 +323,7 @@ sk_win_write_1(struct sk_softc *sc, uint32_t reg, uint8_t x)
 
 /*
  * The VPD EEPROM contains Vital Product Data, as suggested in
- * the PCI 2.1 specification. The VPD data is separared into areas
+ * the PCI 2.1 specification. The VPD data is separated into areas
  * denoted by resource IDs. The SysKonnect VPD contains an ID string
  * resource (the name of the adapter), a read-only area resource
  * containing various key/data fields and a read/write area which
@@ -2959,17 +2959,13 @@ sk_stop(struct ifnet *ifp, int disable)
 
 	/* Free RX and TX mbufs still in the queues. */
 	for (i = 0; i < SK_RX_RING_CNT; i++) {
-		if (sc_if->sk_cdata.sk_rx_chain[i].sk_mbuf != NULL) {
-			m_freem(sc_if->sk_cdata.sk_rx_chain[i].sk_mbuf);
-			sc_if->sk_cdata.sk_rx_chain[i].sk_mbuf = NULL;
-		}
+		m_freem(sc_if->sk_cdata.sk_rx_chain[i].sk_mbuf);
+		sc_if->sk_cdata.sk_rx_chain[i].sk_mbuf = NULL;
 	}
 
 	for (i = 0; i < SK_TX_RING_CNT; i++) {
-		if (sc_if->sk_cdata.sk_tx_chain[i].sk_mbuf != NULL) {
-			m_freem(sc_if->sk_cdata.sk_tx_chain[i].sk_mbuf);
-			sc_if->sk_cdata.sk_tx_chain[i].sk_mbuf = NULL;
-		}
+		m_freem(sc_if->sk_cdata.sk_tx_chain[i].sk_mbuf);
+		sc_if->sk_cdata.sk_tx_chain[i].sk_mbuf = NULL;
 	}
 
 	ifp->if_flags &= ~(IFF_RUNNING | IFF_OACTIVE);

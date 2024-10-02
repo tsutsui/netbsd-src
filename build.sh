@@ -1,5 +1,5 @@
 #! /usr/bin/env sh
-#	$NetBSD: build.sh,v 1.375 2024/01/03 02:48:45 thorpej Exp $
+#	$NetBSD: build.sh,v 1.379 2024/07/23 20:46:40 riastradh Exp $
 #
 # Copyright (c) 2001-2023 The NetBSD Foundation, Inc.
 # All rights reserved.
@@ -1091,7 +1091,7 @@ help()
     list-arch           Show a list of valid MACHINE/MACHINE_ARCH values,
                         and exit.  The list may be narrowed by passing glob
                         patterns or exact values in MACHINE or MACHINE_ARCH.
-    mkrepro-timestamp   Show the latest source timestamp used for reproducable
+    mkrepro-timestamp   Show the latest source timestamp used for reproducible
                         builds and exit.  Requires -P or -V MKREPRO=yes.
 
  Options:
@@ -1114,7 +1114,7 @@ help()
                    aliases that set MACHINE/MACHINE_ARCH pairs.
                    [Default: deduced from the host system if the host
                    OS is NetBSD]
-    -N NOISY       Set the noisyness (MAKEVERBOSE) level of the build to NOISY:
+    -N NOISY       Set the noisiness (MAKEVERBOSE) level of the build to NOISY:
                        0   Minimal output ("quiet").
                        1   Describe what is occurring.
                        2   Describe what is occurring and echo the actual
@@ -1547,7 +1547,7 @@ sanitycheck()
 
 	while [ ${MKX11-no} = "yes" ]; do		# not really a loop
 		test -n "${X11SRCDIR}" && {
-		    test -d "${X11SRCDIR}" ||
+		    test -d "${X11SRCDIR}/external" ||
 		    	bomb "X11SRCDIR (${X11SRCDIR}) does not exist (with -x)"
 		    break
 		}
@@ -1556,7 +1556,7 @@ sanitycheck()
 		    "${NETBSDSRCDIR}/xsrc" \
 		    /usr/xsrc
 		do
-		    test -d "${_xd}" &&
+		    test -f "${_xd}/Makefile" &&
 			setmakeenv X11SRCDIR "${_xd}" &&
 			break 2
 		done
@@ -2031,7 +2031,7 @@ createmakewrapper()
 	eval cat <<EOF ${makewrapout}
 #! ${HOST_SH}
 # Set proper variables to allow easy "make" building of a NetBSD subtree.
-# Generated from:  \$NetBSD: build.sh,v 1.375 2024/01/03 02:48:45 thorpej Exp $
+# Generated from:  \$NetBSD: build.sh,v 1.379 2024/07/23 20:46:40 riastradh Exp $
 # with these arguments: ${_args}
 #
 
@@ -2433,7 +2433,7 @@ setup_mkrepro()
 		fi
 	done
 
-	[ "${MKREPRO_TIMESTAMP}" != "0" ] || bomb "Failed to compute timestamp"
+	[ "${MKREPRO_TIMESTAMP}" -ne 0 ] || bomb "Failed to compute timestamp"
 	if [ -z "${quiet}" ]; then
 		statusmsg2 "MKREPRO_TIMESTAMP" \
 			"$(repro_date "${MKREPRO_TIMESTAMP}")"

@@ -1,4 +1,4 @@
-# $NetBSD: varparse-errors.mk,v 1.11 2023/11/19 22:32:44 rillig Exp $
+# $NetBSD: varparse-errors.mk,v 1.19 2024/08/29 20:20:37 rillig Exp $
 
 # Tests for parsing and evaluating all kinds of expressions.
 #
@@ -24,7 +24,7 @@ ERR_BAD_MOD=	An ${:Uindirect:Z} expression with an unknown modifier.
 ERR_EVAL=	An evaluation error ${:Uvalue:C,.,\3,}.
 
 # In a conditional, an expression that is not enclosed in quotes is
-# expanded using the mode VARE_UNDEFERR.
+# expanded using the mode VARE_EVAL_DEFINED.
 # The variable itself must be defined.
 # It may refer to undefined variables though.
 .if ${REF_UNDEF} != "A reference to an undefined variable."
@@ -66,8 +66,10 @@ VAR.${:U:Z}post=	unknown modifier with text in the variable name
 #
 #.MAKEFLAGS: -dv
 IND=	${:OX}
-# expect+2: Undefined variable "${:U:OX"
-# expect+1: Undefined variable "${:U:OX"
+# expect+4: Bad modifier ":OX"
+# expect+3: Bad modifier ":OX"
+# expect+2: Bad modifier ":OX"
+# expect+1: Bad modifier ":OX"
 _:=	${:U:OX:U${IND}} ${:U:OX:U${IND}}
 #.MAKEFLAGS: -d0
 
@@ -75,17 +77,31 @@ _:=	${:U:OX:U${IND}} ${:U:OX:U${IND}}
 # Before var.c 1.032 from 2022-08-24, make complained about 'Unknown modifier'
 # or 'Bad modifier' when in fact the modifier was entirely correct, it was
 # just not delimited by either ':' or '}' but instead by '\0'.
+# expect+1: Unclosed expression, expecting '}' for modifier "Q"
 UNCLOSED:=	${:U:Q
+# expect+1: Unclosed expression, expecting '}' for modifier "sh"
 UNCLOSED:=	${:U:sh
+# expect+1: Unclosed expression, expecting '}' for modifier "tA"
 UNCLOSED:=	${:U:tA
+# expect+1: Unclosed expression, expecting '}' for modifier "tsX"
 UNCLOSED:=	${:U:tsX
+# expect+1: Unclosed expression, expecting '}' for modifier "ts"
 UNCLOSED:=	${:U:ts
+# expect+1: Unclosed expression, expecting '}' for modifier "ts\040"
 UNCLOSED:=	${:U:ts\040
+# expect+1: Unclosed expression, expecting '}' for modifier "u"
 UNCLOSED:=	${:U:u
+# expect+1: Unclosed expression, expecting '}' for modifier "H"
 UNCLOSED:=	${:U:H
+# expect+1: Unclosed expression, expecting '}' for modifier "[1]"
 UNCLOSED:=	${:U:[1]
+# expect+1: Unclosed expression, expecting '}' for modifier "hash"
 UNCLOSED:=	${:U:hash
+# expect+1: Unclosed expression, expecting '}' for modifier "range"
 UNCLOSED:=	${:U:range
+# expect+1: Unclosed expression, expecting '}' for modifier "_"
 UNCLOSED:=	${:U:_
+# expect+1: Unclosed expression, expecting '}' for modifier "gmtime"
 UNCLOSED:=	${:U:gmtime
+# expect+1: Unclosed expression, expecting '}' for modifier "localtime"
 UNCLOSED:=	${:U:localtime

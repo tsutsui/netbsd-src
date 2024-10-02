@@ -1,4 +1,4 @@
-/*	$NetBSD: procfs_subr.c,v 1.117 2024/01/17 10:20:12 hannken Exp $	*/
+/*	$NetBSD: procfs_subr.c,v 1.120 2024/07/01 01:35:53 christos Exp $	*/
 
 /*-
  * Copyright (c) 2006, 2007, 2008 The NetBSD Foundation, Inc.
@@ -102,7 +102,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: procfs_subr.c,v 1.117 2024/01/17 10:20:12 hannken Exp $");
+__KERNEL_RCSID(0, "$NetBSD: procfs_subr.c,v 1.120 2024/07/01 01:35:53 christos Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -215,6 +215,10 @@ procfs_rw(void *v)
 		error = procfs_dolimit(curl, p, pfs, uio);
 		break;
 
+	case PFSlimits:
+		error = procfs_dolimits(curl, p, pfs, uio);
+		break;
+
 	case PFSmap:
 		error = procfs_domap(curl, p, pfs, uio, 0);
 		break;
@@ -281,6 +285,38 @@ procfs_rw(void *v)
 
 	case PFSauxv:
 		error = procfs_doauxv(curl, p, pfs, uio);
+		break;
+
+	case PFSsysvipc_msg:
+		error = procfs_dosysvipc_msg(curl, p, pfs, uio);
+		break;
+
+	case PFSsysvipc_sem:
+		error = procfs_dosysvipc_sem(curl, p, pfs, uio);
+		break;
+
+	case PFSsysvipc_shm:
+		error = procfs_dosysvipc_shm(curl, p, pfs, uio);
+		break;
+
+	case PFSmq_msg_def:
+		error = procfs_domq_msg_def(curl, p, pfs, uio);
+		break;
+
+	case PFSmq_msg_max:
+		error = procfs_domq_msg_max(curl, p, pfs, uio);
+		break;
+
+	case PFSmq_siz_def:
+		error = procfs_domq_siz_def(curl, p, pfs, uio);
+		break;
+
+	case PFSmq_siz_max:
+		error = procfs_domq_siz_max(curl, p, pfs, uio);
+		break;
+
+	case PFSmq_qmax:
+		error = procfs_domq_qmax(curl, p, pfs, uio);
 		break;
 
 #ifdef __HAVE_PROCFS_MACHDEP

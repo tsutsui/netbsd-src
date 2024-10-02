@@ -1,4 +1,4 @@
-/*	$NetBSD: job.c,v 1.467 2024/03/10 02:53:37 sjg Exp $	*/
+/*	$NetBSD: job.c,v 1.483 2024/07/22 18:15:04 rillig Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990 The Regents of the University of California.
@@ -141,7 +141,7 @@
 #include "trace.h"
 
 /*	"@(#)job.c	8.2 (Berkeley) 3/19/94"	*/
-MAKE_RCSID("$NetBSD: job.c,v 1.467 2024/03/10 02:53:37 sjg Exp $");
+MAKE_RCSID("$NetBSD: job.c,v 1.483 2024/07/22 18:15:04 rillig Exp $");
 
 /*
  * A shell defines how the commands are run.  All commands for a target are
@@ -399,7 +399,7 @@ static Shell shells[] = {
  * It is set by the Job_ParseShell function.
  */
 static Shell *shell = &shells[DEFSHELL_INDEX];
-const char *shellPath = NULL;	/* full pathname of executable image */
+char *shellPath;		/* full pathname of executable image */
 const char *shellName = NULL;	/* last component of shellPath */
 char *shellErrFlag = NULL;
 static char *shell_freeIt = NULL; /* Allocated memory for custom .SHELL */
@@ -594,7 +594,6 @@ JobCondPassSig(int signo)
  *
  * Sends a token on the child exit pipe to wake us up from select()/poll().
  */
-/*ARGSUSED*/
 static void
 JobChildSig(int signo MAKE_ATTR_UNUSED)
 {
@@ -606,7 +605,6 @@ JobChildSig(int signo MAKE_ATTR_UNUSED)
 
 
 /* Resume all stopped jobs. */
-/*ARGSUSED*/
 static void
 JobContinueSig(int signo MAKE_ATTR_UNUSED)
 {
@@ -901,7 +899,7 @@ JobWriteCommand(Job *job, ShellWriter *wr, StringListNode *ln, const char *ucmd)
 
 	run = GNode_ShouldExecute(job->node);
 
-	xcmd = Var_Subst(ucmd, job->node, VARE_WANTRES);
+	xcmd = Var_SubstInTarget(ucmd, job->node);
 	/* TODO: handle errors */
 	xcmdStart = xcmd;
 
@@ -1028,9 +1026,10 @@ JobSaveCommands(Job *job)
 		 * variables such as .TARGET, .IMPSRC.  It is not intended to
 		 * expand the other variables as well; see deptgt-end.mk.
 		 */
-		expanded_cmd = Var_Subst(cmd, job->node, VARE_WANTRES);
+		expanded_cmd = Var_SubstInTarget(cmd, job->node);
 		/* TODO: handle errors */
 		Lst_Append(&Targ_GetEndNode()->commands, expanded_cmd);
+		Parse_RegisterCommand(expanded_cmd);
 	}
 }
 
@@ -1058,13 +1057,14 @@ DebugFailedJob(const Job *job)
 
 	debug_printf("\n");
 	debug_printf("*** Failed target: %s\n", job->node->name);
+	debug_printf("*** In directory: %s\n", curdir);
 	debug_printf("*** Failed commands:\n");
 	for (ln = job->node->commands.first; ln != NULL; ln = ln->next) {
 		const char *cmd = ln->datum;
 		debug_printf("\t%s\n", cmd);
 
 		if (strchr(cmd, '$') != NULL) {
-			char *xcmd = Var_Subst(cmd, job->node, VARE_WANTRES);
+			char *xcmd = Var_Subst(cmd, job->node, VARE_EVAL);
 			debug_printf("\t=> %s\n", xcmd);
 			free(xcmd);
 		}
@@ -1450,11 +1450,11 @@ JobExec(Job *job, char **argv)
 		 * was marked close-on-exec, we must clear that bit in the
 		 * new input.
 		 */
-		if (dup2(fileno(job->cmdFILE), 0) == -1)
+		if (dup2(fileno(job->cmdFILE), STDIN_FILENO) == -1)
 			execDie("dup2", "job->cmdFILE");
-		if (fcntl(0, F_SETFD, 0) == -1)
+		if (fcntl(STDIN_FILENO, F_SETFD, 0) == -1)
 			execDie("fcntl clear close-on-exec", "stdin");
-		if (lseek(0, 0, SEEK_SET) == -1)
+		if (lseek(STDIN_FILENO, 0, SEEK_SET) == -1)
 			execDie("lseek to 0", "stdin");
 
 		if (job->node->type & (OP_MAKE | OP_SUBMAKE)) {
@@ -1471,18 +1471,18 @@ JobExec(Job *job, char **argv)
 		 * Set up the child's output to be routed through the pipe
 		 * we've created for it.
 		 */
-		if (dup2(job->outPipe, 1) == -1)
+		if (dup2(job->outPipe, STDOUT_FILENO) == -1)
 			execDie("dup2", "job->outPipe");
 
 		/*
 		 * The output channels are marked close on exec. This bit
-		 * was duplicated by the dup2(on some systems), so we have
+		 * was duplicated by dup2 (on some systems), so we have
 		 * to clear it before routing the shell's error output to
 		 * the same place as its standard output.
 		 */
-		if (fcntl(1, F_SETFD, 0) == -1)
+		if (fcntl(STDOUT_FILENO, F_SETFD, 0) == -1)
 			execDie("clear close-on-exec", "stdout");
-		if (dup2(1, 2) == -1)
+		if (dup2(STDOUT_FILENO, STDERR_FILENO) == -1)
 			execDie("dup2", "1, 2");
 
 		/*
@@ -1680,6 +1680,8 @@ JobStart(GNode *gn, bool special)
 		 * virtual targets.
 		 */
 
+		int parseErrorsBefore;
+
 		/*
 		 * We're serious here, but if the commands were bogus, we're
 		 * also dead...
@@ -1689,7 +1691,10 @@ JobStart(GNode *gn, bool special)
 			DieHorribly();
 		}
 
+		parseErrorsBefore = parseErrors;
 		JobWriteShellCommands(job, gn, &run);
+		if (parseErrors != parseErrorsBefore)
+			run = false;
 		(void)fflush(job->cmdFILE);
 	} else if (!GNode_ShouldExecute(gn)) {
 		/*
@@ -1752,7 +1757,7 @@ JobStart(GNode *gn, bool special)
  * itself.
  */
 static char *
-PrintFilteredOutput(char *p, char *endp)	/* XXX: should all be const */
+PrintFilteredOutput(char *p, const char *endp)	/* XXX: p should be const */
 {
 	char *ep;		/* XXX: should be const */
 
@@ -1938,31 +1943,12 @@ again:
 static void
 JobRun(GNode *targ)
 {
-#if 0
-	/*
-	 * Unfortunately it is too complicated to run .BEGIN, .END, and
-	 * .INTERRUPT job in the parallel job module.  As of 2020-09-25,
-	 * unit-tests/deptgt-end-jobs.mk hangs in an endless loop.
-	 *
-	 * Running these jobs in compat mode also guarantees that these
-	 * jobs do not overlap with other unrelated jobs.
-	 */
-	GNodeList lst = LST_INIT;
-	Lst_Append(&lst, targ);
-	(void)Make_Run(&lst);
-	Lst_Done(&lst);
-	JobStart(targ, true);
-	while (jobTokensRunning != 0) {
-		Job_CatchOutput();
-	}
-#else
+	/* Don't let these special jobs overlap with other unrelated jobs. */
 	Compat_Make(targ, targ);
-	/* XXX: Replace with GNode_IsError(gn) */
-	if (targ->made == ERROR) {
+	if (GNode_IsError(targ)) {
 		PrintOnError(targ, "\n\nStop.\n");
 		exit(1);
 	}
-#endif
 }
 
 /*
@@ -2135,7 +2121,7 @@ InitShellNameAndPath(void)
 
 #ifdef DEFSHELL_CUSTOM
 	if (shellName[0] == '/') {
-		shellPath = shellName;
+		shellPath = bmake_strdup(shellName);
 		shellName = str_basename(shellPath);
 		return;
 	}
@@ -2150,7 +2136,8 @@ Shell_Init(void)
 	if (shellPath == NULL)
 		InitShellNameAndPath();
 
-	Var_SetWithFlags(SCOPE_CMDLINE, ".SHELL", shellPath, VAR_SET_READONLY);
+	Var_SetWithFlags(SCOPE_CMDLINE, ".SHELL", shellPath,
+			 VAR_SET_INTERNAL|VAR_SET_READONLY);
 	if (shell->errFlag == NULL)
 		shell->errFlag = "";
 	if (shell->echoFlag == NULL)
@@ -2188,7 +2175,7 @@ Job_SetPrefix(void)
 		Global_Set(".MAKE.JOB.PREFIX", "---");
 
 	targPrefix = Var_Subst("${.MAKE.JOB.PREFIX}",
-	    SCOPE_GLOBAL, VARE_WANTRES);
+	    SCOPE_GLOBAL, VARE_EVAL);
 	/* TODO: handle errors */
 }
 
@@ -2470,13 +2457,14 @@ Job_ParseShell(char *line)
 				 * Shell_Init has already been called!
 				 * Do it again.
 				 */
-				free(UNCONST(shellPath));
+				free(shellPath);
 				shellPath = NULL;
 				Shell_Init();
 			}
 		}
 	} else {
-		shellPath = path;
+		free(shellPath);
+		shellPath = bmake_strdup(path);
 		shellName = newShell.name != NULL ? newShell.name
 		    : str_basename(path);
 		if (!fullSpec) {
@@ -2583,14 +2571,14 @@ Job_Finish(void)
 	return job_errors;
 }
 
+#ifdef CLEANUP
 /* Clean up any memory used by the jobs module. */
 void
 Job_End(void)
 {
-#ifdef CLEANUP
 	free(shell_freeIt);
-#endif
 }
+#endif
 
 /*
  * Waits for all running jobs to finish and returns.
@@ -2899,11 +2887,6 @@ Job_RunTarget(const char *target, const char *fname)
 		Var_Set(gn, ALLSRC, fname);
 
 	JobRun(gn);
-	/* XXX: Replace with GNode_IsError(gn) */
-	if (gn->made == ERROR) {
-		PrintOnError(gn, "\n\nStop.\n");
-		exit(1);
-	}
 	return true;
 }
 

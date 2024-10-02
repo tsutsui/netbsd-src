@@ -1,4 +1,4 @@
-#	$NetBSD: bsd.kmodule.mk,v 1.84 2023/06/03 21:26:28 lukem Exp $
+#	$NetBSD: bsd.kmodule.mk,v 1.86 2024/06/16 21:50:23 pgoyette Exp $
 
 # We are not building this with PIE
 MKPIE=no
@@ -31,6 +31,7 @@ CPPFLAGS+=	-nostdinc -I. -I${.CURDIR} -isystem $S -isystem $S/arch
 CPPFLAGS+=	-isystem ${S}/../common/include
 CPPFLAGS+=	-D_KERNEL -D_MODULE -DSYSCTL_INCLUDE_DESCR
 CPPFLAGS+=	${${MKDTRACE:Uno} != "no" :? -DKDTRACE_HOOKS :}
+AFLAGS+=	-D_LOCORE -Wa,--fatal-warnings
 
 CWARNFLAGS.clang+=	-Wno-error=constant-conversion
 
@@ -191,7 +192,8 @@ ${PROG}: ${OBJS} ${DPADD} ${KMODSCRIPT}
 .if defined(PROGDEBUG)
 ${PROGDEBUG}: ${PROG}
 	${_MKTARGET_CREATE}
-	(  ${OBJCOPY} --only-keep-debug ${PROG} ${PROGDEBUG} \
+	( ${OBJCOPY} --only-keep-debug --compress-debug-sections \
+	    ${PROG} ${PROGDEBUG} \
 	&& ${OBJCOPY} --strip-debug -p -R .gnu_debuglink \
 		--add-gnu-debuglink=${PROGDEBUG} ${PROG} \
 	) || (rm -f ${PROGDEBUG}; false)

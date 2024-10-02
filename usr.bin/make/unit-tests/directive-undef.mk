@@ -1,4 +1,4 @@
-# $NetBSD: directive-undef.mk,v 1.13 2023/06/01 20:56:35 rillig Exp $
+# $NetBSD: directive-undef.mk,v 1.16 2024/08/29 20:20:36 rillig Exp $
 #
 # Tests for the .undef directive.
 #

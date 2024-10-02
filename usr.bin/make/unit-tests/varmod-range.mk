@@ -1,4 +1,4 @@
-# $NetBSD: varmod-range.mk,v 1.10 2023/12/17 14:07:22 rillig Exp $
+# $NetBSD: varmod-range.mk,v 1.15 2024/08/29 20:20:36 rillig Exp $
 #
 # Tests for the :range variable modifier, which generates sequences
 # of integers from the given range.
@@ -39,7 +39,7 @@
 # XXX: As of 2023-12-17, the ':range=n' modifier does not turn the undefined
 # expression into a defined one, even though it does not depend on the value
 # of the expression.  This looks like an oversight.
-# expect+1: Malformed conditional (${:range=5} != "")
+# expect+1: Malformed conditional '${:range=5} != ""'
 .if ${:range=5} != ""
 .  error
 .else
@@ -63,7 +63,7 @@
 # Since 2020-11-01, the parser issues a more precise "Invalid number" error
 # instead.
 # expect+2: Invalid number "x}Rest" != "Rest"" for ':range' modifier
-# expect+1: Malformed conditional ("${:U:range=x}Rest" != "Rest")
+# expect+1: Malformed conditional '"${:U:range=x}Rest" != "Rest"'
 .if "${:U:range=x}Rest" != "Rest"
 .  error
 .else
@@ -74,7 +74,7 @@
 # This parse error stops at the 'x', trying to parse it as a variable
 # modifier.
 # expect+2: Unknown modifier "x0"
-# expect+1: Malformed conditional ("${:U:range=0x0}Rest" != "Rest")
+# expect+1: Malformed conditional '"${:U:range=0x0}Rest" != "Rest"'
 .if "${:U:range=0x0}Rest" != "Rest"
 .  error
 .else
@@ -92,7 +92,7 @@
 
 # modifier name too short
 # expect+2: Unknown modifier "rang"
-# expect+1: Malformed conditional ("${a b c:L:rang}Rest" != "Rest")
+# expect+1: Malformed conditional '"${a b c:L:rang}Rest" != "Rest"'
 .if "${a b c:L:rang}Rest" != "Rest"
 .  error
 .else
@@ -101,7 +101,7 @@
 
 # misspelled modifier name
 # expect+2: Unknown modifier "rango"
-# expect+1: Malformed conditional ("${a b c:L:rango}Rest" != "Rest")
+# expect+1: Malformed conditional '"${a b c:L:rango}Rest" != "Rest"'
 .if "${a b c:L:rango}Rest" != "Rest"
 .  error
 .else
@@ -110,7 +110,7 @@
 
 # modifier name too long
 # expect+2: Unknown modifier "ranger"
-# expect+1: Malformed conditional ("${a b c:L:ranger}Rest" != "Rest")
+# expect+1: Malformed conditional '"${a b c:L:ranger}Rest" != "Rest"'
 .if "${a b c:L:ranger}Rest" != "Rest"
 .  error
 .else

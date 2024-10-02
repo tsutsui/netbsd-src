@@ -1,0 +1,6 @@
+# $NetBSD: ad.mips64eb,v 1.11 2024/07/11 08:13:49 riastradh Exp $
+#
+./libexec/ld.elf_so-o32			base-compat-shlib	compat,pic
+./usr/lib/o32/libgomp.so.2.1			base-compat-shlib	compat,pic,arch64,gcc=10
+./usr/lib/o32/libgomp.so.2.2			base-compat-shlib	compat,pic,arch64,gcc=12
+./usr/libexec/ld.elf_so-o32			base-sys-shlib		compat,pic

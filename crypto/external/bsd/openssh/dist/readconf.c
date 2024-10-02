@@ -1,5 +1,5 @@
-/*	$NetBSD: readconf.c,v 1.44 2023/12/20 17:15:21 christos Exp $	*/
-/* $OpenBSD: readconf.c,v 1.383 2023/10/12 02:18:18 djm Exp $ */
+/*	$NetBSD: readconf.c,v 1.47 2024/09/24 21:32:18 christos Exp $	*/
+/* $OpenBSD: readconf.c,v 1.390 2024/09/15 00:57:36 djm Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -15,7 +15,7 @@
  */
 
 #include "includes.h"
-__RCSID("$NetBSD: readconf.c,v 1.44 2023/12/20 17:15:21 christos Exp $");
+__RCSID("$NetBSD: readconf.c,v 1.47 2024/09/24 21:32:18 christos Exp $");
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -674,24 +674,79 @@ check_match_ifaddrs(const char *addrlist)
 }
 
 /*
+ * Expand a "match exec" command or an Include path, caller must free returned
+ * value.
+ */
+static char *
+expand_match_exec_or_include_path(const char *path, Options *options,
+    struct passwd *pw, const char *host_arg, const char *original_host,
+    int final_pass, int is_include_path)
+{
+	char thishost[NI_MAXHOST], shorthost[NI_MAXHOST], portstr[NI_MAXSERV];
+	char uidstr[32], *conn_hash_hex, *keyalias, *ruser;
+	const char *jmphost;
+	char *host, *ret;
+	int port;
+
+	port = options->port <= 0 ? default_ssh_port() : options->port;
+	ruser = options->user == NULL ? pw->pw_name : options->user;
+	if (final_pass) {
+		host = xstrdup(options->hostname);
+	} else if (options->hostname != NULL) {
+		/* NB. Please keep in sync with ssh.c:main() */
+		host = percent_expand(options->hostname,
+		    "h", host_arg, (char *)NULL);
+	} else {
+		host = xstrdup(host_arg);
+	}
+	if (gethostname(thishost, sizeof(thishost)) == -1)
+		fatal("gethostname: %s", strerror(errno));
+	jmphost = option_clear_or_none(options->jump_host) ?
+	    "" : options->jump_host;
+	strlcpy(shorthost, thishost, sizeof(shorthost));
+	shorthost[strcspn(thishost, ".")] = '\0';
+	snprintf(portstr, sizeof(portstr), "%d", port);
+	snprintf(uidstr, sizeof(uidstr), "%llu",
+	    (unsigned long long)pw->pw_uid);
+	conn_hash_hex = ssh_connection_hash(thishost, host,
+	    portstr, ruser, jmphost);
+	keyalias = options->host_key_alias ?  options->host_key_alias : host;
+
+	ret = (is_include_path ? percent_dollar_expand : percent_expand)(path,
+	    "C", conn_hash_hex,
+	    "L", shorthost,
+	    "d", pw->pw_dir,
+	    "h", host,
+	    "k", keyalias,
+	    "l", thishost,
+	    "n", original_host,
+	    "p", portstr,
+	    "r", ruser,
+	    "u", pw->pw_name,
+	    "i", uidstr,
+	    "j", jmphost,
+	    (char *)NULL);
+	free(host);
+	free(conn_hash_hex);
+	return ret;
+}
+
+/*
  * Parse and execute a Match directive.
  */
 static int
-match_cfg_line(Options *options, char **condition, struct passwd *pw,
-    const char *host_arg, const char *original_host, int final_pass,
-    int *want_final_pass, const char *filename, int linenum)
+match_cfg_line(Options *options, const char *full_line, int *acp, char ***avp,
+    struct passwd *pw, const char *host_arg, const char *original_host,
+    int final_pass, int *want_final_pass, const char *filename, int linenum)
 {
-	char *arg, *oattrib, *attrib, *cmd, *cp = *condition, *host, *criteria;
+	char *arg, *oattrib, *attrib, *cmd, *host, *criteria;
 	const char *ruser;
-	int r, port, this_result, result = 1, attributes = 0, negate;
-	char thishost[NI_MAXHOST], shorthost[NI_MAXHOST], portstr[NI_MAXSERV];
-	char uidstr[32];
+	int r, this_result, result = 1, attributes = 0, negate;
 
 	/*
 	 * Configuration is likely to be incomplete at this point so we
 	 * must be prepared to use default values.
 	 */
-	port = options->port <= 0 ? default_ssh_port() : options->port;
 	ruser = options->user == NULL ? pw->pw_name : options->user;
 	if (final_pass) {
 		host = xstrdup(options->hostname);
@@ -704,11 +759,11 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 	}
 
 	debug2("checking match for '%s' host %s originally %s",
-	    cp, host, original_host);
-	while ((oattrib = attrib = strdelim(&cp)) && *attrib != '\0') {
+	    full_line, host, original_host);
+	while ((oattrib = attrib = argv_next(acp, avp)) != NULL) {
 		/* Terminate on comment */
 		if (*attrib == '#') {
-			cp = NULL; /* mark all arguments consumed */
+			argv_consume(acp);
 			break;
 		}
 		arg = criteria = NULL;
@@ -717,7 +772,8 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 			attrib++;
 		/* Criterion "all" has no argument and must appear alone */
 		if (strcasecmp(attrib, "all") == 0) {
-			if (attributes > 1 || ((arg = strdelim(&cp)) != NULL &&
+			if (attributes > 1 ||
+			    ((arg = argv_next(acp, avp)) != NULL &&
 			    *arg != '\0' && *arg != '#')) {
 				error("%.200s line %d: '%s' cannot be combined "
 				    "with other Match attributes",
@@ -726,7 +782,7 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 				goto out;
 			}
 			if (arg != NULL && *arg == '#')
-				cp = NULL; /* mark all arguments consumed */
+				argv_consume(acp); /* consume remaining args */
 			if (result)
 				result = negate ? 0 : 1;
 			goto out;
@@ -751,7 +807,7 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 			continue;
 		}
 		/* All other criteria require an argument */
-		if ((arg = strdelim(&cp)) == NULL ||
+		if ((arg = argv_next(acp, avp)) == NULL ||
 		    *arg == '\0' || *arg == '#') {
 			error("Missing Match criteria for %s", attrib);
 			result = -1;
@@ -793,38 +849,12 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 			if (r == (negate ? 1 : 0))
 				this_result = result = 0;
 		} else if (strcasecmp(attrib, "exec") == 0) {
-			char *conn_hash_hex, *keyalias;
-			const char *jmphost;
-
-			if (gethostname(thishost, sizeof(thishost)) == -1)
-				fatal("gethostname: %s", strerror(errno));
-			jmphost = option_clear_or_none(options->jump_host) ?
-			    "" : options->jump_host;
-			strlcpy(shorthost, thishost, sizeof(shorthost));
-			shorthost[strcspn(thishost, ".")] = '\0';
-			snprintf(portstr, sizeof(portstr), "%d", port);
-			snprintf(uidstr, sizeof(uidstr), "%llu",
-			    (unsigned long long)pw->pw_uid);
-			conn_hash_hex = ssh_connection_hash(thishost, host,
-			    portstr, ruser, jmphost);
-			keyalias = options->host_key_alias ?
-			    options->host_key_alias : host;
-
-			cmd = percent_expand(arg,
-			    "C", conn_hash_hex,
-			    "L", shorthost,
-			    "d", pw->pw_dir,
-			    "h", host,
-			    "k", keyalias,
-			    "l", thishost,
-			    "n", original_host,
-			    "p", portstr,
-			    "r", ruser,
-			    "u", pw->pw_name,
-			    "i", uidstr,
-			    "j", jmphost,
-			    (char *)NULL);
-			free(conn_hash_hex);
+			if ((cmd = expand_match_exec_or_include_path(arg,
+			    options, pw, host_arg, original_host,
+			    final_pass, 0)) == NULL) {
+				fatal("%.200s line %d: failed to expand match "
+				    "exec '%.100s'", filename, linenum, arg);
+			}
 			if (result != 1) {
 				/* skip execution if prior predicate failed */
 				debug3("%.200s line %d: skipped exec "
@@ -864,7 +894,6 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
  out:
 	if (result != -1)
 		debug2("match %sfound", result ? "" : "not ");
-	*condition = cp;
 	free(host);
 	return result;
 }
@@ -917,6 +946,20 @@ parse_token(const char *cp, const char *filename, int linenum,
 	error("%s: line %d: Bad configuration option: %s",
 	    filename, linenum, cp);
 	return oBadOption;
+}
+
+static void
+free_canon_cnames(struct allowed_cname *cnames, u_int n)
+{
+	u_int i;
+
+	if (cnames == NULL || n == 0)
+		return;
+	for (i = 0; i < n; i++) {
+		free(cnames[i].source_list);
+		free(cnames[i].target_list);
+	}
+	free(cnames);
 }
 
 /* Multistate option parsing */
@@ -1017,7 +1060,7 @@ static const struct multistate multistate_pubkey_auth[] = {
 };
 static const struct multistate multistate_compression[] = {
 #ifdef WITH_ZLIB
-	{ "yes",			COMP_ZLIB },
+	{ "yes",			COMP_DELAYED },
 #endif
 	{ "no",				COMP_NONE },
 	{ NULL, -1 }
@@ -1061,21 +1104,24 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 {
 	char *str, **charptr, *endofnumber, *keyword, *arg, *arg2, *p;
 	char **cpptr, ***cppptr, fwdarg[256];
-	u_int i, *uintptr, uvalue, max_entries = 0;
+	u_int i, *uintptr, max_entries = 0;
 	int r, oactive, negated, opcode, *intptr, value, value2, cmdline = 0;
-	int remotefwd, dynamicfwd, ca_only = 0;
+	int remotefwd, dynamicfwd, ca_only = 0, found = 0;
 	LogLevel *log_level_ptr;
 	SyslogFacility *log_facility_ptr;
 	long long val64;
 	size_t len;
 	struct Forward fwd;
 	const struct multistate *multistate_ptr;
-	struct allowed_cname *cname;
 	glob_t gl;
 	const char *errstr;
 	char **oav = NULL, **av;
 	int oac = 0, ac;
 	int ret = -1;
+	struct allowed_cname *cnames = NULL;
+	u_int ncnames = 0;
+	char **strs = NULL; /* string array arguments; freed implicitly */
+	u_int nstrs = 0;
 
 	if (activep == NULL) { /* We are processing a command line directive */
 		cmdline = 1;
@@ -1747,14 +1793,13 @@ parse_pubkey_algos:
 	case oPermitRemoteOpen:
 		uintptr = &options->num_permitted_remote_opens;
 		cppptr = &options->permitted_remote_opens;
-		uvalue = *uintptr;	/* modified later */
-		i = 0;
+		found = *uintptr == 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			arg2 = xstrdup(arg);
 			/* Allow any/none only in first position */
 			if (strcasecmp(arg, "none") == 0 ||
 			    strcasecmp(arg, "any") == 0) {
-				if (i > 0 || ac > 0) {
+				if (nstrs > 0 || ac > 0) {
 					error("%s line %d: keyword %s \"%s\" "
 					    "argument must appear alone.",
 					    filename, linenum, keyword, arg);
@@ -1780,17 +1825,20 @@ parse_pubkey_algos:
 					    lookup_opcode_name(opcode));
 				}
 			}
-			if (*activep && uvalue == 0) {
-				opt_array_append(filename, linenum,
-				    lookup_opcode_name(opcode),
-				    cppptr, uintptr, arg2);
-			}
+			opt_array_append(filename, linenum,
+			    lookup_opcode_name(opcode),
+			    &strs, &nstrs, arg2);
 			free(arg2);
-			i++;
 		}
-		if (i == 0)
+		if (nstrs == 0)
 			fatal("%s line %d: missing %s specification",
 			    filename, linenum, lookup_opcode_name(opcode));
+		if (found && *activep) {
+			*cppptr = strs;
+			*uintptr = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
+		}
 		break;
 
 	case oClearAllForwardings:
@@ -1844,8 +1892,8 @@ parse_pubkey_algos:
 			    "option");
 			goto out;
 		}
-		value = match_cfg_line(options, &str, pw, host, original_host,
-		    flags & SSHCONF_FINAL, want_final_pass,
+		value = match_cfg_line(options, str, &ac, &av, pw, host,
+		    original_host, flags & SSHCONF_FINAL, want_final_pass,
 		    filename, linenum);
 		if (value < 0) {
 			error("%.200s line %d: Bad Match condition", filename,
@@ -1853,13 +1901,6 @@ parse_pubkey_algos:
 			goto out;
 		}
 		*activep = (flags & SSHCONF_NEVERMATCH) ? 0 : value;
-		/*
-		 * If match_cfg_line() didn't consume all its arguments then
-		 * arrange for the extra arguments check below to fail.
-		 */
-
-		if (str == NULL || *str == '\0')
-			argv_consume(&ac);
 		break;
 
 	case oEscapeChar:
@@ -1908,12 +1949,14 @@ parse_pubkey_algos:
 		goto parse_int;
 
 	case oSendEnv:
+		/* XXX appends to list; doesn't respect first-match-wins */
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0' || strchr(arg, '=') != NULL) {
 				error("%s line %d: Invalid environment name.",
 				    filename, linenum);
 				goto out;
 			}
+			found = 1;
 			if (!*activep)
 				continue;
 			if (*arg == '-') {
@@ -1925,27 +1968,38 @@ parse_pubkey_algos:
 			    lookup_opcode_name(opcode),
 			    &options->send_env, &options->num_send_env, arg);
 		}
+		if (!found) {
+			fatal("%s line %d: no %s specified",
+			    filename, linenum, keyword);
+		}
 		break;
 
 	case oSetEnv:
-		value = options->num_setenv;
+		found = options->num_setenv == 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (strchr(arg, '=') == NULL) {
 				error("%s line %d: Invalid SetEnv.",
 				    filename, linenum);
 				goto out;
 			}
-			if (!*activep || value != 0)
-				continue;
-			if (lookup_setenv_in_list(arg, options->setenv,
-			    options->num_setenv) != NULL) {
+			if (lookup_setenv_in_list(arg, strs, nstrs) != NULL) {
 				debug2("%s line %d: ignoring duplicate env "
 				    "name \"%.64s\"", filename, linenum, arg);
 				continue;
 			}
 			opt_array_append(filename, linenum,
 			    lookup_opcode_name(opcode),
-			    &options->setenv, &options->num_setenv, arg);
+			    &strs, &nstrs, arg);
+		}
+		if (nstrs == 0) {
+			fatal("%s line %d: no %s specified",
+			    filename, linenum, keyword);
+		}
+		if (found && *activep) {
+			options->setenv = strs;
+			options->num_setenv = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
 		}
 		break;
 
@@ -2043,6 +2097,15 @@ parse_pubkey_algos:
 				    filename, linenum, keyword);
 				goto out;
 			}
+			/* Expand %tokens and environment variables */
+			if ((p = expand_match_exec_or_include_path(arg,
+			    options, pw, host, original_host,
+			    flags & SSHCONF_FINAL, 1)) == NULL) {
+				error("%.200s line %d: Unable to expand user "
+				    "config file '%.100s'",
+				    filename, linenum, arg);
+				continue;
+			}
 			/*
 			 * Ensure all paths are anchored. User configuration
 			 * files may begin with '~/' but system configurations
@@ -2050,17 +2113,19 @@ parse_pubkey_algos:
 			 * as living in ~/.ssh for user configurations or
 			 * /etc/ssh for system ones.
 			 */
-			if (*arg == '~' && (flags & SSHCONF_USERCONF) == 0) {
+			if (*p == '~' && (flags & SSHCONF_USERCONF) == 0) {
 				error("%.200s line %d: bad include path %s.",
-				    filename, linenum, arg);
+				    filename, linenum, p);
 				goto out;
 			}
-			if (!path_absolute(arg) && *arg != '~') {
+			if (!path_absolute(p) && *p != '~') {
 				xasprintf(&arg2, "%s/%s",
 				    (flags & SSHCONF_USERCONF) ?
-				    "~/" _PATH_SSH_USER_DIR : SSHDIR, arg);
-			} else
-				arg2 = xstrdup(arg);
+				    "~/" _PATH_SSH_USER_DIR : SSHDIR, p);
+			} else {
+				arg2 = xstrdup(p);
+			}
+			free(p);
 			memset(&gl, 0, sizeof(gl));
 			r = glob(arg2, GLOB_TILDE | GLOB_LIMIT, NULL, &gl);
 			if (r == GLOB_NOMATCH) {
@@ -2086,8 +2151,9 @@ parse_pubkey_algos:
 				    (oactive ? 0 : SSHCONF_NEVERMATCH),
 				    activep, want_final_pass, depth + 1);
 				if (r != 1 && errno != ENOENT) {
-					error("Can't open user config file "
-					    "%.100s: %.100s", gl.gl_pathv[i],
+					error("%.200s line %d: Can't open user "
+					    "config file %.100s: %.100s",
+					    filename, linenum, gl.gl_pathv[i],
 					    strerror(errno));
 					globfree(&gl);
 					goto out;
@@ -2158,45 +2224,39 @@ parse_pubkey_algos:
 		goto parse_flag;
 
 	case oCanonicalDomains:
-		value = options->num_canonical_domains != 0;
-		i = 0;
+		found = options->num_canonical_domains == 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
-			if (*arg == '\0') {
-				error("%s line %d: keyword %s empty argument",
-				    filename, linenum, keyword);
-				goto out;
-			}
 			/* Allow "none" only in first position */
 			if (strcasecmp(arg, "none") == 0) {
-				if (i > 0 || ac > 0) {
+				if (nstrs > 0 || ac > 0) {
 					error("%s line %d: keyword %s \"none\" "
 					    "argument must appear alone.",
 					    filename, linenum, keyword);
 					goto out;
 				}
 			}
-			i++;
 			if (!valid_domain(arg, 1, &errstr)) {
 				error("%s line %d: %s", filename, linenum,
 				    errstr);
 				goto out;
 			}
-			if (!*activep || value)
-				continue;
-			if (options->num_canonical_domains >=
-			    MAX_CANON_DOMAINS) {
-				error("%s line %d: too many hostname suffixes.",
-				    filename, linenum);
-				goto out;
-			}
-			options->canonical_domains[
-			    options->num_canonical_domains++] = xstrdup(arg);
+			opt_array_append(filename, linenum, keyword,
+			    &strs, &nstrs, arg);
+		}
+		if (nstrs == 0) {
+			fatal("%s line %d: no %s specified",
+			    filename, linenum, keyword);
+		}
+		if (found && *activep) {
+			options->canonical_domains = strs;
+			options->num_canonical_domains = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
 		}
 		break;
 
 	case oCanonicalizePermittedCNAMEs:
-		value = options->num_permitted_cnames != 0;
-		i = 0;
+		found = options->num_permitted_cnames == 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			char empty[] = "";
 			/*
@@ -2204,7 +2264,7 @@ parse_pubkey_algos:
 			 * everything or 'list:list'
 			 */
 			if (strcasecmp(arg, "none") == 0) {
-				if (i > 0 || ac > 0) {
+				if (ncnames > 0 || ac > 0) {
 					error("%s line %d: keyword %s \"none\" "
 					    "argument must appear alone.",
 					    filename, linenum, keyword);
@@ -2225,20 +2285,23 @@ parse_pubkey_algos:
 				*arg2 = '\0';
 				arg2++;
 			}
-			i++;
-			if (!*activep || value)
-				continue;
-			if (options->num_permitted_cnames >=
-			    MAX_CANON_DOMAINS) {
-				error("%s line %d: too many permitted CNAMEs.",
-				    filename, linenum);
-				goto out;
-			}
-			cname = options->permitted_cnames +
-			    options->num_permitted_cnames++;
-			cname->source_list = xstrdup(arg);
-			cname->target_list = xstrdup(arg2);
+			cnames = xrecallocarray(cnames, ncnames, ncnames + 1,
+			    sizeof(*cnames));
+			cnames[ncnames].source_list = xstrdup(arg);
+			cnames[ncnames].target_list = xstrdup(arg2);
+			ncnames++;
 		}
+		if (ncnames == 0) {
+			fatal("%s line %d: no %s specified",
+			    filename, linenum, keyword);
+		}
+		if (found && *activep) {
+			options->permitted_cnames = cnames;
+			options->num_permitted_cnames = ncnames;
+			cnames = NULL; /* transferred */
+			ncnames = 0;
+		}
+		/* un-transferred cnames is cleaned up before exit */
 		break;
 
 	case oCanonicalizeHostname:
@@ -2419,12 +2482,11 @@ parse_pubkey_algos:
 		break;
 
 	case oChannelTimeout:
-		uvalue = options->num_channel_timeouts;
-		i = 0;
+		found = options->num_channel_timeouts == 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			/* Allow "none" only in first position */
 			if (strcasecmp(arg, "none") == 0) {
-				if (i > 0 || ac > 0) {
+				if (nstrs > 0 || ac > 0) {
 					error("%s line %d: keyword %s \"none\" "
 					    "argument must appear alone.",
 					    filename, linenum, keyword);
@@ -2435,11 +2497,18 @@ parse_pubkey_algos:
 				fatal("%s line %d: invalid channel timeout %s",
 				    filename, linenum, arg);
 			}
-			if (!*activep || uvalue != 0)
-				continue;
 			opt_array_append(filename, linenum, keyword,
-			    &options->channel_timeouts,
-			    &options->num_channel_timeouts, arg);
+			    &strs, &nstrs, arg);
+		}
+		if (nstrs == 0) {
+			fatal("%s line %d: no %s specified",
+			    filename, linenum, keyword);
+		}
+		if (found && *activep) {
+			options->channel_timeouts = strs;
+			options->num_channel_timeouts = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
 		}
 		break;
 
@@ -2471,6 +2540,8 @@ parse_pubkey_algos:
 	/* success */
 	ret = 0;
  out:
+	free_canon_cnames(cnames, ncnames);
+	opt_array_free2(strs, NULL, nstrs);
 	argv_free(oav, oac);
 	return ret;
 }
@@ -2828,7 +2899,9 @@ fill_default_options(Options * options)
 		add_identity_file(options, "~/",
 		    _PATH_SSH_CLIENT_ID_ED25519_SK, 0);
 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_XMSS, 0);
+#ifdef WITH_DSA
 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_DSA, 0);
+#endif
 	}
 	if (options->escape_char == -1)
 		options->escape_char = '~';
@@ -3436,7 +3509,7 @@ parse_ssh_uri(const char *uri, char **userp, char **hostp, int *portp)
 	return r;
 }
 
-/* XXX the following is a near-vebatim copy from servconf.c; refactor */
+/* XXX the following is a near-verbatim copy from servconf.c; refactor */
 static const char *
 fmt_multistate_int(int val, const struct multistate *m)
 {

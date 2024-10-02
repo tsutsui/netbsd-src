@@ -1,4 +1,4 @@
-#	$NetBSD: bsd.x11.mk,v 1.151 2023/10/25 04:37:59 mrg Exp $
+#	$NetBSD: bsd.x11.mk,v 1.158 2024/07/04 21:48:19 mrg Exp $
 
 .include <bsd.init.mk>
 
@@ -31,7 +31,7 @@ X11FLAGS.CONNECTION+=	-DIPv6
 #	 EXT_DEFINES
 X11FLAGS.BASE_EXTENSION=	-DMITMISC -DXTEST -DXTRAP -DXSYNC -DXCMISC \
 				-DXRECORD -DMITSHM -DBIGREQS -DXF86VIDMODE \
-				-DXF86MISC -DDPMSExtension -DEVI \
+				-DDPMSExtension -DEVI \
 				-DSCREENSAVER -DXV -DXVMC -DGLXEXT \
 				-DRES
 
@@ -83,8 +83,7 @@ X11FLAGS.OS_DEFINES=	-DDDXOSINIT -DSERVER_LOCK -DDDXOSFATALERROR \
 
 .if !(${MACHINE} == "acorn32"	|| \
     ${MACHINE} == "sun3"	|| \
-    ${MACHINE} == "x68k"	|| \
-    ${MACHINE} == "vax")
+    ${MACHINE} == "x68k")
 #	EXT_DEFINES
 X11FLAGS.EXTENSION+=	-DXF86VIDMODE
 
@@ -134,7 +133,7 @@ XORG_VERSION_CURRENT="(((${XORG_SERVER_MAJOR}) * 10000000) + ((${XORG_SERVER_MIN
 .else
 XORG_SERVER_MAJOR=	21
 XORG_SERVER_MINOR=	1
-XORG_SERVER_TEENY=	9
+XORG_SERVER_TEENY=	13
 XORG_VERSION_CURRENT="((10000000) + ((${XORG_SERVER_MAJOR}) * 100000) + ((${XORG_SERVER_MINOR}) * 1000) + ${XORG_SERVER_TEENY})"
 .endif
 
@@ -145,11 +144,25 @@ __XKBDEFRULES__=	'"xorg"'
 XLOCALE.DEFINES=	-DXLOCALEDIR=\"${X11LIBDIR}/locale\" \
 			-DXLOCALELIBDIR=\"${X11LIBDIR}/locale\"
 
-PRINT_PACKAGE_VERSION=	awk '/^PACKAGE_VERSION=/ {			\
+PRINT_PACKAGE_VERSION=	${TOOL_AWK} '/^PACKAGE_VERSION=/ {		\
 				match($$1, "([0-9]+\\.)+[0-9]+");	\
 				version = substr($$1, RSTART, RLENGTH);	\
 			} END { print version }'
 
+_CONFIGURE_PATH=
+.if exists(${X11SRCDIR.${PROG}}/configure)
+_CONFIGURE_PATH=${X11SRCDIR.${PROG}}/configure
+.elif exists(${X11SRCDIR.${LIB}}/configure)
+_CONFIGURE_PATH=${X11SRCDIR.${LIB}}/configure
+.endif
+
+.if exists(${_CONFIGURE_PATH})
+_PRINT_PACKAGE_STRING=	${TOOL_AWK} -F= '/^PACKAGE_STRING=/ { print $$2 }' \
+			${_CONFIGURE_PATH}
+PACKAGE_STRING!=	${_PRINT_PACKAGE_STRING}
+.else
+PACKAGE_STRING=		"X11 program"
+.endif
 
 # Commandline to convert 'XCOMM' comments and 'XHASH' to '#', among other
 # things. Transformed from the "CppSedMagic" macro from "Imake.rules".
@@ -401,7 +414,7 @@ realinstall: appdefsinstall
 CLEANDIRFILES+= ${MAN:U${PROG:D${PROG.1}}}
 .endif								# }
 
-.SUFFIXES:	.man .man.pre .1 .3 .4 .5 .7
+.SUFFIXES:	.man .man.pre .1 .3 .4 .5 .7 .8
 
 # Note the escaping trick for _X11MANTRANSFORM using % to replace spaces
 XORGVERSION=	'"X Version 11"'
@@ -413,13 +426,16 @@ _X11MANTRANSFORM= \
 _X11MANTRANSFORMS_BOTH=\
 	${X11EXTRAMANTRANSFORMS_BOTH} \
 	appmansuffix		1 \
+	APP_MAN_SUFFIX		1 \
 	LIB_MAN_SUFFIX		3 \
 	libmansuffix		3 \
 	oslibmansuffix		3 \
 	drivermansuffix		4 \
 	filemansuffix		5 \
+	MISC_MAN_SUFFIX		7 \
 	miscmansuffix		7 \
 	adminmansuffix		8 \
+	XORG_MAN_PAGE		"X Version 11" \
 	logdir			/var/log \
 	sysconfdir		/etc \
 	apploaddir		${X11ROOTDIR}/lib/X11/app-defaults \
@@ -437,6 +453,11 @@ _X11MANTRANSFORMS_BOTH=\
 	xorgversion		${XORGVERSION:C/ /%/gW} \
 	XSERVERNAME		Xorg \
 	xservername		Xorg
+
+.if !empty(PACKAGE_STRING)
+_X11MANTRANSFORMS_BOTH+=\
+	PACKAGE_STRING		${PACKAGE_STRING}
+.endif
 
 .for __def__ __value__ in ${_X11MANTRANSFORMS_BOTH}
 _X11MANTRANSFORM+= \
@@ -464,7 +485,7 @@ _X11MANTRANSFORMCMD+=	-e s,${__def__},${__value__:C/%/ /gW},g
 .endif
 _X11MANTRANSFORMCMD+=	${X11EXTRAMANDEFS}
 
-.man.1 .man.3 .man.4 .man.5 .man.7 .man.pre.1 .man.pre.4 .man.pre.5:
+.man.1 .man.3 .man.4 .man.5 .man.7 .man.8 .man.pre.1 .man.pre.4 .man.pre.5:
 	${_MKTARGET_CREATE}
 	rm -f ${.TARGET}
 	${_X11MANTRANSFORMCMD} | ${X11TOOL_UNXCOMM} > ${.TARGET}.tmp

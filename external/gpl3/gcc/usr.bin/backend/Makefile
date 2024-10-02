@@ -1,4 +1,4 @@
-#	$NetBSD: Makefile,v 1.71 2024/02/25 00:28:02 mrg Exp $
+#	$NetBSD: Makefile,v 1.78 2024/09/29 17:14:40 kalvisd Exp $
 
 HOSTPROG_CXX=	1
 LIBISPRIVATE=	yes
@@ -52,6 +52,7 @@ CPPFLAGS.cppbuiltin.cc+=	-DBASEVER="\"${BASEVER}"\"
 CLEANFILES+=	gengenrtl genrtl.h \
 		gengtype gtyp-gen.h gtype-brig.h gtype-desc.cc gtype-desc.h \
 		gtype-c.h gtype-cp.h gtype-f.h gtype-objc.h \
+		gtype-d.h gtype-fortran.h \
 		genflags genflags.h \
 		gencheck tree-check.h \
 		insn-preds.cc genpreds tm-preds.h tm_p.h cs-tm_p.h \
@@ -64,6 +65,8 @@ CLEANFILES+=	gengenrtl genrtl.h \
 
 # XXX
 #COPTS.varasm.cc=		-Wno-error
+
+.SUFFIXES: .lo .h .c .cc
 
 # XXX Override the normal rule to use HOST_COMPILE.cc
 .c.lo:
@@ -428,6 +431,14 @@ aarch64-builtin-iterators.h: ${DIST}/gcc/config/aarch64/geniterators.sh \
 
 CLEANFILES+=	aarch-builtin-iterators.h
 
+.if ${GCC_MACHINE_ARCH} == "powerpc" || ${GCC_MACHINE_ARCH} == "powerpc64" # {
+
+.include "../rs6000-inc.mk"
+gtype-desc.h: rs6000-builtins.h
+
+.endif # }
+
+
 #
 # Required hard-coded dependancies.
 #
@@ -498,70 +509,11 @@ i386.d i386.o: pass_manager.h
 #COPTS.insn-recog.cc+=-Wno-error
 .endif
 
-.if ${GCC_MACHINE_ARCH} == "vax" && 0
+.if ${GCC_MACHINE_ARCH} == "vax"
 CPPFLAGS+=-I${.CURDIR}/../../lib/libgcc/libgcov/arch/${GCC_MACHINE_ARCH}
-COPTS.builtins.c+=-O0
-COPTS.calls.c+=-O0
-COPTS.convert.c+=-O0
-COPTS.data-streamer-out.c+=-O0
-COPTS.dse.c+=-O0					# XXX port-vax/51967
-COPTS.dwarf2out.c+=-O0
-COPTS.expmed.c+=-O0
-COPTS.expr.c+=-O0 -Wno-error=tautological-compare
-COPTS.fixed-value.c+=-O0
-COPTS.fold-const.c+=-O0
-COPTS.generic-match.c+=-O0
-COPTS.gimple-fold.c+=-O0
-COPTS.gimple-match.c+=-O0
-COPTS.gimple-ssa-strength-reduction.c+=-O0
-COPTS.gimple-ssa-warn-restrict.c+=-O0
-COPTS.gimple.c+=-O0
-COPTS.internal-fn.c+=-O0
-COPTS.lto-streamer-out.c+=-O0
-COPTS.omp-low.c+=-O0
-COPTS.predict.c+=-O0
-COPTS.range-op.cc+=-O0
-COPTS.recog.c+=-O0
-COPTS.sanopt.c+=-O0
-COPTS.stmt.c+=-O0
-COPTS.stor-layout.c+=-O0
-COPTS.targhooks.c+=-O0
-COPTS.tree-affine.c+=-O0
-COPTS.tree-cfg.c+=-O0
-COPTS.tree-data-ref.c+=-O0
-COPTS.tree-eh.c+=-O0
-COPTS.tree-if-conv.c+=-O0
-COPTS.tree-object-size.c+=-O0
-COPTS.tree-parloops.c+=-O0
-COPTS.tree-predcom.c+=-O0
-COPTS.tree-pretty-print.c+=-O0
-COPTS.tree-ssa-alias.c+=-O0
-COPTS.tree-ssa-ccp.c+=-O0
-COPTS.tree-ssa-forwprop.c+=-O0
-COPTS.tree-ssa-loop-ivopts.c+=-O0
-COPTS.tree-ssa-loop-manip.c+=-O0
-COPTS.tree-ssa-loop-niter.c+=-O0
-COPTS.tree-ssa-math-opts.c+=-O0
-COPTS.tree-ssa-phiopt.c+= -O0
-COPTS.tree-ssa-pre.c+=-O0
-COPTS.tree-ssa-reassoc.c+=-O0
-COPTS.tree-ssa-strlen.c+=-O0
-COPTS.tree-ssa-uninit.c+=-O0
-COPTS.tree-ssa.c+=-O0
-COPTS.tree-switch-conversion.c+=-O0
-COPTS.tree-vect-data-refs.c+=-O0
-COPTS.tree-vect-loop-manip.c+=-O0
-COPTS.tree-vect-loop.c+=-O0
-COPTS.tree-vect-patterns.c+=-O0
-COPTS.tree-vect-stmts.c+=-O0
-COPTS.tree-vrp.c+=-O0
-COPTS.tree.c+=-O0
-COPTS.ubsan.c+=-O0
-COPTS.varasm.c+=-O0
-COPTS.vr-values.c+=-O0
-COPTS.web.c+=-O0
-COPTS.wide-int-range.cc+=-O0
-COPTS.wide-int.cc+=-O0
+
+COPTS.expmed.c+=-Wno-error=tautological-compare
+COPTS.expr.c+=-Wno-error=tautological-compare
 .endif
 
 COPTS.tree.cc+=	${${ACTIVE_CC} == "clang" :? -O0 :}
@@ -592,4 +544,8 @@ CFLAGS+= -fno-exceptions -fno-rtti -fasynchronous-unwind-tables
 .PATH: ${DIST}/gcc/rtl-ssa
 .if ${MACHINE_CPU} == "aarch64"
 .PATH: ${DIST}/gcc/config/arm
+.endif
+
+.if ${MACHINE} == "vax"
+CPPFLAGS+=	-DNB_FIX_VAX_BACKEND
 .endif

@@ -1,4 +1,4 @@
-#	$NetBSD: Makefile.inc,v 1.47 2023/11/28 14:10:18 martin Exp $
+#	$NetBSD: Makefile.inc,v 1.49 2024/04/22 14:41:26 nia Exp $
 #
 # Makefile for sysinst
 
@@ -75,6 +75,24 @@ SETS_TAR_SUFF=${"${USE_XZ_SETS:Uno}"!="no":?"tar.xz":"tgz"}
 
 .if ${MKBSDTAR:Uno} == "no"
 CPPFLAGS+=	-DUSING_PAXASTAR
+.endif
+
+.if ${MKCOMPAT:Uno} != "no"
+CPPFLAGS+=	-DHAVE_BASE32
+.endif
+
+.if ${MKCOMPAT:Uno} != "no" && \
+    (${MACHINE_ARCH} == "mips64eb" || ${MACHINE_ARCH} == "mips64el")
+CPPFLAGS+=	-DHAVE_BASE64
+.endif
+
+.if ${MKCOMPAT:Uno} != "no" && ${MKDEBUG:Uno} != "no"
+CPPFLAGS+=	-DHAVE_DEBUG32
+.endif
+
+.if ${MKCOMPAT:Uno} != "no" && ${MKDEBUG:Uno} != "no" && \
+    (${MACHINE_ARCH} == "mips64eb" || ${MACHINE_ARCH} == "mips64el")
+CPPFLAGS+=	-DHAVE_DEBUG64
 .endif
 
 .if ${MKDTB:Uno} != "no"

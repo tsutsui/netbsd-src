@@ -1,4 +1,4 @@
-.\"	$NetBSD: ifconfig.8,v 1.125 2023/03/26 01:04:16 mlelstv Exp $
+.\"	$NetBSD: ifconfig.8,v 1.131 2024/09/25 14:55:31 roy Exp $
 .\"
 .\" Copyright (c) 1983, 1991, 1993
 .\"	The Regents of the University of California.  All rights reserved.
@@ -29,7 +29,7 @@
 .\"
 .\"     @(#)ifconfig.8	8.4 (Berkeley) 6/1/94
 .\"
-.Dd November 25, 2022
+.Dd September 25, 2024
 .Dt IFCONFIG 8
 .Os
 .Sh NAME
@@ -614,6 +614,40 @@ Remove
 from the
 .Xr agr 4
 interface.
+.It Cm laggport Ar interface Oo Cm pri Ar n Oc
+Add the interface named by
+.Ar interface
+as a port of the
+.Xr lagg 4
+interface,
+and set the priority of
+.Ar interface
+to
+.Ar n .
+.It Cm -laggport Ar interface
+Remove the interface named by
+.Ar interface
+from the
+.Xr lagg 4
+interface.
+.It Cm laggportpri Ar interface Ar n
+If the interface is a
+.Xr lagg 4
+pseudo-interface, set the priority of
+.Ar interface
+to
+.Ar n
+.It Cm laggproto Ar proto
+Set the aggregation protocol of
+.Xr lagg 4 .
+The default is
+.Li none .
+The available options are
+.Li failover ,
+.Li lacp ,
+.Li loadbalance ,
+and
+.Li none .
 .It Cm eee
 Enable IEEE 802.3az Energy Efficiency Ethernet function.
 .It Cm -eee
@@ -762,24 +796,13 @@ If the
 .Fl s
 flag is passed before an interface name,
 .Nm
-will attempt to query the interface for its media status.
-If the
-interface supports reporting media status, and it reports that it does
-not appear to be connected to a network,
+will query the interface for its link state.
+If the link state is reported to be down,
 .Nm
 will exit with status of 1
 .Pq false ;
-otherwise, it will exit with a zero
-.Pq true
-exit status.
-For interface drivers that do not support media status reporting.
-then if the link state is not reported to be up,
-.Nm
-will exit with a status of 1
-.Pq false ;
-otherwise, it will exit with a zero
-.Pq true
-exit status.
+otherwise, it will exit with a status of 0
+.Pq true .
 .Pp
 If the
 .Fl m
@@ -836,8 +859,8 @@ mutually exclusive with all other flags and commands.
 .Pp
 The
 .Fl v
-flag prints statistics on packets sent and received on the given
-interface.
+flag prints additional information like statistics on packets sent and received
+on the interface and the link state of the interface.
 If
 .Fl h
 is used in conjunction with
@@ -899,6 +922,7 @@ tried to alter an interface's configuration.
 .Sh SEE ALSO
 .Xr netstat 1 ,
 .Xr agr 4 ,
+.Xr lagg 4 ,
 .Xr carp 4 ,
 .Xr ifmedia 4 ,
 .Xr netintro 4 ,

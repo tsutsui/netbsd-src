@@ -1,4 +1,4 @@
-/*	$NetBSD: scsiconf.c,v 1.303 2022/10/15 18:42:49 jmcneill Exp $	*/
+/*	$NetBSD: scsiconf.c,v 1.305 2024/09/29 12:36:40 nat Exp $	*/
 
 /*-
  * Copyright (c) 1998, 1999, 2004 The NetBSD Foundation, Inc.
@@ -48,7 +48,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: scsiconf.c,v 1.303 2022/10/15 18:42:49 jmcneill Exp $");
+__KERNEL_RCSID(0, "$NetBSD: scsiconf.c,v 1.305 2024/09/29 12:36:40 nat Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -738,6 +738,8 @@ static const struct scsi_quirk_inquiry_pattern scsi_quirk_patterns[] = {
 	 "MST     ", "SnapLink        ", ""},     PQUIRK_NOLUNS},
 	{{T_DIRECT, T_FIXED,
 	 "NEC     ", "D3847           ", "0307"}, PQUIRK_NOLUNS},
+	{{T_CDROM, T_REMOV,
+	 "PiSCSI  ", "SCSI CD-ROM     ", ""},     PQUIRK_NOREADDISCINFO},
 	{{T_DIRECT, T_FIXED,
 	 "QUANTUM ", "ELS85S          ", ""},     PQUIRK_AUTOSAVE},
 	{{T_DIRECT, T_FIXED,
@@ -864,6 +866,8 @@ static const struct scsi_quirk_inquiry_pattern scsi_quirk_patterns[] = {
 	 "SONY    ", "CDL1100         ", ""},     PQUIRK_NOLUNS},
 	{{T_ENCLOSURE, T_FIXED,
 	 "SUN     ", "SENA            ", ""},     PQUIRK_NOLUNS},
+	{{T_CDROM, T_REMOV,
+	 "SUN     ", "Virtual CDROM   ", ""},     PQUIRK_NOREADDISCINFO},
 };
 
 /*

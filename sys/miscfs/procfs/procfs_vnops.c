@@ -1,4 +1,4 @@
-/*	$NetBSD: procfs_vnops.c,v 1.230 2024/01/17 10:19:21 hannken Exp $	*/
+/*	$NetBSD: procfs_vnops.c,v 1.233 2024/07/01 01:35:53 christos Exp $	*/
 
 /*-
  * Copyright (c) 2006, 2007, 2008, 2020 The NetBSD Foundation, Inc.
@@ -105,7 +105,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: procfs_vnops.c,v 1.230 2024/01/17 10:19:21 hannken Exp $");
+__KERNEL_RCSID(0, "$NetBSD: procfs_vnops.c,v 1.233 2024/07/01 01:35:53 christos Exp $");
 
 #include <sys/param.h>
 #include <sys/atomic.h>
@@ -171,6 +171,7 @@ static const struct proc_target {
 	{ DT_REG, N("file"),	PFSfile,	procfs_validfile },
 	{ DT_REG, N("fpregs"),	PFSfpregs,	procfs_validfpregs },
 	{ DT_REG, N("limit"),	PFSlimit,	NULL },
+	{ DT_REG, N("limits"),	PFSlimits,	procfs_validfile_linux },
 	{ DT_REG, N("map"),	PFSmap,		procfs_validmap },
 	{ DT_REG, N("maps"),	PFSmaps,	procfs_validmap },
 	{ DT_REG, N("mem"),	PFSmem,		NULL },
@@ -202,10 +203,74 @@ static const struct proc_target proc_root_targets[] = {
 	{ DT_REG, N("stat"),	    PFScpustat,        procfs_validfile_linux },
 	{ DT_REG, N("loadavg"),	    PFSloadavg,        procfs_validfile_linux },
 	{ DT_REG, N("version"),     PFSversion,        procfs_validfile_linux },
+	{ DT_DIR, N("sys"),         PFSsys,            procfs_validfile_linux },
+	{ DT_DIR, N("sysvipc"),     PFSsysvipc,        procfs_validfile_linux },
 #undef N
 };
 static const int nproc_root_targets =
     sizeof(proc_root_targets) / sizeof(proc_root_targets[0]);
+
+/*
+ * List of files in the sys directory
+ */
+static const struct proc_target proc_sys_targets[] = {
+#define N(s) sizeof(s)-1, s
+        /*        name              type            validp */
+	{ DT_DIR, N("."),	PFSsys,		procfs_validfile_linux },
+	{ DT_DIR, N(".."),	PFSroot,	NULL },
+	{ DT_REG, N("fs"),	PFSsysfs,	procfs_validfile_linux },
+#undef N
+};
+static const int nproc_sys_targets =
+    sizeof(proc_sys_targets) / sizeof(proc_sys_targets[0]);
+
+/*
+ * List of files in the sys/fs directory
+ */
+static const struct proc_target proc_sysfs_targets[] = {
+#define N(s) sizeof(s)-1, s
+        /*        name              type            validp */
+	{ DT_DIR, N("."),	PFSsysfs,	procfs_validfile_linux },
+	{ DT_DIR, N(".."),	PFSsys,		procfs_validfile_linux },
+	{ DT_REG, N("mqueue"),	PFSmqueue,	procfs_validfile_linux },
+#undef N
+};
+static const int nproc_sysfs_targets =
+    sizeof(proc_sysfs_targets) / sizeof(proc_sysfs_targets[0]);
+
+/*
+ * List of files in the sys/fs/mqueue directory
+ */
+static const struct proc_target proc_mqueue_targets[] = {
+#define N(s) sizeof(s)-1, s
+        /*        name              	type            validp */
+	{ DT_DIR, N("."),		PFSmqueue,	procfs_validfile_linux },
+	{ DT_DIR, N(".."),		PFSsysfs,	procfs_validfile_linux },
+	{ DT_REG, N("msg_default"),	PFSmq_msg_def,	procfs_validfile_linux },
+	{ DT_REG, N("msg_max"),		PFSmq_msg_max,	procfs_validfile_linux },
+	{ DT_REG, N("msgsize_default"),	PFSmq_siz_def,	procfs_validfile_linux },
+	{ DT_REG, N("msgsize_max"),	PFSmq_siz_max,	procfs_validfile_linux },
+	{ DT_REG, N("queues_max"),	PFSmq_qmax,	procfs_validfile_linux },
+#undef N
+};
+static const int nproc_mqueue_targets =
+    sizeof(proc_mqueue_targets) / sizeof(proc_mqueue_targets[0]);
+
+/*
+ * List of files in the sysvipc directory
+ */
+static const struct proc_target proc_sysvipc_targets[] = {
+#define N(s) sizeof(s)-1, s
+        /*        name              type            validp */
+	{ DT_DIR, N("."),	PFSsysvipc,	NULL },
+	{ DT_DIR, N(".."),	PFSroot,	NULL },
+	{ DT_REG, N("msg"),	PFSsysvipc_msg, procfs_validfile_linux },
+	{ DT_REG, N("sem"),	PFSsysvipc_sem, procfs_validfile_linux },
+	{ DT_REG, N("shm"),	PFSsysvipc_shm, procfs_validfile_linux },
+#undef N
+};
+static const int nproc_sysvipc_targets =
+    sizeof(proc_sysvipc_targets) / sizeof(proc_sysvipc_targets[0]);
 
 int	procfs_lookup(void *);
 int	procfs_open(void *);
@@ -704,6 +769,7 @@ procfs_getattr(void *v)
 	case PFSmap:
 	case PFSmaps:
 	case PFSlimit:
+	case PFSlimits:
 	case PFSauxv:
 		vap->va_nlink = 1;
 		vap->va_uid = kauth_cred_geteuid(procp->p_cred);
@@ -723,7 +789,31 @@ procfs_getattr(void *v)
 	case PFSself:
 	case PFScurproc:
 	case PFSroot:
+	case PFSmq_msg_def:
+	case PFSmq_msg_max:
+	case PFSmq_siz_def:
+	case PFSmq_siz_max:
+	case PFSmq_qmax:
+	case PFSsysvipc_msg:
+	case PFSsysvipc_sem:
+	case PFSsysvipc_shm:
 		vap->va_nlink = 1;
+		vap->va_uid = vap->va_gid = 0;
+		break;
+
+	case PFSsysvipc:
+		vap->va_nlink = 5;
+		vap->va_uid = vap->va_gid = 0;
+		break;
+
+	case PFSsys:	/* proc/sys only contains "fs" */
+	case PFSsysfs:	/* proc/sys/fs only contains "mqueue" */
+		vap->va_nlink = 3;
+		vap->va_uid = vap->va_gid = 0;
+		break;
+
+	case PFSmqueue:
+		vap->va_nlink = 7;
 		vap->va_uid = vap->va_gid = 0;
 		break;
 
@@ -841,9 +931,22 @@ procfs_getattr(void *v)
 	case PFSloadavg:
 	case PFSstatm:
 	case PFSversion:
+	case PFSsys:
+	case PFSsysfs:
+	case PFSmqueue:
+	case PFSmq_msg_def:
+	case PFSmq_msg_max:
+	case PFSmq_siz_def:
+	case PFSmq_siz_max:
+	case PFSmq_qmax:
+	case PFSsysvipc:
+	case PFSsysvipc_msg:
+	case PFSsysvipc_sem:
+	case PFSsysvipc_shm:
 		vap->va_bytes = vap->va_size = 0;
 		break;
 	case PFSlimit:
+	case PFSlimits:
 	case PFSmap:
 	case PFSmaps:
 		/*
@@ -1156,6 +1259,67 @@ procfs_lookup(void *v)
 		procfs_proc_unlock(p);
 		return error;
 	}
+	case PFSsys:
+	case PFSsysfs:
+	case PFSmqueue:
+	case PFSsysvipc: {
+		const struct proc_target *targets;
+		int ntargets;
+		pfstype parent;
+
+		switch (pfs->pfs_type) {
+		case PFSsys:
+			targets = proc_sys_targets;
+			ntargets = nproc_sys_targets;
+			parent = PFSroot;
+			break;
+		case PFSsysfs:
+			targets = proc_sysfs_targets;
+			ntargets = nproc_sysfs_targets;
+			parent = PFSsys;
+			break;
+		case PFSmqueue:
+			targets = proc_mqueue_targets;
+			ntargets = nproc_mqueue_targets;
+			parent = PFSsysfs;
+			break;
+		case PFSsysvipc:
+			targets = proc_sysvipc_targets;
+			ntargets = nproc_sysvipc_targets;
+			parent = PFSroot;
+			break;
+		default:
+			return (EINVAL);
+		}
+
+		if (cnp->cn_flags & ISDOTDOT) {
+			error = procfs_allocvp(dvp->v_mount, vpp, 0, parent,
+			    -1);
+			return (error);
+		}
+
+		for (i = 0; i < ntargets; i++) {
+			pt = &targets[i];
+			/*
+			 * check for node match.  proc is always NULL here,
+			 * so call pt_valid with constant NULL lwp.
+			 */
+			if (cnp->cn_namelen == pt->pt_namlen &&
+			    memcmp(pt->pt_name, pname, cnp->cn_namelen) == 0 &&
+			    (pt->pt_valid == NULL ||
+			     (*pt->pt_valid)(NULL, dvp->v_mount)))
+				break;
+		}
+
+		if (i != ntargets) {
+			error = procfs_allocvp(dvp->v_mount, vpp, 0,
+			    pt->pt_pfstype, -1);
+			return (error);
+		}
+
+		return (ENOENT);
+	}
+
 	default:
 		return (ENOTDIR);
 	}
@@ -1438,6 +1602,67 @@ procfs_readdir(void *v)
 				*cookies++ = i + 1;
 			nc++;
 		}
+		goto out;
+	}
+
+	/*
+	 * misc subdirectories
+	 */
+	case PFSsys:
+	case PFSsysfs:
+	case PFSmqueue:
+	case PFSsysvipc: {
+		const struct proc_target *targets;
+		int ntargets;
+
+		switch (pfs->pfs_type) {
+		case PFSsys:
+			targets = proc_sys_targets;
+			ntargets = nproc_sys_targets;
+			break;
+		case PFSsysfs:
+			targets = proc_sysfs_targets;
+			ntargets = nproc_sysfs_targets;
+			break;
+		case PFSmqueue:
+			targets = proc_mqueue_targets;
+			ntargets = nproc_mqueue_targets;
+			break;
+		case PFSsysvipc:
+			targets = proc_sysvipc_targets;
+			ntargets = nproc_sysvipc_targets;
+			break;
+		default:
+			return (EINVAL);
+		}
+
+		if ((error = procfs_proc_lock(vp->v_mount, pfs->pfs_pid, &p,
+					      ESRCH)) != 0)
+			return error;
+		if (ap->a_ncookies) {
+			ncookies = uimin(ncookies, (ntargets - i));
+			cookies = malloc(ncookies * sizeof (off_t),
+			    M_TEMP, M_WAITOK);
+			*ap->a_cookies = cookies;
+		}
+
+		for (pt = &targets[i];
+		     uio->uio_resid >= UIO_MX && i < ntargets; pt++, i++) {
+			if (pt->pt_valid &&
+			    (*pt->pt_valid)(NULL, vp->v_mount) == 0)
+				continue;
+			d.d_fileno = PROCFS_FILENO(pfs->pfs_pid,
+			    pt->pt_pfstype, -1);
+			d.d_namlen = pt->pt_namlen;
+			memcpy(d.d_name, pt->pt_name, pt->pt_namlen + 1);
+			d.d_type = pt->pt_type;
+
+			if ((error = uiomove(&d, UIO_MX, uio)) != 0)
+				break;
+			if (cookies)
+				*cookies++ = i + 1;
+		}
+
 		goto out;
 	}
 

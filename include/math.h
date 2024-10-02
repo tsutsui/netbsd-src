@@ -1,4 +1,4 @@
-/*	$NetBSD: math.h,v 1.69 2024/01/22 14:01:50 kre Exp $	*/
+/*	$NetBSD: math.h,v 1.72 2024/09/09 15:06:29 riastradh Exp $	*/
 
 /*
  * ====================================================
@@ -20,16 +20,6 @@
 
 #include <sys/cdefs.h>
 #include <sys/featuretest.h>
-
-/*
- * Missing for C99 support:
- * - MATH_ERRNO
- * - MATH_ERREXCEPT
- * - FP_FAST_FMA
- * - FP_FAST_FMAF
- * - FP_FAST_FMAL
- * - math_errhandling
- */
 
 union __float_u {
 	unsigned char __dummy[sizeof(float)];
@@ -143,8 +133,31 @@ extern const union __float_u __nanf;
 #define	_FP_LOMD	0x80		/* range for machine-specific classes */
 #define	_FP_HIMD	0xff
 
+/* 7.12#7 fast fma(3) feature test macros */
+#if __GNUC_PREREQ__(4, 4)
+#  ifdef __FP_FAST_FMA
+#    define	FP_FAST_FMA	1
+#  endif
+#  ifdef __FP_FAST_FMAF
+#    define	FP_FAST_FMAF	1
+#  endif
+#  ifdef __FP_FAST_FMAL
+#    define	FP_FAST_FMAL	1
+#  endif
+#endif
+
+/* 7.12#8 ilogb exceptional input result value macros */
 #define	FP_ILOGB0	INT_MIN
 #define	FP_ILOGBNAN	INT_MAX
+
+/* 7.12#9 error handling (__math_errhandling from machine/math.h) */
+#define	MATH_ERRNO		1
+#define	MATH_ERREXCEPT		2
+#ifdef __vax__			/* XXX !__HAVE_FENV */
+#define	math_errhandling	MATH_ERRNO
+#else
+#define	math_errhandling	MATH_ERREXCEPT
+#endif
 
 #endif /* C99 || _XOPEN_SOURCE >= 600 */
 
@@ -501,6 +514,7 @@ long double fminl(long double, long double);
 #endif /* !_ANSI_SOURCE && ... */
 
 #if defined(_NETBSD_SOURCE)
+
 #ifndef __cplusplus
 int	matherr(struct exception *);
 #endif
@@ -515,6 +529,22 @@ double	significand(double);
  */
 double	drem(double, double);
 
+void		sincos(double, double *, double *);
+void		sincosf(float, float *, float *);
+void		sincosl(long double, long double *, long double *);
+
+double		cospi(double);
+float		cospif(float);
+long double	cospil(long double);
+
+double		sinpi(double);
+float		sinpif(float);
+long double	sinpil(long double);
+
+double		tanpi(double);
+float		tanpif(float);
+long double	tanpil(long double);
+
 #endif /* _NETBSD_SOURCE */
 
 #if defined(_NETBSD_SOURCE) || defined(_REENTRANT)
@@ -524,8 +554,8 @@ double	drem(double, double);
  */
 double	gamma_r(double, int *);
 double	lgamma_r(double, int *);
+long double	lgammal_r(long double, int *);
 #endif /* _NETBSD_SOURCE || _REENTRANT */
-
 
 #if defined(_NETBSD_SOURCE)
 
@@ -553,10 +583,6 @@ float	significandf(float);
  * float versions of BSD math library entry points
  */
 float	dremf(float, float);
-
-void		sincos(double, double *, double *);
-void		sincosf(float, float *, float *);
-void		sincosl(long double, long double *, long double *);
 #endif /* _NETBSD_SOURCE */
 
 #if defined(_NETBSD_SOURCE) || defined(_REENTRANT)
@@ -590,19 +616,6 @@ int	__isinfl(long double);
 int	__isnanl(long double);
 int	__signbitl(long double);
 #endif
-
-/* XXX: Probable temporary hacks for new math functions - 20240122 */
-double	cospi(double);
-float	cospif(float);
-double	sinpi(double);
-float	sinpif(float);
-double	tanpi(double);
-float	tanpif(float);
-
-long double	cospil(long double);
-long double	lgammal_r(long double, int *);
-long double	sinpil(long double);
-long double	tanpil(long double);
 
 __END_DECLS
 

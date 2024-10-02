@@ -1,4 +1,4 @@
-/*	$NetBSD: kern_proc.c,v 1.274 2023/10/05 19:41:07 ad Exp $	*/
+/*	$NetBSD: kern_proc.c,v 1.276 2024/07/14 05:10:40 kre Exp $	*/
 
 /*-
  * Copyright (c) 1999, 2006, 2007, 2008, 2020, 2023
@@ -63,7 +63,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: kern_proc.c,v 1.274 2023/10/05 19:41:07 ad Exp $");
+__KERNEL_RCSID(0, "$NetBSD: kern_proc.c,v 1.276 2024/07/14 05:10:40 kre Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_kstack.h"
@@ -628,7 +628,7 @@ pgid_in_session(struct proc *p, pid_t pg_id)
 	struct session *session;
 	int error;
 
-	if (pg_id == INT_MIN)
+	if (pg_id <= INT_MIN)
 		return EINVAL;
 
 	mutex_enter(&proc_lock);
@@ -1074,7 +1074,7 @@ proc_alloc(void)
 }
 
 /*
- * proc_alloc_pid_slot: allocate PID and record the occcupant so that
+ * proc_alloc_pid_slot: allocate PID and record the occupant so that
  * proc_find_raw() can find it by the PID.
  */
 static pid_t __noinline

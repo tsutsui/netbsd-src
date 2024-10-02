@@ -1,4 +1,4 @@
-.\"	$NetBSD: options.4,v 1.528 2024/01/29 18:27:09 christos Exp $
+.\"	$NetBSD: options.4,v 1.531 2024/07/05 13:02:55 reinoud Exp $
 .\"
 .\" Copyright (c) 1996
 .\" 	Perry E. Metzger.  All rights reserved.
@@ -30,7 +30,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\"
-.Dd September 3, 2023
+.Dd May 12, 2024
 .Dt OPTIONS 4
 .Os
 .Sh NAME
@@ -900,15 +900,15 @@ See
 .Xr mount_procfs 8
 for details.
 .It Cd file-system UDF
-.Bq Em EXPERIMENTAL
-Includes code for the UDF file system commonly found on CD and DVD
-media but also on USB sticks.
-Currently supports read and write access up to UDF 2.01 and somewhat limited
-write support for UDF 2.50.
-It is marked experimental since there is no
-.Xr fsck_udf 8 .
+Includes code for the UDF file system commonly found on CD and DVD media but
+also on USB sticks and harddiscs for interchange and backup. Supports read and
+write access for all formats on discs and on rewritable and recordable
+CD/DVD/BD media. It has a somewhat limited write support for UDF 2.50 as it
+can't expand the metadata partion.
 See
 .Xr mount_udf 8
+and
+.Xr fsck_udf 8
 for details.
 .It Cd file-system UMAPFS
 Includes a loopback file system in which user and group IDs may be
@@ -1294,9 +1294,9 @@ for more information.
 .It Cd options SELFRELOC
 Make the kernel able to self relocate at bootstrap, so that it can
 run whatever its load address is.
-This is intented to be used withe the
+This is intented to be used with the
 .Ic reloc
-boostrap command documented in
+bootstrap command documented in
 .Xr x86/boot 8 ,
 to workaround UEFI bugs, and is only available on amd64.
 .It Cd options SPLDEBUG

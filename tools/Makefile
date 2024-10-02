@@ -1,4 +1,4 @@
-#	$NetBSD: Makefile,v 1.218 2024/03/30 22:38:02 riastradh Exp $
+#	$NetBSD: Makefile,v 1.226 2024/09/15 03:56:58 tsutsui Exp $
 
 .include <bsd.own.mk>
 .include <bsd.endian.mk>
@@ -29,7 +29,7 @@ TOOLCHAIN_BITS+= gmake .WAIT
 TOOLCHAIN_BITS+= gmp .WAIT
 TOOLCHAIN_BITS+= mpfr .WAIT
 TOOLCHAIN_BITS+= mpc .WAIT
-.  if (defined(HAVE_GCC) && ${HAVE_GCC} >= 12)
+.  if (defined(HAVE_GCC) && ${HAVE_GCC} >= 12 && !defined(NOGCCISL))
 TOOLCHAIN_BITS+= isl .WAIT
 .  endif
 . endif
@@ -105,7 +105,7 @@ SUBDIR+= cap_mkdb crunchgen ctags gencat hexdump \
 		makewhatis mtree nbperf .WAIT uudecode
 .endif
 
-SUBDIR+= cat rpcgen join lorder m4 mkdep tsort .WAIT yacc .WAIT awk .WAIT lex
+SUBDIR+= cat gzip rpcgen join lorder m4 mkdep tsort .WAIT yacc .WAIT awk .WAIT lex
 .if ${TOOLS_BUILDRUMP} == "no"
 SUBDIR+= xz-include .WAIT grep xz-lib pax .WAIT libprop
 
@@ -172,6 +172,8 @@ SUBDIR+=	ibmnws-ncdcs
 
 .if ${MACHINE} == "macppc"
 SUBDIR+=	macppc-fixcoff
+SUBDIR+=	macppc_installboot
+SUBDIR+=	macppc_mkboothfs
 .endif
 
 .if (${MACHINE} == "prep" || ${MACHINE} == "rs6000" || ${MACHINE} == "bebox")
@@ -219,20 +221,19 @@ SUBDIR+=	elftosb
 
 .if ${MACHINE} == "evbarm" || ${MACHINE} == "evbmips" || \
     ${MACHINE} == "evbppc" || ${MACHINE} == "evbsh3" || \
-    ${MACHINE} == "sandpoint"
-SUBDIR+=	mkubootimage
-.endif
-
-.if ${MACHINE} == "evbarm" || ${MACHINE} == "evbmips" || \
-    ${MACHINE} == "evbppc" || ${MACHINE} == "evbsh3" || \
     ${MACHINE} == "sandpoint" || \
     ${MACHINE_CPU} == "riscv"
+SUBDIR+=	mkubootimage
 SUBDIR+=	libfdt .WAIT
 SUBDIR+=	dtc
 .endif
 
 .if ${MACHINE} == "mvme68k"
 SUBDIR+=	mvme68k-wrtvid
+.endif
+
+.if ${MACHINE} == "mac68k" || ${MACHINE} == "macppc"
+SUBDIR+=	mkhybrid
 .endif
 
 .if ${MKX11} != "no"

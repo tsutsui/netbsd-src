@@ -1,4 +1,4 @@
-/*	$NetBSD: cond.c,v 1.362 2024/02/07 07:21:22 rillig Exp $	*/
+/*	$NetBSD: cond.c,v 1.369 2024/08/07 05:48:45 rillig Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990 The Regents of the University of California.
@@ -91,7 +91,7 @@
 #include "dir.h"
 
 /*	"@(#)cond.c	8.2 (Berkeley) 1/2/94"	*/
-MAKE_RCSID("$NetBSD: cond.c,v 1.362 2024/02/07 07:21:22 rillig Exp $");
+MAKE_RCSID("$NetBSD: cond.c,v 1.369 2024/08/07 05:48:45 rillig Exp $");
 
 /*
  * Conditional expressions conform to this grammar:
@@ -222,8 +222,8 @@ ParseWord(const char **pp, bool doEval)
 			break;
 		if (ch == '$') {
 			VarEvalMode emode = doEval
-			    ? VARE_UNDEFERR
-			    : VARE_PARSE_ONLY;
+			    ? VARE_EVAL_DEFINED
+			    : VARE_PARSE;
 			/*
 			 * TODO: make Var_Parse complain about undefined
 			 * variables.
@@ -242,7 +242,6 @@ ParseWord(const char **pp, bool doEval)
 		p++;
 	}
 
-	cpp_skip_hspace(&p);
 	*pp = p;
 
 	return Buf_DoneData(&word);
@@ -252,12 +251,14 @@ ParseWord(const char **pp, bool doEval)
 static char *
 ParseFuncArg(CondParser *par, const char **pp, bool doEval, const char *func)
 {
-	const char *p = *pp;
+	const char *p = *pp, *argStart, *argEnd;
 	char *res;
 
 	p++;			/* skip the '(' */
 	cpp_skip_hspace(&p);
+	argStart = p;
 	res = ParseWord(&p, doEval);
+	argEnd = p;
 	cpp_skip_hspace(&p);
 
 	if (*p++ != ')') {
@@ -266,7 +267,8 @@ ParseFuncArg(CondParser *par, const char **pp, bool doEval, const char *func)
 			len++;
 
 		Parse_Error(PARSE_FATAL,
-		    "Missing closing parenthesis for %.*s()", len, func);
+		    "Missing ')' after argument '%.*s' for '%.*s'",
+		    (int)(argEnd - argStart), argStart, len, func);
 		par->printedError = true;
 		free(res);
 		return NULL;
@@ -396,9 +398,9 @@ CondParser_StringExpr(CondParser *par, const char *start,
 	const char *p;
 	bool atStart;		/* true means an expression outside quotes */
 
-	emode = doEval && quoted ? VARE_WANTRES
-	    : doEval ? VARE_UNDEFERR
-	    : VARE_PARSE_ONLY;
+	emode = doEval && quoted ? VARE_EVAL
+	    : doEval ? VARE_EVAL_DEFINED
+	    : VARE_PARSE;
 
 	p = par->p;
 	atStart = p == start;
@@ -424,13 +426,12 @@ CondParser_StringExpr(CondParser *par, const char *start,
  * Parse a string from an expression or an optionally quoted string,
  * on the left-hand and right-hand sides of comparisons.
  *
- * Results:
- *	Returns the string without any enclosing quotes, or NULL on error.
- *	Sets out_quoted if the leaf was a quoted string literal.
+ * Return the string without any enclosing quotes, or NULL on error.
+ * Sets out_quoted if the leaf was a quoted string literal.
  */
-static void
+static FStr
 CondParser_Leaf(CondParser *par, bool doEval, bool unquotedOK,
-		  FStr *out_str, bool *out_quoted)
+		bool *out_quoted)
 {
 	Buffer buf;
 	FStr str;
@@ -492,7 +493,7 @@ return_buf:
 	buf.data = NULL;
 return_str:
 	Buf_Done(&buf);
-	*out_str = str;
+	return str;
 }
 
 /*
@@ -602,7 +603,7 @@ CondParser_Comparison(CondParser *par, bool doEval)
 	ComparisonOp op;
 	bool lhsQuoted, rhsQuoted;
 
-	CondParser_Leaf(par, doEval, par->leftUnquotedOK, &lhs, &lhsQuoted);
+	lhs = CondParser_Leaf(par, doEval, par->leftUnquotedOK, &lhsQuoted);
 	if (lhs.str == NULL)
 		goto done_lhs;
 
@@ -622,7 +623,7 @@ CondParser_Comparison(CondParser *par, bool doEval)
 		goto done_lhs;
 	}
 
-	CondParser_Leaf(par, doEval, true, &rhs, &rhsQuoted);
+	rhs = CondParser_Leaf(par, doEval, true, &rhsQuoted);
 	t = rhs.str == NULL ? TOK_ERROR
 	    : !doEval ? TOK_FALSE
 	    : EvalCompare(par, lhs.str, lhsQuoted, op, rhs.str, rhsQuoted);
@@ -652,8 +653,7 @@ CondParser_FuncCallEmpty(CondParser *par, bool doEval, Token *out_token)
 		return false;
 
 	p--;			/* Make p[1] point to the '('. */
-	val = Var_Parse(&p, SCOPE_CMDLINE,
-	    doEval ? VARE_WANTRES : VARE_PARSE_ONLY);
+	val = Var_Parse(&p, SCOPE_CMDLINE, doEval ? VARE_EVAL : VARE_PARSE);
 	/* TODO: handle errors */
 
 	if (val.str == var_Error)
@@ -736,9 +736,12 @@ CondParser_ComparisonOrLeaf(CondParser *par, bool doEval)
 	 */
 	arg = ParseWord(&p, doEval);
 	assert(arg[0] != '\0');
+	cpp_skip_hspace(&p);
 
-	if (*p == '=' || *p == '!' || *p == '<' || *p == '>')
+	if (*p == '=' || *p == '!' || *p == '<' || *p == '>') {
+		free(arg);
 		return CondParser_Comparison(par, doEval);
+	}
 	par->p = p;
 
 	/*
@@ -780,7 +783,7 @@ CondParser_Token(CondParser *par, bool doEval)
 		par->p++;
 		if (par->p[0] == '|')
 			par->p++;
-		else if (opts.strict) {
+		else {
 			Parse_Error(PARSE_FATAL, "Unknown operator '|'");
 			par->printedError = true;
 			return TOK_ERROR;
@@ -791,7 +794,7 @@ CondParser_Token(CondParser *par, bool doEval)
 		par->p++;
 		if (par->p[0] == '&')
 			par->p++;
-		else if (opts.strict) {
+		else {
 			Parse_Error(PARSE_FATAL, "Unknown operator '&'");
 			par->printedError = true;
 			return TOK_ERROR;
@@ -939,7 +942,7 @@ CondEvalExpression(const char *cond, bool plain,
 		rval = CR_ERROR;
 
 	if (rval == CR_ERROR && eprint && !par.printedError)
-		Parse_Error(PARSE_FATAL, "Malformed conditional (%s)", cond);
+		Parse_Error(PARSE_FATAL, "Malformed conditional '%s'", cond);
 
 	return rval;
 }

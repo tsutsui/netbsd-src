@@ -1,4 +1,4 @@
-/*	$NetBSD: printf.c,v 1.54 2021/05/20 02:01:07 christos Exp $	*/
+/*	$NetBSD: printf.c,v 1.58 2024/08/07 15:40:03 kre Exp $	*/
 
 /*
  * Copyright (c) 1989, 1993
@@ -41,7 +41,7 @@ __COPYRIGHT("@(#) Copyright (c) 1989, 1993\
 #if 0
 static char sccsid[] = "@(#)printf.c	8.2 (Berkeley) 3/22/95";
 #else
-__RCSID("$NetBSD: printf.c,v 1.54 2021/05/20 02:01:07 christos Exp $");
+__RCSID("$NetBSD: printf.c,v 1.58 2024/08/07 15:40:03 kre Exp $");
 #endif
 #endif /* not lint */
 
@@ -68,13 +68,13 @@ __RCSID("$NetBSD: printf.c,v 1.54 2021/05/20 02:01:07 christos Exp $");
 static void	 conv_escape_str(char *, void (*)(int), int);
 static char	*conv_escape(char *, char *, int);
 static char	*conv_expand(const char *);
-static char	 getchr(void);
-static double	 getdouble(void);
+static wchar_t	 getchr(void);
+static long double getdouble(void);
 static int	 getwidth(void);
 static intmax_t	 getintmax(void);
 static char	*getstr(void);
-static char	*mklong(const char *, char);
-static intmax_t	 wide_char(const char *);
+static char	*mklong(const char *, char, char);
+static intmax_t	 wide_char(const char *, int);
 static void      check_conversion(const char *, const char *);
 static void	 usage(void);
 
@@ -85,6 +85,7 @@ static char	*b_fmt;
 
 static int	rval;
 static char  **gargv;
+static int	long_double;
 
 #ifdef BUILTIN		/* csh builtin */
 #define main progprintf
@@ -142,29 +143,43 @@ main(int argc, char *argv[])
 #endif
 
 	rval = 0;	/* clear for builtin versions (avoid holdover) */
+	long_double = 0;
 	clearerr(stdout);	/* for the builtin version */
 
-	/*
-	 * printf does not comply with Posix XBD 12.2 - there are no opts,
-	 * not even the -- end of options marker.   Do not run getoot().
-	 */
 	if (argc > 2 && strchr(argv[1], '%') == NULL) {
 		int o;
 
 		/*
-		 * except that if there are multiple args and
-		 * the first (the nominal format) contains no '%'
-		 * conversions (which we will approximate as no '%'
-		 * characters at all, conversions or not) then the
-		 * results are unspecified, and we can do what we
-		 * like.   So in that case, for some backward compat
-		 * to scripts which (stupidly) do:
-		 *	printf -- format args
-		 * process this case the old way.
+		 * We only do this for argc > 2, as:
+		 *
+		 * for argc <= 1
+		 *	at best we have a bare "printf" so there cannot be
+		 *	any options, thus getopts() would be a waste of time.
+		 *	The usage() below is assured.
+		 *
+		 * for argc == 2
+		 *	There is only one arg (argv[1])	which logically must
+		 *	be intended to be the (required) format string for
+		 *	printf, without which we can do nothing	so rather
+		 *	than usage() if it happens to start with a '-' we
+		 *	just avoid getopts() and treat it as a format string.
+		 *
+		 * Then, for argc > 2, we also skip this if there is a '%'
+		 * anywhere in argv[1] as it is likely that would be intended
+		 * to be the format string, rather than options, even if it
+		 * starts with a '-' so we skip getopts() in that case as well.
+		 *
+		 * Note that this would fail should there ever be an option
+		 * which takes an arbitrary string value, which could be given
+		 * as -Oabc%def so should that ever become possible, remove
+		 * the strchr() test above.
 		 */
 
-		while ((o = getopt(argc, argv, "")) != -1) {
+		while ((o = getopt(argc, argv, "L")) != -1) {
 			switch (o) {
+			case 'L':
+				long_double = 1;
+				break;
 			case '?':
 			default:
 				usage();
@@ -178,13 +193,13 @@ main(int argc, char *argv[])
 		argv += 1;
 	}
 
-	if (argc < 1) {
+	if (argc < 1) {		/* Nothing left at all? */
 		usage();
 		return 1;
 	}
 
-	format = *argv;
-	gargv = ++argv;
+	format = *argv;		/* First remaining arg is the format string */
+	gargv = ++argv;		/* remaining args are for that to consume */
 
 #define SKIP1	"#-+ 0'"
 #define SKIP2	"0123456789"
@@ -308,10 +323,20 @@ main(int argc, char *argv[])
 				printf("%s", b_fmt);
 				break;
 			}
-			case 'c': {
-				char p = getchr();
+			case 'C': {
+				wchar_t p = (wchar_t)getintmax();
+				char *f = mklong(start, 'c', 'l');
 
-				PF(start, p);
+				PF(f, p);
+				if (error < 0)
+					goto out;
+				break;
+			}
+			case 'c': {
+				wchar_t p = getchr();
+				char *f = mklong(start, ch, 'l');
+
+				PF(f, p);
 				if (error < 0)
 					goto out;
 				break;
@@ -327,7 +352,7 @@ main(int argc, char *argv[])
 			case 'd':
 			case 'i': {
 				intmax_t p = getintmax();
-				char *f = mklong(start, ch);
+				char *f = mklong(start, ch, 'j');
 
 				PF(f, p);
 				if (error < 0)
@@ -339,7 +364,7 @@ main(int argc, char *argv[])
 			case 'x':
 			case 'X': {
 				uintmax_t p = (uintmax_t)getintmax();
-				char *f = mklong(start, ch);
+				char *f = mklong(start, ch, 'j');
 
 				PF(f, p);
 				if (error < 0)
@@ -354,9 +379,15 @@ main(int argc, char *argv[])
 			case 'F':
 			case 'g':
 			case 'G': {
-				double p = getdouble();
+				long double p = getdouble();
 
-				PF(start, p);
+				if (long_double) {
+					char * f = mklong(start, ch, 'L');
+					PF(f, p);
+				} else {
+					double pp = (double)p;
+					PF(start, pp);
+				}
 				if (error < 0)
 					goto out;
 				break;
@@ -629,7 +660,7 @@ conv_expand(const char *str)
 }
 
 static char *
-mklong(const char *str, char ch)
+mklong(const char *str, char ch, char longer)
 {
 	static char copy[64];
 	size_t len;	
@@ -641,18 +672,18 @@ mklong(const char *str, char ch)
 		rval = 1;
 	}
 	(void)memmove(copy, str, len - 3);
-	copy[len - 3] = 'j';
+	copy[len - 3] = longer;
 	copy[len - 2] = ch;
 	copy[len - 1] = '\0';
 	return copy;	
 }
 
-static char
+static wchar_t
 getchr(void)
 {
 	if (!*gargv)
 		return 0;
-	return **gargv++;
+	return (wchar_t)wide_char(*gargv++, 0);
 }
 
 static char *
@@ -700,7 +731,7 @@ getintmax(void)
 	gargv++;
 
 	if (*cp == '\"' || *cp == '\'')
-		return wide_char(cp);
+		return wide_char(cp, 1);
 
 	errno = 0;
 	val = strtoimax(cp, &ep, 0);
@@ -708,10 +739,10 @@ getintmax(void)
 	return val;
 }
 
-static double
+static long double
 getdouble(void)
 {
-	double val;
+	long double val;
 	char *ep;
 
 	if (!*gargv)
@@ -719,36 +750,44 @@ getdouble(void)
 
 	/* This is a NetBSD extension, not required by POSIX (it is useless) */
 	if (*(ep = *gargv) == '\"' || *ep == '\'')
-		return (double)wide_char(ep);
+		return (long double)wide_char(ep, 1);
 
 	errno = 0;
-	val = strtod(*gargv, &ep);
+	val = strtold(*gargv, &ep);
 	check_conversion(*gargv++, ep);
 	return val;
 }
 
 /*
- * XXX This is just a placeholder for a later version which
- *     will do mbtowc() on p+1 (and after checking that all of the
- *     string has been consumed) return that value.
+ * Fetch a wide character from the string given
  *
- * This (mbtowc) behaviour is required by POSIX (as is the check
- * that the whole arg is consumed).
+ * if all that character must consume the entire string
+ * after an initial leading byte (ascii char) is ignored,
+ * (used for parsing intger args using the 'X syntax)
  *
- * What follows is actually correct if we assume that LC_CTYPE=C
- * (or something else similar that is a single byte charset).
+ * if !all then there is no requirement that the whole
+ * string be consumed (remaining characters are just ignored)
+ * but the character is to start at *p.
+ * (used for fetching the first chartacter of a string arg for %c)
  */
 static intmax_t
-wide_char(const char *p)
+wide_char(const char *p, int all)
 {
-	intmax_t ch = (intmax_t)(unsigned char)p[1];
+	wchar_t wch;
+	size_t len;
+	int n;
 
-	if (ch != 0 && p[2] != '\0') {
+	(void)mbtowc(NULL, NULL, 0);
+	n = mbtowc(&wch, p + all, (len = strlen(p + all)) + 1);
+	if (n < 0) {
+		warn("%s", p);
+		rval = -1;
+	} else if (all && (size_t)n != len) {
 		warnx("%s: not completely converted", p);
 		rval = 1;
 	}
 
-	return ch;
+	return (intmax_t) wch;
 }
 
 static void
@@ -769,5 +808,6 @@ check_conversion(const char *s, const char *ep)
 static void
 usage(void)
 {
-	(void)fprintf(stderr, "Usage: %s format [arg ...]\n", getprogname());
+	(void)fprintf(stderr,
+	    "Usage: %s [-L] format [arg ...]\n", getprogname());
 }

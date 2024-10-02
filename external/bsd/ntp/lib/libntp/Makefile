@@ -1,4 +1,4 @@
-#	$NetBSD: Makefile,v 1.27 2023/06/03 09:09:04 lukem Exp $
+#	$NetBSD: Makefile,v 1.37 2024/08/18 20:50:00 christos Exp $
 
 LIBISPRIVATE=yes
 
@@ -56,10 +56,10 @@ ntp_intres.c \
 ntp_libopts.c \
 ntp_lineedit.c \
 ntp_random.c \
+ntp_realpath.c \
 ntp_rfc2553.c \
 ntp_worker.c \
 numtoa.c \
-numtohost.c \
 octtoint.c \
 prettydate.c \
 recvbuff.c \
@@ -86,19 +86,11 @@ ymd2yd.c
 CPPFLAGS+= -I${IDIST}/sntp/libopts
 
 # For MKREPRO, avoid using __DATE__ and __TIME__.
-# Instead, use the date and time from ${IMPORTDATE_FILE}.
-#
-# The file should contain one line, like this:
-#	Fri Dec 27 19:28:17 EST 2013 (import)
-#
 .if ${MKREPRO:Uno} == "yes"
-IMPORTDATE_FILE := ${.PARSEDIR}/../../importdate
-MKREPRO_DATE != ${TOOL_AWK} '{printf "%3s %2d %4d", $$2, $$3, $$6}' \
-	<${IMPORTDATE_FILE} # "Mmm DD YYYY"
-MKREPRO_TIME != ${TOOL_AWK} '{print $$4}' \
-	<${IMPORTDATE_FILE} # "HH:MM:SS"
-CPPFLAGS.ntp_calendar.c += -DMKREPRO_DATE=\"${MKREPRO_DATE:Q}\"
-CPPFLAGS.ntp_calendar.c += -DMKREPRO_TIME=\"${MKREPRO_TIME:Q}\"
+MKREPRO_CPPFLAGS.ntp_calendar.c:= \
+	-DMKREPRO_DATE=\"${%b %e %Y:L:${:Ugmtime=${MKREPRO_TIMESTAMP}}:Q}\" \
+	-DMKREPRO_TIME=\"${%T:L:${:Ugmtime=${MKREPRO_TIMESTAMP}}:Q}\"
+CPPFLAGS.ntp_calendar.c += ${MKREPRO_CPPFLAGS.ntp_calendar.c}
 .endif
 
 COPTS.timetoa.c+=	${CC_WNO_FORMAT_TRUNCATION}

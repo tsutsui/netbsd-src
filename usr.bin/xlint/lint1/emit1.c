@@ -1,4 +1,4 @@
-/* $NetBSD: emit1.c,v 1.94 2024/03/27 20:09:43 rillig Exp $ */
+/* $NetBSD: emit1.c,v 1.96 2024/08/29 20:35:19 rillig Exp $ */
 
 /*
  * Copyright (c) 1996 Christopher G. Demetriou.  All Rights Reserved.
@@ -38,7 +38,7 @@
 
 #include <sys/cdefs.h>
 #if defined(__RCSID)
-__RCSID("$NetBSD: emit1.c,v 1.94 2024/03/27 20:09:43 rillig Exp $");
+__RCSID("$NetBSD: emit1.c,v 1.96 2024/08/29 20:35:19 rillig Exp $");
 #endif
 
 #include <stdlib.h>
@@ -91,11 +91,11 @@ outtype(const type_t *tp)
 {
 	/* Available letters: ------GH--K-MNO--R--U-W-YZ */
 #ifdef INT128_SIZE
-	static const char tt[NTSPEC] = "???BCCCSSIILLQQJJDDD?XXXVTTTPAF";
-	static const char ss[NTSPEC] = "???  su u u u u us l?s l sue   ";
+	static const char tt[NTSPEC] = "???BCCCSSIILLQQJJDDD?XXXV?TTTPAF";
+	static const char ss[NTSPEC] = "???  su u u u u us l?s l ?sue   ";
 #else
-	static const char tt[NTSPEC] = "???BCCCSSIILLQQDDD?XXXVTTTPAF";
-	static const char ss[NTSPEC] = "???  su u u u us l?s l sue   ";
+	static const char tt[NTSPEC] = "???BCCCSSIILLQQDDD?XXXV?TTTPAF";
+	static const char ss[NTSPEC] = "???  su u u u us l?s l ?sue   ";
 #endif
 	int na;
 	tspec_t ts;
@@ -187,7 +187,7 @@ outsym(const sym_t *sym, scl_t sc, def_t def)
 	 */
 	if (sc != EXTERN && !(sc == STATIC && sym->s_type->t_tspec == FUNC))
 		return;
-	if (isdigit((unsigned char)sym->s_name[0]))	/* see mktempsym */
+	if (ch_isdigit(sym->s_name[0]))	/* see mktempsym */
 		return;
 
 	outint(csrc_pos.p_line);
@@ -393,7 +393,7 @@ static void
 outqchar(char c)
 {
 
-	if (isprint((unsigned char)c) && c != '\\' && c != '"' && c != '\'') {
+	if (ch_isprint(c) && c != '\\' && c != '"' && c != '\'') {
 		outchar(c);
 		return;
 	}
@@ -467,7 +467,7 @@ outfstrg(const char *cp)
 		}
 
 		/* numeric field width */
-		while (isdigit((unsigned char)c)) {
+		while (ch_isdigit(c)) {
 			outchar(c);
 			c = *cp++;
 		}
@@ -480,7 +480,7 @@ outfstrg(const char *cp)
 				outchar(c);
 				c = *cp++;
 			} else {
-				while (isdigit((unsigned char)c)) {
+				while (ch_isdigit(c)) {
 					outchar(c);
 					c = *cp++;
 				}
@@ -534,7 +534,7 @@ outfstrg(const char *cp)
 void
 outusg(const sym_t *sym)
 {
-	if (isdigit((unsigned char)sym->s_name[0]))	/* see mktempsym */
+	if (ch_isdigit(sym->s_name[0]))	/* see mktempsym */
 		return;
 
 	outint(csrc_pos.p_line);

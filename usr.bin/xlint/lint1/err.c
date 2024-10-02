@@ -1,4 +1,4 @@
-/*	$NetBSD: err.c,v 1.239 2024/03/30 17:23:13 rillig Exp $	*/
+/*	$NetBSD: err.c,v 1.249 2024/09/29 13:16:57 rillig Exp $	*/
 
 /*
  * Copyright (c) 1994, 1995 Jochen Pohl
@@ -37,7 +37,7 @@
 
 #include <sys/cdefs.h>
 #if defined(__RCSID)
-__RCSID("$NetBSD: err.c,v 1.239 2024/03/30 17:23:13 rillig Exp $");
+__RCSID("$NetBSD: err.c,v 1.249 2024/09/29 13:16:57 rillig Exp $");
 #endif
 
 #include <limits.h>
@@ -219,7 +219,7 @@ static const char *const msgs[] = {
 	"constant in conditional context",				// 161
 	"operator '%s' compares '%s' with '%s'",			// 162
 	"a cast does not yield an lvalue",				// 163
-	"assignment of negative constant to unsigned type",		// 164
+	"assignment of negative constant %lld to unsigned type '%s'",	// 164
 	"constant truncated by assignment",				// 165
 	"precision lost in bit-field assignment",			// 166
 	"array subscript %jd cannot be negative",			// 167
@@ -229,7 +229,7 @@ static const char *const msgs[] = {
 	"cannot assign to '%s' from '%s'",				// 171
 	"too many struct/union initializers",				// 172
 	"too many array initializers, expected %d",			// 173
-	"too many initializers",					// 174
+	"too many initializers for '%s'",				// 174
 	"initialization of incomplete type '%s'",			// 175
 	"",			/* no longer used */			// 176
 	"non-constant initializer",					// 177
@@ -276,8 +276,8 @@ static const char *const msgs[] = {
 	"C90 treats constant as unsigned, op '%s'",			// 218
 	"concatenated strings are illegal in traditional C",		// 219
 	"fallthrough on case statement",				// 220
-	"initialization of unsigned with negative constant",		// 221
-	"conversion of negative constant to unsigned type",		// 222
+	"initialization of unsigned type '%s' with negative constant %lld", // 221
+	"conversion of negative constant %lld to unsigned type '%s'",	// 222
 	"end-of-loop code not reached",					// 223
 	"cannot recover from previous errors",				// 224
 	"static function '%s' called but not defined",			// 225
@@ -302,7 +302,7 @@ static const char *const msgs[] = {
 	"illegal structure pointer combination",			// 244
 	"incompatible structure pointers: '%s' '%s' '%s'",		// 245
 	"dubious conversion of enum to '%s'",				// 246
-	"pointer cast from '%s' to '%s' may be troublesome",		// 247
+	"pointer cast from '%s' to unrelated '%s'",			// 247
 	"floating-point constant out of range",				// 248
 	"syntax error '%s'",						// 249
 	"unknown character \\%o",					// 250
@@ -351,7 +351,7 @@ static const char *const msgs[] = {
 	"parameter %d must be 'char *' for PRINTFLIKE/SCANFLIKE",	// 293
 	"multi-character character constant",				// 294
 	"conversion of '%s' to '%s' is out of range, arg #%d",		// 295
-	"conversion of negative constant to unsigned type, arg #%d",	// 296
+	"conversion of negative constant %lld to unsigned type '%s', arg #%d", // 296
 	"conversion to '%s' may sign-extend incorrectly, arg #%d",	// 297
 	"conversion from '%s' to '%s' may lose accuracy, arg #%d",	// 298
 	"prototype does not match old-style definition, arg #%d",	// 299
@@ -418,7 +418,7 @@ static const char *const msgs[] = {
 	"missing new-style number base after '\\177'",			// 360
 	"number base '%.*s' is %ju, must be 8, 10 or 16",		// 361
 	"conversion '%.*s' should not be escaped",			// 362
-	"non-printing character '%.*s' in description '%.*s'",		// 363
+	"escaped character '%.*s' in description of conversion '%.*s'", // 363
 	"missing bit position after '%.*s'",				// 364
 	"missing field width after '%.*s'",				// 365
 	"missing '\\0' at the end of '%.*s'",				// 366
@@ -434,6 +434,10 @@ static const char *const msgs[] = {
 	"'%.*s' overlaps earlier '%.*s' on bit %u",			// 376
 	"redundant '\\0' at the end of the format",			// 377
 	"conversion '%.*s' is unreachable by input value",		// 378
+	"comparing integer '%s' to floating point constant %Lg",	// 379
+	"lossy conversion of %Lg to '%s', arg #%d",			// 380
+	"lossy conversion of %Lg to '%s'",				// 381
+	"constant assignment of type '%s' in operand of '!' always evaluates to '%s'", 	// 382
 };
 
 static bool is_suppressed[sizeof(msgs) / sizeof(msgs[0])];
@@ -449,7 +453,7 @@ suppress_messages(const char *p)
 {
 	char *end;
 
-	for (; isdigit((unsigned char)*p); p = end + 1) {
+	for (; ch_isdigit(*p); p = end + 1) {
 		unsigned long id = strtoul(p, &end, 10);
 		if ((*end != '\0' && *end != ',') ||
 		    id >= sizeof(msgs) / sizeof(msgs[0]) ||
@@ -608,6 +612,7 @@ void
 assert_failed(const char *file, int line, const char *func, const char *cond)
 {
 
+#if LINT_FUZZING
 	/*
 	 * After encountering a parse error in the grammar, lint often does not
 	 * properly clean up its data structures, especially in 'dcs', the
@@ -620,6 +625,7 @@ assert_failed(const char *file, int line, const char *func, const char *cond)
 	 */
 	if (sytxerr > 0)
 		norecover();
+#endif
 
 	(void)fflush(stdout);
 	(void)fprintf(stderr,
@@ -741,6 +747,7 @@ static const char *queries[] = {
 	"invisible character U+%04X in %s",				// Q17
 	"const automatic variable '%s'",				// Q18
 	"implicit conversion from integer '%s' to floating point '%s'",	// Q19
+	"implicit narrowing conversion from void pointer to '%s'",	// Q20
 };
 
 bool any_query_enabled;		/* for optimizing non-query scenarios */
@@ -769,7 +776,7 @@ enable_queries(const char *p)
 {
 	char *end;
 
-	for (; isdigit((unsigned char)*p); p = end + 1) {
+	for (; ch_isdigit(*p); p = end + 1) {
 		unsigned long id = strtoul(p, &end, 10);
 		if ((*end != '\0' && *end != ',') ||
 		    id >= sizeof(queries) / sizeof(queries[0]) ||

@@ -1,4 +1,4 @@
-# $NetBSD: Makefile,v 1.342 2024/01/07 02:07:44 sjg Exp $
+# $NetBSD: Makefile,v 1.351 2024/08/18 13:40:51 rillig Exp $
 #
 # Unit tests for make(1)
 #
@@ -397,6 +397,7 @@ TESTS+=		varmod-to-lower
 TESTS+=		varmod-to-many-words
 TESTS+=		varmod-to-one-word
 TESTS+=		varmod-to-separator
+TESTS+=		varmod-to-title
 TESTS+=		varmod-to-upper
 TESTS+=		varmod-undefined
 TESTS+=		varmod-unique
@@ -533,7 +534,7 @@ SED_CMDS.opt-chdir=		-e 's,\(nonexistent\).[1-9][0-9]*,\1,'
 SED_CMDS.opt-debug-graph1=	${STD_SED_CMDS.dg1}
 SED_CMDS.opt-debug-graph2=	${STD_SED_CMDS.dg2}
 SED_CMDS.opt-debug-graph3=	${STD_SED_CMDS.dg3}
-SED_CMDS.opt-debug-hash=	-e 's,\(numEntries\)=[1-9][0-9],\1=<entries>,'
+SED_CMDS.opt-debug-hash=	-e 's,\(entries\)=[1-9][0-9],\1=<entries>,'
 SED_CMDS.opt-debug-jobs=	-e 's,([0-9][0-9]*),(<pid>),'
 SED_CMDS.opt-debug-jobs+=	-e 's,pid [0-9][0-9]*,pid <pid>,'
 SED_CMDS.opt-debug-jobs+=	-e 's,Process [0-9][0-9]*,Process <pid>,'
@@ -559,7 +560,7 @@ SED_CMDS.suff-transform-debug+=	${STD_SED_CMDS.dg1}
 SED_CMDS.var-op-shell+=		${STD_SED_CMDS.shell}
 SED_CMDS.var-op-shell+=		-e '/command/s,No such.*,not found,'
 SED_CMDS.vardebug+=		-e 's,${.SHELL},</path/to/shell>,'
-SED_CMDS.varmod-mtime+=		-e "s,': .*,': <ENOENT>,"
+SED_CMDS.varmod-mtime+=		-e "s,\(.*\)': .*,\1': <ENOENT>,"
 SED_CMDS.varmod-subst-regex+=	${STD_SED_CMDS.regex}
 SED_CMDS.varparse-errors+=	${STD_SED_CMDS.timestamp}
 SED_CMDS.varname-dot-make-meta-ignore_filter+= ${SED_CMDS.meta-ignore}
@@ -589,8 +590,9 @@ unexport-env.rawout: export.mk
 
 # In tests that use the debugging option -dd, ignore debugging output that is
 # only logged in -DCLEANUP mode.
-STD_SED_CMDS.dd=		-e '/^OpenDirs_Done:/d'
-STD_SED_CMDS.dd+=		-e '/^CachedDir /d'
+STD_SED_CMDS.dd=	-e '/^OpenDirs_Done:/d'
+STD_SED_CMDS.dd+=	-e '/^CachedDir /d'
+STD_SED_CMDS.dd+=	-e 's,  ${DEFSYSPATH:U/usr/share/mk} ,  <defsyspath> ,'
 
 # Omit details such as process IDs from the output of the -dg1 option.
 STD_SED_CMDS.dg1=	-e 's,${.CURDIR}$$,<curdir>,'
@@ -677,11 +679,11 @@ all: ${OUTFILES}
 CLEANFILES=		*.rawout *.out *.status *.tmp *.core *.tmp
 CLEANFILES+=		obj*.[och] lib*.a	# posix1.mk
 CLEANFILES+=		issue* .[ab]*		# suffixes.mk
-CLEANDIRS=		dir dummy		# posix1.mk
+CLEANDIRS=		dir dummy *.tmp		# posix1.mk
 
 clean:
-	rm -f ${CLEANFILES}
 	rm -rf ${CLEANDIRS}
+	rm -f ${CLEANFILES}
 
 TEST_MAKE?=	${.MAKE}
 TOOL_SED?=	sed
@@ -731,7 +733,7 @@ LIMIT_RESOURCES?=	:
 # Postprocess the test output to make the output platform-independent.
 #
 # Replace anything after 'stopped in' with unit-tests
-_SED_CMDS+=	-e '/stopped/s, /.*, unit-tests,'
+_SED_CMDS+=	-e '/stopped/s, in /.*, in unit-tests,'
 # Allow the test files to be placed anywhere.
 _SED_CMDS+=	-e 's,\(\.PARSEDIR}\) = `'"/[^']*'"',\1 = <some-dir>,'
 _SED_CMDS+=	-e 's,\(\.INCLUDEDFROMDIR}\) = `'"/[^']*'"',\1 = <some-dir>,'
@@ -772,6 +774,12 @@ test:	${OUTFILES} .PHONY
 	  echo "Failed tests: $${failed}" ; false ; \
 	else \
 	  echo "All tests passed" ; \
+	  lua=${LUA:Ulua} ; \
+	  have_lua=$$("$$lua" -e 'print "yes"' 2>&1) ; \
+	  if [ "$$have_lua" = "yes" ]; then \
+	    (cd ${.CURDIR} && "$$lua" ./check-expect.lua *.mk); \
+	  fi; \
+	  rm -rf ${TMPDIR}; \
 	fi
 
 accept:

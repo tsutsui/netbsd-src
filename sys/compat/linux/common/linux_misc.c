@@ -1,4 +1,4 @@
-/*	$NetBSD: linux_misc.c,v 1.263 2024/02/10 18:43:52 andvar Exp $	*/
+/*	$NetBSD: linux_misc.c,v 1.266 2024/09/29 00:09:52 christos Exp $	*/
 
 /*-
  * Copyright (c) 1995, 1998, 1999, 2008 The NetBSD Foundation, Inc.
@@ -57,7 +57,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: linux_misc.c,v 1.263 2024/02/10 18:43:52 andvar Exp $");
+__KERNEL_RCSID(0, "$NetBSD: linux_misc.c,v 1.266 2024/09/29 00:09:52 christos Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -169,11 +169,11 @@ const struct linux_mnttypes linux_fstypes[] = {
 };
 const int linux_fstypes_cnt = sizeof(linux_fstypes) / sizeof(linux_fstypes[0]);
 
-# ifdef DEBUG_LINUX
-#define	DPRINTF(a)	uprintf a
-# else
-#define	DPRINTF(a)
-# endif
+#ifdef DEBUG_LINUX
+#define DPRINTF(a, ...)	uprintf(a, __VA_ARGS__)
+#else
+#define DPRINTF(a, ...)
+#endif
 
 /* Local linux_misc.c functions: */
 static void linux_to_bsd_mmap_args(struct sys_mmap_args *,
@@ -2052,8 +2052,8 @@ linux_sys_memfd_create(struct lwp *l,
 	}
 
 	if (lflags & ~LINUX_MFD_KNOWN_FLAGS) {
-		DPRINTF(("linux_sys_memfd_create: ignored flags %x\n",
-		    lflags & ~LINUX_MFD_KNOWN_FLAGS));
+		DPRINTF("%s: ignored flags %#x\n", __func__,
+		    lflags & ~LINUX_MFD_KNOWN_FLAGS);
 	}
 
 	SCARG(&muap, name) = SCARG(uap, name);
@@ -2140,4 +2140,34 @@ linux_sys_readahead(struct lwp *l, const struct linux_sys_readahead_args *uap,
 
 	return do_posix_fadvise(fd, SCARG(uap, offset), SCARG(uap, count),
 	    POSIX_FADV_WILLNEED);
+}
+
+int
+linux_sys_getcpu(lwp_t *l, const struct linux_sys_getcpu_args *uap,
+    register_t *retval)
+{
+	/* {
+		syscallarg(unsigned int *) cpu;
+		syscallarg(unsigned int *) node;
+		syscallarg(struct linux_getcpu_cache *) tcache;
+	}*/
+	int error;
+
+	if (SCARG(uap, cpu)) {
+		u_int cpu_id = l->l_cpu->ci_data.cpu_index;
+		error = copyout(&cpu_id, SCARG(uap, cpu), sizeof(cpu_id));
+		if (error)
+			return error;
+
+	}
+	
+	// TO-DO: Test on a NUMA machine if the node_id returned is correct
+	if (SCARG(uap, node)) {
+		u_int node_id = l->l_cpu->ci_data.cpu_numa_id;
+		error = copyout(&node_id, SCARG(uap, node), sizeof(node_id));
+		if (error)
+			return error;
+	}
+
+	return 0;
 }

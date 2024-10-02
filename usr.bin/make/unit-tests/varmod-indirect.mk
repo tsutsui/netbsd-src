@@ -1,4 +1,4 @@
-# $NetBSD: varmod-indirect.mk,v 1.18 2024/02/04 10:03:10 rillig Exp $
+# $NetBSD: varmod-indirect.mk,v 1.21 2024/08/29 20:20:36 rillig Exp $
 #
 # Tests for indirect variable modifiers, such as in ${VAR:${M_modifiers}}.
 # These can be used for very basic purposes like converting a string to either

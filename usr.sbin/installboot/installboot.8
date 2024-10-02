@@ -1,4 +1,4 @@
-.\"	$NetBSD: installboot.8,v 1.108 2023/12/26 06:00:35 mrg Exp $
+.\"	$NetBSD: installboot.8,v 1.111 2024/08/29 05:02:44 dholland Exp $
 .\"
 .\" Copyright (c) 2002-2023 The NetBSD Foundation, Inc.
 .\" All rights reserved.
@@ -32,7 +32,7 @@
 .\" Usage: \*(UB
 .ds UB U\(hyBoot
 .
-.Dd December 25, 2023
+.Dd June 1, 2024
 .Dt INSTALLBOOT 8
 .Os
 .Sh NAME
@@ -468,7 +468,7 @@ Use
 as the type of
 .Ar filesystem .
 The default operation is to attempt to auto-detect this setting.
-The following file system types are currently supported by:
+The following file system types are currently supported:
 .
 .Bl -tag -width Ic
 .
@@ -478,6 +478,9 @@ Fast File System.
 .
 .It Ic raid
 Mirrored RAIDframe File System.
+.
+.It Ic cd9660
+ISO 9660 File System.
 .
 .It Ic raw
 .Dq Raw
@@ -722,6 +725,9 @@ SiByte/Broadcom
 and
 .Tn BCM1480
 CPUs.
+There is also
+\*(UB support for the
+.Tn Creator CI20 .
 .Bl -tag -width Pa
 .
 .It Pa /usr/mdec/sbmips/boot
@@ -739,10 +745,9 @@ primary bootstrap for LFSv1 and LFSv2 file system.
 .It Pa /usr/mdec/sbmips/netboot
 .Tn SBMIPS
 primary bootstrap for network root.
-.Pp
-Note that
-.Nm
-does not currently support evbmips directly.
+.It Pa /usr/share/installboot/evbmips/boards.plist
+Base board database, used to provide information about which
+\*(UB package is required for a given board.
 .
 .El
 .

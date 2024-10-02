@@ -1,0 +1,4 @@
+# $NetBSD: ad.powerpc64,v 1.13 2024/07/11 08:13:49 riastradh Exp $
+#
+./usr/libdata/debug/libexec/ld.elf_so-powerpc.debug	comp-sys-debug		debug,compat
+./usr/libdata/debug/usr/libexec/ld.elf_so-powerpc.debug	comp-sys-debug		debug,compat

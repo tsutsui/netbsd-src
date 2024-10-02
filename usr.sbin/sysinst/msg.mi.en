@@ -1,4 +1,4 @@
-/*	$NetBSD: msg.mi.en,v 1.48 2024/03/21 02:24:35 nia Exp $	*/
+/*	$NetBSD: msg.mi.en,v 1.52 2024/06/20 05:46:22 nia Exp $	*/
 
 /*
  * Copyright 1997 Piermont Information Systems Inc.
@@ -618,7 +618,7 @@ message net_defroute
 {IPv4 gateway}
 
 message net_media
-{Network media type}
+{Network media type (empty to autoconfigure)}
 
 message net_ssid
 {Wi-Fi SSID?}
@@ -809,12 +809,18 @@ message cur_distsets
 }
 
 message cur_distsets_header
-{   Distribution set         Selected
-   ------------------------ --------
+{   Distribution set                   Selected
+   ---------------------------------- --------
 }
 
 message set_base
 {Base}
+
+message set_base32
+{Base 32-bit compatibility libraries}
+
+message set_base64
+{Base 64-bit compatibility libraries}
 
 message set_system
 {Configuration files (/etc)}
@@ -833,6 +839,9 @@ message set_gpufw
 
 message set_man_pages
 {Manual pages}
+
+message set_man_pages_html
+{Manual pages (HTML)}
 
 message set_misc
 {Miscellaneous}
@@ -887,6 +896,12 @@ message set_xsrc
 
 message set_debug
 {Debug symbols}
+
+message set_debug32
+{Debug symbols (32-bit)}
+
+message set_debug64
+{Debug symbols (64-bit)}
 
 message set_xdebug
 {X11 debug symbols}

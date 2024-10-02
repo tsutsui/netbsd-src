@@ -1,4 +1,4 @@
-/*	$NetBSD: clock_machdep.c,v 1.7 2024/01/18 07:41:50 skrll Exp $	*/
+/*	$NetBSD: clock_machdep.c,v 1.9 2024/08/04 08:16:25 skrll Exp $	*/
 
 /*-
  * Copyright (c) 2014 The NetBSD Foundation, Inc.
@@ -31,7 +31,7 @@
 
 #include <sys/cdefs.h>
 
-__RCSID("$NetBSD: clock_machdep.c,v 1.7 2024/01/18 07:41:50 skrll Exp $");
+__RCSID("$NetBSD: clock_machdep.c,v 1.9 2024/08/04 08:16:25 skrll Exp $");
 
 #include <sys/param.h>
 #include <sys/cpu.h>
@@ -80,11 +80,11 @@ riscv_timer_frequency_get(void)
 void
 riscv_timer_register(void (*timerfn)(void))
 {
-       if (_riscv_timer_init != NULL) {
+	if (_riscv_timer_init != NULL) {
 #ifdef DIAGNOSTIC
-               aprint_verbose("%s: timer already registered\n", __func__);
+		aprint_verbose("%s: timer already registered\n", __func__);
 #endif
-       }
+	}
 	_riscv_timer_init = timerfn;
 }
 
@@ -124,6 +124,10 @@ riscv_timer_intr(void *arg)
 	ci->ci_ev_timer.ev_count++;
 
 	ci->ci_lastintr_scheduled += timer_ticks_per_hz;
+	while (__predict_false(ci->ci_lastintr_scheduled < now)) {
+		ci->ci_lastintr_scheduled += timer_ticks_per_hz;
+		/* XXX count missed timer interrupts */
+	}
 	sbi_set_timer(ci->ci_lastintr_scheduled);
 
 	hardclock(cf);
@@ -149,10 +153,10 @@ setstatclockrate(int newhz)
 void
 delay(unsigned long us)
 {
-        const uint64_t ticks = (uint64_t)us * timer_ticks_per_usec;
-        const uint64_t finish = csr_time_read() + ticks;
+	const uint64_t ticks = (uint64_t)us * timer_ticks_per_usec;
+	const uint64_t finish = csr_time_read() + ticks;
 
-        while (csr_time_read() < finish) {
-                /* spin, baby spin */
-        }
+	while (csr_time_read() < finish) {
+		/* spin, baby spin */
+	}
 }
