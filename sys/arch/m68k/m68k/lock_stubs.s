@@ -38,7 +38,7 @@
 	.file	"lock_stubs.s"
 	.text
 
-#if defined(__mc68010__)
+#if defined(__mc68010__) || defined(NO_CAS)
 /*
  * int _atomic_cas_32(volatile uint32_t *val, uint32_t old, uint32_t new);
  *
@@ -83,7 +83,7 @@ STRONG_ALIAS(_atomic_cas_ulong_ni,_atomic_cas_32)
 
 #if !defined(LOCKDEBUG)
 
-#if !defined(__mc68010__)
+#if !defined(__mc68010__) && !defined(NO_CAS)
 /*
  * void mutex_enter(kmutex_t *mtx);
  */

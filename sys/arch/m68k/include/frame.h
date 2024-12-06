@@ -218,7 +218,7 @@ void	sendsig_sigcontext(const ksiginfo_t *, const sigset_t *);
 int	m68040_writeback(struct frame *, int);
 #endif
 
-#if defined(__mc68010__)
+#if defined(__mc68010__) || defined(NO_CAS)
 /*
  * Restartable atomic sequence-cased compare-and-swap for atomic_cas ops
  * and locking primitives.  We defined this here because it manipulates a

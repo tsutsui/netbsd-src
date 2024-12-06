@@ -62,7 +62,7 @@ struct kmutex {
 #define	mtx_lock		u.s.mtxs_lock
 
 #define	__HAVE_SIMPLE_MUTEXES		1
-#ifndef	__mc68010__
+#if !defined(__mc68010__) && !defined(NO_CAS)
 #define	__HAVE_MUTEX_STUBS		1
 #endif
 
