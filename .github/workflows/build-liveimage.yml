@@ -1,0 +1,39 @@
+name: ci
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        machine: [ "alpha", "amd64", "hpcarm", "hppa", "i386", "macppc", "sparc", "sparc64", "sun2", "sun3", "vax", "virt68k", "zaurus" ]
+
+    steps:
+    - name: checkout src
+      uses: actions/checkout@v4
+
+    - name: checkout xsrc
+      uses: actions/checkout@v4
+      with:
+        repository: netbsd/xsrc
+        path: xsrc
+
+    - name: setup build environment
+      run: |
+        sudo apt install -y build-essential flex
+
+    - name: build
+      run: |
+        DISTRIBVER="$(sh sys/conf/osrelease.sh)"
+        echo "DISTRIBVER=$DISTRIBVER" >> $GITHUB_ENV
+        sh build.sh -U -u -x -X xsrc -j 4 -N 0 -m ${{ matrix.machine }} -V OBJMACHINE=yes release live-image
+
+    - name: upload liveimages
+      uses: actions/upload-artifact@v4
+      with:
+        name: NetBSD-${{ env.DISTRIBVER }}-${{ matrix.machine }}-live
+        path: obj.${{ matrix.machine }}/releasedir/images/
+        compression-level: 0	# no compression, images are already gzipped
