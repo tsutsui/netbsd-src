@@ -4,6 +4,8 @@
 .include "${NETBSDSRCDIR}/distrib/common/Makefile.distrib"
 
 SUBDIR=		instkernel cdroms # floppy-GENERIC
+SUBDIR+=	.WAIT
+SUBDIR+=	liveimage
 TARGETS+=	release
 
 release: check_RELEASEDIR .WAIT README.files
@@ -14,5 +16,8 @@ release: check_RELEASEDIR .WAIT README.files
 
 iso_image:
 	${MAKEDIRTARGET} cdroms iso_image
+
+live_image:
+	${MAKEDIRTARGET} liveimage live_image
 
 .include <bsd.subdir.mk>
