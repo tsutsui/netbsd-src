@@ -219,6 +219,7 @@ cgfourattach(device_t parent, device_t self, void *aux)
 	volatile struct bt_regs *bt;
 	struct fbdevice *fb = &sc->sc_fb;
 	int ramsize, i, isconsole;
+	paddr_t cmap_pa;
 
 	sc->sc_bustag = oba->oba_bustag;
 	sc->sc_paddr = (bus_addr_t)oba->oba_paddr;
@@ -287,8 +288,10 @@ cgfourattach(device_t parent, device_t self, void *aux)
 #endif
 
 	/* Map the Brooktree. */
+	/* XXX: PFOUR_COLOR_OFF_CMAP assumes 32 bit wraparound */
+	cmap_pa = (paddr_t)oba->oba_paddr + (paddr_t)PFOUR_COLOR_OFF_CMAP;
 	if (bus_space_map(oba->oba_bustag,
-			  oba->oba_paddr + PFOUR_COLOR_OFF_CMAP,
+			  cmap_pa,
 			  sizeof(struct fbcontrol),
 			  BUS_SPACE_MAP_LINEAR,
 			  &bh) != 0) {
