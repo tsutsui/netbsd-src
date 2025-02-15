@@ -180,9 +180,9 @@ fb_attach(struct fbdevice *fb, int isconsole)
 		fbl->fb_next = NULL;
 		aprint_normal_dev(fbl->fb_dev->fb_device,
 		    "moved to /dev/fb%d\n", nfb);
-		aprint_normal_dev(fbl->fb_dev->fb_device,
-		    "attached to /dev/fb0\n");
 		fblist.fb_dev = fb;
+		aprint_normal_dev(fblist.fb_dev->fb_device,
+		    "attached to /dev/fb0\n");
 		if (fb->fb_flags & FB_FORCE)
 			seen_force = 1;
 	/* Add to end of fb list. */
