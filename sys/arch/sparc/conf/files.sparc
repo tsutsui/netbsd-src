@@ -245,7 +245,7 @@ device cgtwo: fb, rasops8
 attach cgtwo at vme
 file	arch/sparc/dev/cgtwo.c		cgtwo needs-flag
 
-device cgfour: bt_dac, fb, rasops8, pfour
+device cgfour: bt_dac, fb, pfour, rasops8, wsemuldisplaydev, vcons
 attach cgfour at obio
 file	arch/sparc/dev/cgfour.c		cgfour needs-flag
 
