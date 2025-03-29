@@ -103,6 +103,9 @@ hp300_setboot(ib_params *params)
 	retval = 0;
 	bootstrap = MAP_FAILED;
 
+	/* needs whole LIF volume/directory and actual bootstrap by default */
+	bootstrap_size = params->s1stat.st_size;
+
 	label = malloc(params->sectorsize);
 	if (label == NULL) {
 		warn("Failed to allocate memory for disklabel");
@@ -223,27 +226,12 @@ hp300_setboot(ib_params *params)
 		}
 	}
 
-#ifdef SUPPORT_CD9660
-	if (params->stage2 != NULL) {
-		/* Use bootstrap file in the target filesystem. */
-		bootstrap = mmap(NULL, bootstrap_size,
-		    PROT_READ | PROT_WRITE, MAP_PRIVATE, params->fsfd,
-		    boot_offset);
-		if (bootstrap == MAP_FAILED) {
-			warn("mmapping `%s'", params->filesystem);
-			goto done;
-		}
-	} else
-#endif
-	{
-		/* Use bootstrap specified as stage1. */
-		bootstrap_size = params->s1stat.st_size;
-		bootstrap = mmap(NULL, bootstrap_size,
-		    PROT_READ | PROT_WRITE, MAP_PRIVATE, params->s1fd, 0);
-		if (bootstrap == MAP_FAILED) {
-			warn("mmapping `%s'", params->stage1);
-			goto done;
-		}
+	/* Read LIF volume/directory (and bootstrap) from stage1 */
+	bootstrap = mmap(NULL, bootstrap_size,
+	    PROT_READ | PROT_WRITE, MAP_PRIVATE, params->s1fd, 0);
+	if (bootstrap == MAP_FAILED) {
+		warn("mmapping `%s'", params->stage1);
+		goto done;
 	}
 
 	/* Relocate files, sanity check LIF directory on the way */
