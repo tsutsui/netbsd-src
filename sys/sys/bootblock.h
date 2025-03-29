@@ -986,6 +986,14 @@ struct hp300_load {
 #define	HP300_DIR_FLAG		0x8001	/* don't ask me! */
 #define	HP300_SECTSIZE		256
 
+#define HP300_LIF_NUMDIR	8
+
+#define HP300_LIF_VOLSTART	0
+#define HP300_LIF_VOLSIZE	sizeof(struct hp300_lifvol)
+#define HP300_LIF_DIRSTART	512
+#define HP300_LIF_DIRSIZE	(HP300_LIF_NUMDIR * sizeof(struct hp300_lifdir))
+#define HP300_LIF_FILESTART	8192
+
 
 /* ------------------------------------------
  * hppa
