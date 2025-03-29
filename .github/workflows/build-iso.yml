@@ -1,0 +1,51 @@
+name: ci
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        machine: [ "alpha", "amd64", "hp300", "hppa", "i386", "macppc", "pmax", "sparc", "sparc64", "sun2", "sun3", "vax" ]
+
+    steps:
+    - name: setup build environment
+      run: |
+        sudo apt install -y build-essential flex
+
+    - name: checkout src
+      uses: actions/checkout@v4
+      with:
+        path: src
+
+    - name: checkout netbsd/xsrc
+      uses: actions/checkout@v4
+      with:
+        repository: netbsd/xsrc
+        path: xsrc
+
+    - name: build release and iso-image
+      run: |
+        DISTRIBVER="$(sh src/sys/conf/osrelease.sh)"
+        echo "DISTRIBVER=$DISTRIBVER" >> $GITHUB_ENV
+        case "${{ matrix.machine }}" in
+        sun2)
+          XOPTS=""
+          ;;
+        *)
+          XOPTS="-x -X ../xsrc"
+          ;;
+        esac
+        JOBS=4
+        (cd src && sh build.sh -U -u ${XOPTS} -j ${JOBS} -N 0 -m ${{ matrix.machine }} -V OBJMACHINE=yes release iso-image)
+
+    - name: upload iso-images
+      uses: actions/upload-artifact@v4
+      with:
+        name: NetBSD-${{ env.DISTRIBVER }}-${{ matrix.machine }}-iso
+        path: |
+          src/obj.${{ matrix.machine }}/releasedir/images/
+        compression-level: 0	# no compression, files in image are mostly gzipped
