@@ -145,6 +145,9 @@ device	gendiofb: wsemuldisplaydev, diofb, rasops8
 attach	gendiofb at dio
 file	arch/hp300/dev/gendiofb.c		gendiofb	needs-flag
 
+attach	sti at dio with sti_dio
+file	arch/hp300/dev/sti_dio.c	sti_dio needs-flag
+
 #
 # Devices on the DIO bus
 #

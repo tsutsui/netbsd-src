@@ -235,10 +235,11 @@ tvrx*		at dio? scode ?
 wsdisplay*	at tvrx?
 
 # dumb framebuffer support for 362/382
-gendiofb*	at dio? scode ?
-wsdisplay*	at gendiofb?
+#gendiofb*	at dio? scode ?
+#wsdisplay*	at gendiofb?
 
 # STI framebuffers
+sti*		at dio? scode ?
 sti*		at sgc?	slot ?
 wsdisplay*	at sti?
 
