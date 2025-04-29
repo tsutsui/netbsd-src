@@ -49,11 +49,6 @@
 
 #include <uvm/uvm_extern.h>
 
-/* DIO attachment defines */
-#define STI_DIO_SCODE_OFFSET	0x02	/* offset to SGC rom, in select codes */
-#define STI_DIO_SIZE		0x10	/* expected total device size
-					   in DIO-II size units */
-
 struct sti_dio_softc {
 	struct sti_softc sc_sti;
 
@@ -168,26 +163,36 @@ sti_dio_probe(bus_space_tag_t bst, bus_addr_t addr, int scode)
 	 * and report the device as spanning at least four select codes.
 	 */
 
+printf("%s: 1\n", __func__);
 	if (!DIO_ISDIOII(scode))
 		return 0;
 
+printf("%s: 2\n", __func__);
 	if (bus_space_map(bst, addr, PAGE_SIZE, 0, &bsh))
 		return 0;
+printf("%s: 3\n", __func__);
 	span = bus_space_read_1(bst, bsh, DIOII_SIZEOFF);
+printf("%s: 4\n", __func__);
 	bus_space_unmap(bst, bsh, PAGE_SIZE);
+printf("%s: 5\n", __func__);
 
 	if (span < STI_DIO_SIZE - 1)
 		return 0;
 
+printf("%s: 6\n", __func__);
 	if (bus_space_map(bst,
 	    (bus_addr_t)dio_scodetopa(scode + STI_DIO_SCODE_OFFSET),
 	    PAGE_SIZE, 0, &bsh))
 		return 0;
+printf("%s: 7\n", __func__);
 	devtype = bus_space_read_1(bst, bsh, 3);
+printf("%s: 8\n", __func__);
 	bus_space_unmap(bst, bsh, PAGE_SIZE);
+printf("%s: 9\n", __func__);
 
 	if (devtype != STI_DEVTYPE1 && devtype != STI_DEVTYPE4)
 		return 0;
+printf("%s: 10\n", __func__);
 
 	return 1;
 }
@@ -196,11 +201,14 @@ int
 sti_dio_cnprobe(bus_space_tag_t bst, bus_addr_t addr, int scode)
 {
 
+printf("%s: 1\n", __func__);
 	if (sti_dio_probe(bst, addr, scode) == 0) {
 		/* not found */
 		return 1;
 	}
+printf("%s: 2\n", __func__);
 	conscode = scode;
+
 	return 0;
 }
 
@@ -211,10 +219,13 @@ sti_dio_cnattach(bus_space_tag_t bst, bus_addr_t addr, int scode)
 
 	sticn_dio_tag = *bst;
 
+printf("%s: 1\n", __func__);
 	/* sticn_dio_bases[0] will be fixed in sti_cnattach() */
 	for (i = 0; i < STI_REGION_MAX; i++)
 		sticn_dio_bases[i] = addr;
 
+printf("%s: 2\n", __func__);
 	sti_cnattach(&sticn_dio_rom, &sticn_dio_scr, &sticn_dio_tag,
 	    sticn_dio_bases, STI_CODEBASE_ALT);
+printf("%s: 3\n", __func__);
 }

@@ -23,5 +23,10 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* DIO attachment defines */
+#define STI_DIO_SCODE_OFFSET	0x02	/* offset to SGC rom, in select codes */
+#define STI_DIO_SIZE		0x10	/* expected total device size
+					   in DIO-II size units */
+
 int	sti_dio_cnprobe(bus_space_tag_t, bus_addr_t, int);
 void	sti_dio_cnattach(bus_space_tag_t, bus_addr_t, int);

@@ -97,6 +97,7 @@ __KERNEL_RCSID(0, "$NetBSD: autoconf.c,v 1.115 2024/12/20 22:43:26 tsutsui Exp $
 #include "topcat.h"
 #include "tvrx.h"
 #include "gendiofb.h"
+#include "sti_dio.h"
 #include "sti_sgc.h"
 #include "com_dio.h"
 #include "com_frodo.h"
@@ -153,10 +154,11 @@ __KERNEL_RCSID(0, "$NetBSD: autoconf.c,v 1.115 2024/12/20 22:43:26 tsutsui Exp $
 #include <hp300/dev/com_frodovar.h>
 #endif
 
-#if NSTI_SGC > 0
+#if NSTI_SGC > 0 || NSTI_DIO > 0
 #include <hp300/dev/sgcreg.h>
 #include <hp300/dev/sgcvar.h>
 #include <hp300/dev/sti_sgcvar.h>
+#include <hp300/dev/sti_diovar.h>
 #endif
 
 #include <hp300/dev/diofbreg.h>
@@ -822,7 +824,7 @@ hp300_cninit(void)
 #endif
 #if NCOM_DIO > 0
 	if (!dio_scan(com_dio_cnattach))
-		return;
+		;//return;
 #endif
 #if NDCM > 0
 	if (!dio_scan(dcmcnattach))
@@ -882,6 +884,12 @@ hp300_cninit(void)
 	if (!dio_scan(gendiofbcnattach))
 		goto find_kbd;
 #endif
+#if NSTI_DIO > 0
+	if (!dio_scan(sti_dio_cnprobe)) {
+		cninit_deferred = true;
+		goto find_kbd;
+	}
+#endif
 #if NSTI_SGC > 0
 	if (machineid == HP_400 ||
 	    machineid == HP_425 ||
@@ -905,7 +913,7 @@ hp300_cninit(void)
 #endif
 
 #if (NDVBOX + NGBOX + NRBOX + NTOPCAT + NDVBOX + NGBOX + NHYPER + NRBOX + \
-     NTOPCAT + NTVRX + NGENDIOFB + NSTI_SGC) > 0
+     NTOPCAT + NTVRX + NGENDIOFB + NSTI_DIO + NSTI_SGC) > 0
 find_kbd:
 #endif
 
@@ -971,6 +979,21 @@ hp300_cninit_deferred(void)
 	if (!cninit_deferred)
 		return;
 
+#if NSTI_DIO > 0
+	if (machineid == HP_362 ||
+	    machineid == HP_382) {
+		struct bus_space_tag dio_tag;
+		bus_space_tag_t dio_bst;
+		bus_addr_t base;
+
+		dio_bst = &dio_tag;
+		memset(dio_bst, 0, sizeof(struct bus_space_tag));
+		dio_bst->bustype = HP300_BUS_SPACE_DIO;
+		base = (bus_addr_t)
+		    dio_scodetopa(conscode + STI_DIO_SCODE_OFFSET);
+		sti_dio_cnattach(dio_bst, base, conscode);
+	}
+#endif
 #if NSTI_SGC > 0
 	if (machineid == HP_400 ||
 	    machineid == HP_425 ||
