@@ -23,5 +23,30 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * hp300 specific DIO/SGC common stuff
+ */
+
+struct sti_machdep_softc {
+	struct sti_softc sc_sti;
+
+	paddr_t sc_base;
+	paddr_t sc_bitmap;
+};
+
+void sti_machdep_attach(struct sti_machdep_softc *);
+void sti_machdep_attach_console(struct sti_machdep_softc *);
+void sti_machdep_cnattach(bus_space_tag_t, paddr_t);
+
+/*
+ * DIO stuff in sti_dio.c
+ */
+
 int	sti_dio_cnprobe(bus_space_tag_t, bus_addr_t, int);
 void	sti_dio_cnattach(bus_space_tag_t, int);
+
+/*
+ * SGC stuff in sti_sgc.c
+ */
+int	sti_sgc_cnprobe(bus_space_tag_t, int);
+void	sti_sgc_cnattach(bus_space_tag_t, int);

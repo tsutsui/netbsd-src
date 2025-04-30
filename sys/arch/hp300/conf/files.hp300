@@ -216,6 +216,9 @@ file	arch/hp300/dev/spc.c		spc needs-flag
 attach	sti at sgc with sti_sgc
 file	arch/hp300/dev/sti_sgc.c	sti_sgc needs-flag
 
+# Common sti stuff betweeen DIO and SGC
+file	arch/hp300/dev/sti_machdep.c	sti
+
 # Memory Disk for ramdisk
 file	dev/md_root.c			memory_disk_hooks
 

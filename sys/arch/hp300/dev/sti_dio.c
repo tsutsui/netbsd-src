@@ -45,28 +45,22 @@
 
 #include <dev/ic/stireg.h>
 #include <dev/ic/stivar.h>
-#include <hp300/dev/sti_diovar.h>
+#include <hp300/dev/sti_machdep.h>
 
 #include <uvm/uvm_extern.h>
 
-struct sti_dio_softc {
-	struct sti_softc sc_sti;
-
-	paddr_t sc_bitmap;
-};
+/* DIO attachment defines */
+#define STI_DIO_SCODE_OFFSET	0x02	/* offset to SGC rom, in select codes */
+#define STI_DIO_SIZE		0x10	/* expected total device size
+					   in DIO-II size units */
 
 static int  sti_dio_match(device_t, cfdata_t, void *);
 static void sti_dio_attach(device_t, device_t, void *);
 
 static int sti_dio_probe(bus_space_tag_t, int);
 
-CFATTACH_DECL_NEW(sti_dio, sizeof(struct sti_dio_softc),
+CFATTACH_DECL_NEW(sti_dio, sizeof(struct sti_machdep_softc),
     sti_dio_match, sti_dio_attach, NULL, NULL);
-
-static struct bus_space_tag sticn_dio_tag;
-static struct sti_rom sticn_dio_rom;
-static struct sti_screen sticn_dio_scr;
-static bus_addr_t sticn_dio_bases[STI_REGION_MAX];
 
 static int
 sti_dio_match(device_t parent, cfdata_t cf, void *aux)
@@ -91,7 +85,7 @@ sti_dio_match(device_t parent, cfdata_t cf, void *aux)
 static void
 sti_dio_attach(device_t parent, device_t self, void *aux)
 {
-	struct sti_dio_softc *sc = device_private(self);
+	struct sti_machdep_softc *sc = device_private(self);
 	struct sti_softc *ssc = &sc->sc_sti;
 	struct dio_attach_args *da = aux;
 	bus_addr_t base;
@@ -103,23 +97,16 @@ sti_dio_attach(device_t parent, device_t self, void *aux)
 	ssc->sc_dev = self;
 	bst = da->da_bst;
 
+	base = (paddr_t)dio_scodetopa(da->da_scode + STI_DIO_SCODE_OFFSET);
+	sc->sc_base = base;
+
 	/*
 	 * If we already probed it successfully as a console device, go ahead,
 	 * since we will not be able to bus_space_map() again.
 	 */
 	if (da->da_scode == conscode) {
-		ssc->sc_flags |= STI_CONSOLE | STI_ATTACHED;
-		ssc->sc_rom = &sticn_dio_rom;
-		ssc->sc_rom->rom_softc = ssc;
-		ssc->sc_scr = &sticn_dio_scr;
-		ssc->sc_scr->scr_rom = ssc->sc_rom;
-		memcpy(ssc->bases, sticn_dio_bases, sizeof(ssc->bases));
-
-		sti_describe(ssc);
+		sti_machdep_attach_console(sc);
 	} else {
-		base = (bus_addr_t)
-		    dio_scodetopa(da->da_scode + STI_DIO_SCODE_OFFSET);
-
 		if (bus_space_map(bst, base, PAGE_SIZE, 0, &romh)) {
 			aprint_error(": can't map frame buffer");
 			return;
@@ -146,7 +133,7 @@ sti_dio_attach(device_t parent, device_t self, void *aux)
 			return;
 	}
 
-	sti_end_attach(ssc);
+	sti_machdep_attach(sc);
 }
 
 static int
@@ -216,19 +203,12 @@ printf("%s: 2\n", __func__);
 void
 sti_dio_cnattach(bus_space_tag_t bst, int scode)
 {
-	int i;
-	bus_addr_t base;
-
-	sticn_dio_tag = *bst;
+	paddr_t base;
 
 printf("%s: 1\n", __func__);
-	base = (bus_addr_t)dio_scodetopa(scode + STI_DIO_SCODE_OFFSET);
-	/* sticn_dio_bases[0] will be fixed in sti_cnattach() */
-	for (i = 0; i < STI_REGION_MAX; i++)
-		sticn_dio_bases[i] = base;
+	base = (paddr_t)dio_scodetopa(scode + STI_DIO_SCODE_OFFSET);
 
 printf("%s: 2\n", __func__);
-	sti_cnattach(&sticn_dio_rom, &sticn_dio_scr, &sticn_dio_tag,
-	    sticn_dio_bases, STI_CODEBASE_ALT);
+	sti_machdep_cnattach(bst, base);
 printf("%s: 3\n", __func__);
 }
