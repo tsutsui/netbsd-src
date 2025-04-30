@@ -155,7 +155,6 @@ __KERNEL_RCSID(0, "$NetBSD: autoconf.c,v 1.115 2024/12/20 22:43:26 tsutsui Exp $
 #endif
 
 #if NSTI_DIO > 0 || NSTI_SGC > 0
-#include <dev/ic/stireg.h>
 #include <hp300/dev/sti_machdep.h>
 #endif
 #if NSTI_DIO > 0
