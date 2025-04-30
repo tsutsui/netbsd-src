@@ -26,6 +26,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  */
+#include <sys/cdefs.h>
+__KERNEL_RCSID(0, "$NetBSD$");
 
 #include <sys/param.h>
 #include <sys/device.h>
