@@ -239,8 +239,8 @@ wsdisplay*	at tvrx?
 #wsdisplay*	at gendiofb?
 
 # STI framebuffers
-sti*		at dio? scode ?
-sti*		at sgc?	slot ?
+sti*		at dio? scode ?		# 362 and 382
+sti*		at sgc?	slot ?		# 425e and 425t variants
 wsdisplay*	at sti?
 
 com0		at dio0 scode 9		# DCA serial interfaces
