@@ -885,15 +885,15 @@ hp300_cninit(void)
 	if (!dio_scan(tvrxcnattach))
 		goto find_kbd;
 #endif
-#if NGENDIOFB > 0
-	if (!dio_scan(gendiofbcnattach))
-		goto find_kbd;
-#endif
 #if NSTI_DIO > 0
 	if (!dio_scan(sti_dio_cnprobe)) {
 		cninit_deferred = true;
 		goto find_kbd;
 	}
+#endif
+#if NGENDIOFB > 0
+	if (!dio_scan(gendiofbcnattach))
+		goto find_kbd;
 #endif
 #if NSTI_SGC > 0
 	if (machineid == HP_400 ||

@@ -68,10 +68,11 @@ sti_dio_match(device_t parent, cfdata_t cf, void *aux)
 	 * If we already probed it successfully as a console device, go ahead,
 	 * since we will not be able to bus_space_map() again.
 	 */
-	if (da->da_scode == conscode)
-		return 1;
+	if (da->da_scode == conscode ||
+	    sti_dio_probe(da->da_bst, da->da_scode) != 0)
+		return 10;	/* Beat old gendiofb(4) */
 
-	return sti_dio_probe(da->da_bst, da->da_scode);
+	return 0;
 }
 
 static void
