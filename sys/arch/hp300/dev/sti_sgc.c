@@ -38,10 +38,8 @@ __KERNEL_RCSID(0, "$NetBSD: sti_sgc.c,v 1.8 2023/01/15 06:19:45 tsutsui Exp $");
 #include <dev/wscons/wsconsio.h>
 #include <dev/wscons/wsdisplayvar.h>
 
-#include <dev/ic/stireg.h>
-#include <dev/ic/stivar.h>
-
 #include <hp300/dev/sgcvar.h>
+#include <hp300/dev/sti_sgcvar.h>
 #include <hp300/dev/sti_machdep.h>
 #include <machine/autoconf.h>
 

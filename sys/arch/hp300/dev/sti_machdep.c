@@ -38,9 +38,6 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <dev/wscons/wsconsio.h>
 #include <dev/wscons/wsdisplayvar.h>
 
-#include <dev/ic/stireg.h>
-#include <dev/ic/stivar.h>
-
 #include <hp300/dev/sgcvar.h>
 #include <hp300/dev/sti_machdep.h>
 #include <machine/autoconf.h>

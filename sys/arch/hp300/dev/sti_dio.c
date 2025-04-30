@@ -43,8 +43,7 @@
 #include <dev/wscons/wsdisplayvar.h>
 #include <dev/wscons/wsconsio.h>
 
-#include <dev/ic/stireg.h>
-#include <dev/ic/stivar.h>
+#include <hp300/dev/sti_diovar.h>
 #include <hp300/dev/sti_machdep.h>
 
 #include <uvm/uvm_extern.h>
