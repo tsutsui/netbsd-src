@@ -182,7 +182,7 @@ com_dio_cnattach(bus_space_tag_t bst, bus_addr_t addr, int scode)
 	bus_space_unmap(iot, iohdca, DCA_SIZE);
 
 	switch (id) {
-#if 1 //def CONSCODE
+#ifdef CONSCODE
 	case DCAID0:
 	case DCAID1:
 #endif

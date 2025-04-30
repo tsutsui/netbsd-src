@@ -151,36 +151,26 @@ sti_dio_probe(bus_space_tag_t bst, int scode)
 	 * and report the device as spanning at least four select codes.
 	 */
 
-printf("%s: 1\n", __func__);
 	if (!DIO_ISDIOII(scode))
 		return 0;
 
-printf("%s: 2\n", __func__);
 	addr = (bus_addr_t)(bus_addr_t)dio_scodetopa(scode);
 	if (bus_space_map(bst, addr, PAGE_SIZE, 0, &bsh))
 		return 0;
-printf("%s: 3\n", __func__);
 	span = bus_space_read_1(bst, bsh, DIOII_SIZEOFF);
-printf("%s: 4\n", __func__);
 	bus_space_unmap(bst, bsh, PAGE_SIZE);
-printf("%s: 5\n", __func__);
 
 	if (span < STI_DIO_SIZE - 1)
 		return 0;
 
-printf("%s: 6\n", __func__);
 	base = (bus_addr_t)dio_scodetopa(scode + STI_DIO_SCODE_OFFSET);
 	if (bus_space_map(bst, base, PAGE_SIZE, 0, &bsh))
 		return 0;
-printf("%s: 7\n", __func__);
 	devtype = bus_space_read_1(bst, bsh, 3);
-printf("%s: 8\n", __func__);
 	bus_space_unmap(bst, bsh, PAGE_SIZE);
-printf("%s: 9\n", __func__);
 
 	if (devtype != STI_DEVTYPE1 && devtype != STI_DEVTYPE4)
 		return 0;
-printf("%s: 10\n", __func__);
 
 	return 1;
 }
@@ -189,12 +179,10 @@ int
 sti_dio_cnprobe(bus_space_tag_t bst, bus_addr_t addr, int scode)
 {
 
-printf("%s: 1\n", __func__);
 	if (sti_dio_probe(bst, scode) == 0) {
 		/* not found */
 		return 1;
 	}
-printf("%s: 2\n", __func__);
 	conscode = scode;
 
 	return 0;
@@ -205,10 +193,6 @@ sti_dio_cnattach(bus_space_tag_t bst, int scode)
 {
 	paddr_t base;
 
-printf("%s: 1\n", __func__);
 	base = (paddr_t)dio_scodetopa(scode + STI_DIO_SCODE_OFFSET);
-
-printf("%s: 2\n", __func__);
 	sti_machdep_cnattach(bst, base);
-printf("%s: 3\n", __func__);
 }

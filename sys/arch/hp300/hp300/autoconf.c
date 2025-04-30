@@ -824,7 +824,7 @@ hp300_cninit(void)
 #endif
 #if NCOM_DIO > 0
 	if (!dio_scan(com_dio_cnattach))
-		;//return;
+		return;
 #endif
 #if NDCM > 0
 	if (!dio_scan(dcmcnattach))
