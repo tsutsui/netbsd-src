@@ -35,13 +35,9 @@ __KERNEL_RCSID(0, "$NetBSD: sti_sgc.c,v 1.8 2023/01/15 06:19:45 tsutsui Exp $");
 
 #include <uvm/uvm_extern.h>
 
-#include <dev/wscons/wsconsio.h>
-#include <dev/wscons/wsdisplayvar.h>
-
 #include <hp300/dev/sgcvar.h>
 #include <hp300/dev/sti_sgcvar.h>
 #include <hp300/dev/sti_machdep.h>
-#include <machine/autoconf.h>
 
 static int sticonslot = -1;
 

@@ -27,6 +27,7 @@
  * hp300 specific DIO/SGC common stuff
  */
 
+#include <dev/wscons/wsdisplayvar.h>
 #include <dev/ic/stireg.h>
 #include <dev/ic/stivar.h>
 

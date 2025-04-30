@@ -28,25 +28,16 @@
  */
 
 #include <sys/param.h>
-#include <sys/systm.h>
-#include <sys/conf.h>
 #include <sys/device.h>
+#include <sys/bus.h>
 
 #include <machine/autoconf.h>
-#include <machine/bus.h>
-#include <machine/cpu.h>
 
 #include <hp300/dev/dioreg.h>
 #include <hp300/dev/diovar.h>
 #include <hp300/dev/diodevs.h>
-
-#include <dev/wscons/wsdisplayvar.h>
-#include <dev/wscons/wsconsio.h>
-
 #include <hp300/dev/sti_diovar.h>
 #include <hp300/dev/sti_machdep.h>
-
-#include <uvm/uvm_extern.h>
 
 /* DIO attachment defines */
 #define STI_DIO_SCODE_OFFSET	0x02	/* offset to SGC rom, in select codes */

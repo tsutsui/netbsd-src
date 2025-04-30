@@ -33,14 +33,10 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/device.h>
 #include <sys/bus.h>
 
-#include <uvm/uvm_extern.h>
-
 #include <dev/wscons/wsconsio.h>
-#include <dev/wscons/wsdisplayvar.h>
 
 #include <hp300/dev/sgcvar.h>
 #include <hp300/dev/sti_machdep.h>
-#include <machine/autoconf.h>
 
 /*
  * 425e EVRX specific hardware
