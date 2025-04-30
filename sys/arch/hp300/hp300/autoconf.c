@@ -984,14 +984,13 @@ hp300_cninit_deferred(void)
 	    machineid == HP_382) {
 		struct bus_space_tag dio_tag;
 		bus_space_tag_t dio_bst;
-		bus_addr_t base;
+		bus_addr_t addr;
 
 		dio_bst = &dio_tag;
 		memset(dio_bst, 0, sizeof(struct bus_space_tag));
 		dio_bst->bustype = HP300_BUS_SPACE_DIO;
-		base = (bus_addr_t)
-		    dio_scodetopa(conscode + STI_DIO_SCODE_OFFSET);
-		sti_dio_cnattach(dio_bst, base, conscode);
+		addr = (bus_addr_t)dio_scodetopa(conscode);
+		sti_dio_cnattach(dio_bst, addr, conscode);
 	}
 #endif
 #if NSTI_SGC > 0

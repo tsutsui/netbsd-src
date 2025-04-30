@@ -216,13 +216,15 @@ void
 sti_dio_cnattach(bus_space_tag_t bst, bus_addr_t addr, int scode)
 {
 	int i;
+	bus_addr_t base;
 
 	sticn_dio_tag = *bst;
 
 printf("%s: 1\n", __func__);
+	base = (bus_addr_t)dio_scodetopa(scode + STI_DIO_SCODE_OFFSET);
 	/* sticn_dio_bases[0] will be fixed in sti_cnattach() */
 	for (i = 0; i < STI_REGION_MAX; i++)
-		sticn_dio_bases[i] = addr;
+		sticn_dio_bases[i] = base;
 
 printf("%s: 2\n", __func__);
 	sti_cnattach(&sticn_dio_rom, &sticn_dio_scr, &sticn_dio_tag,
