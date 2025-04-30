@@ -902,8 +902,7 @@ hp300_cninit(void)
 		memset(sgc_bst, 0, sizeof(struct bus_space_tag));
 		sgc_bst->bustype = HP300_BUS_SPACE_SGC;
 		for (slot = 0; slot < SGC_NSLOTS; slot++) {
-			if (sti_sgc_cnprobe(sgc_bst, sgc_slottopa(slot),
-			    slot)) {
+			if (sti_sgc_cnprobe(sgc_bst, slot)) {
 				cninit_deferred = true;
 				consslot = slot;
 				goto find_kbd;
@@ -984,13 +983,11 @@ hp300_cninit_deferred(void)
 	    machineid == HP_382) {
 		struct bus_space_tag dio_tag;
 		bus_space_tag_t dio_bst;
-		bus_addr_t addr;
 
 		dio_bst = &dio_tag;
 		memset(dio_bst, 0, sizeof(struct bus_space_tag));
 		dio_bst->bustype = HP300_BUS_SPACE_DIO;
-		addr = (bus_addr_t)dio_scodetopa(conscode);
-		sti_dio_cnattach(dio_bst, addr, conscode);
+		sti_dio_cnattach(dio_bst, conscode);
 	}
 #endif
 #if NSTI_SGC > 0
@@ -1003,7 +1000,7 @@ hp300_cninit_deferred(void)
 		sgc_bst = &sgc_tag;
 		memset(sgc_bst, 0, sizeof(struct bus_space_tag));
 		sgc_bst->bustype = HP300_BUS_SPACE_SGC;
-		sti_sgc_cnattach(sgc_bst, sgc_slottopa(consslot), consslot);
+		sti_sgc_cnattach(sgc_bst, consslot);
 	}
 #endif
 }

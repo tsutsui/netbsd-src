@@ -404,13 +404,15 @@ sti_m68k_mmap(void *v, void *vs, off_t offset, int prot)
 }
 
 int
-sti_sgc_cnprobe(bus_space_tag_t bst, bus_addr_t addr, int slot)
+sti_sgc_cnprobe(bus_space_tag_t bst, int slot)
 {
 	void *va;
 	bus_space_handle_t romh;
+	bus_addr_t base;
 	int devtype, rv = 0;
 
-	if (bus_space_map(bst, addr, PAGE_SIZE, 0, &romh))
+	base = sgc_slottopa(slot);
+	if (bus_space_map(bst, base, PAGE_SIZE, 0, &romh))
 		return 0;
 
 	va = bus_space_vaddr(bst, romh);
@@ -427,15 +429,17 @@ sti_sgc_cnprobe(bus_space_tag_t bst, bus_addr_t addr, int slot)
 }
 
 void
-sti_sgc_cnattach(bus_space_tag_t bst, bus_addr_t addr, int slot)
+sti_sgc_cnattach(bus_space_tag_t bst, int slot)
 {
+	bus_addr_t base;
 	int i;
 
 	sticn_tag = *bst;
+	base = sgc_slottopa(slot);
 
 	/* sticn_bases[0] will be fixed in sti_cnattach() */
 	for (i = 0; i < STI_REGION_MAX; i++)
-		sticn_bases[i] = addr;
+		sticn_bases[i] = base;
 
 	sti_cnattach(&sticn_rom, &sticn_scr, &sticn_tag, sticn_bases,
 	    STI_CODEBASE_ALT);

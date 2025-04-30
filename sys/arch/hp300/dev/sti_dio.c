@@ -58,7 +58,7 @@ struct sti_dio_softc {
 static int  sti_dio_match(device_t, cfdata_t, void *);
 static void sti_dio_attach(device_t, device_t, void *);
 
-static int sti_dio_probe(bus_space_tag_t, bus_addr_t, int);
+static int sti_dio_probe(bus_space_tag_t, int);
 
 CFATTACH_DECL_NEW(sti_dio, sizeof(struct sti_dio_softc),
     sti_dio_match, sti_dio_attach, NULL, NULL);
@@ -85,7 +85,7 @@ sti_dio_match(device_t parent, cfdata_t cf, void *aux)
 	if (da->da_scode == conscode)
 		return 1;
 
-	return sti_dio_probe(da->da_bst, da->da_addr, da->da_scode);
+	return sti_dio_probe(da->da_bst, da->da_scode);
 }
 
 static void
@@ -150,9 +150,10 @@ sti_dio_attach(device_t parent, device_t self, void *aux)
 }
 
 static int
-sti_dio_probe(bus_space_tag_t bst, bus_addr_t addr, int scode)
+sti_dio_probe(bus_space_tag_t bst, int scode)
 {
 	bus_space_handle_t bsh;
+	bus_addr_t addr, base;
 	int devtype;
 	u_int span;
 
@@ -168,6 +169,7 @@ printf("%s: 1\n", __func__);
 		return 0;
 
 printf("%s: 2\n", __func__);
+	addr = (bus_addr_t)(bus_addr_t)dio_scodetopa(scode);
 	if (bus_space_map(bst, addr, PAGE_SIZE, 0, &bsh))
 		return 0;
 printf("%s: 3\n", __func__);
@@ -180,9 +182,8 @@ printf("%s: 5\n", __func__);
 		return 0;
 
 printf("%s: 6\n", __func__);
-	if (bus_space_map(bst,
-	    (bus_addr_t)dio_scodetopa(scode + STI_DIO_SCODE_OFFSET),
-	    PAGE_SIZE, 0, &bsh))
+	base = (bus_addr_t)dio_scodetopa(scode + STI_DIO_SCODE_OFFSET);
+	if (bus_space_map(bst, base, PAGE_SIZE, 0, &bsh))
 		return 0;
 printf("%s: 7\n", __func__);
 	devtype = bus_space_read_1(bst, bsh, 3);
@@ -202,7 +203,7 @@ sti_dio_cnprobe(bus_space_tag_t bst, bus_addr_t addr, int scode)
 {
 
 printf("%s: 1\n", __func__);
-	if (sti_dio_probe(bst, addr, scode) == 0) {
+	if (sti_dio_probe(bst, scode) == 0) {
 		/* not found */
 		return 1;
 	}
@@ -213,7 +214,7 @@ printf("%s: 2\n", __func__);
 }
 
 void
-sti_dio_cnattach(bus_space_tag_t bst, bus_addr_t addr, int scode)
+sti_dio_cnattach(bus_space_tag_t bst, int scode)
 {
 	int i;
 	bus_addr_t base;

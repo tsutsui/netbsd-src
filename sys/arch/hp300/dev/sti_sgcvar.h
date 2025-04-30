@@ -23,5 +23,5 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-int	sti_sgc_cnprobe(bus_space_tag_t, bus_addr_t, int);
-void	sti_sgc_cnattach(bus_space_tag_t, bus_addr_t, int);
+int	sti_sgc_cnprobe(bus_space_tag_t, int);
+void	sti_sgc_cnattach(bus_space_tag_t, int);

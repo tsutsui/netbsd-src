@@ -29,4 +29,4 @@
 					   in DIO-II size units */
 
 int	sti_dio_cnprobe(bus_space_tag_t, bus_addr_t, int);
-void	sti_dio_cnattach(bus_space_tag_t, bus_addr_t, int);
+void	sti_dio_cnattach(bus_space_tag_t, int);
