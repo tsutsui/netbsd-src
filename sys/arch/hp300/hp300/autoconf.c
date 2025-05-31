@@ -825,11 +825,19 @@ hp300_cninit(void)
 #if NCOM_FRODO > 0
 	if (!com_frodo_cnattach(bst, FRODO_BASE + FRODO_APCI_OFFSET(1),
 	    CONSCODE_INTERNAL))
+#if 0
 		return;
+#else
+		;	/* continue to probe framebufrers with com(4) console */
+#endif
 #endif
 #if NCOM_DIO > 0
 	if (!dio_scan(com_dio_cnattach))
+#if 0
 		return;
+#else
+		;	/* continue to probe framebufrers with com(4) console */
+#endif
 #endif
 #if NDCM > 0
 	if (!dio_scan(dcmcnattach))

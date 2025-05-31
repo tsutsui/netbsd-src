@@ -1486,6 +1486,23 @@ sti_alloc_attr(void *v, int fg, int bg, int flags, long *pattr)
 	return 0;
 }
 
+#define STIDEBUG_COMCONSOLE
+#ifdef STIDEBUG_COMCONSOLE
+#define COM_MAJOR	12	/* on hp300 */
+#define COM_MINOR	0	/* 1 for 425e frodo */
+#include <dev/cons.h>
+extern void comcnputc(dev_t, int);
+static void (*cnputc_save)(dev_t, int);
+static dev_t cn_dev_com;
+
+static void
+cnputc_debug(dev_t dev, int c)
+{
+        (*cnputc_save)(dev, c);
+        comcnputc(cn_dev_com, c);
+}
+#endif
+
 /*
  * Early console support.  Only used on hp300, currently
  */
@@ -1520,6 +1537,12 @@ sti_cnattach(struct sti_rom *rom, struct sti_screen *scr, bus_space_tag_t memt,
 
 	sti_alloc_attr(scr, 0, 0, 0, &defattr);
 	wsdisplay_cnattach(&scr->scr_wsd, scr, 0, 0, defattr);
+
+#ifdef STIDEBUG_COMCONSOLE
+	cn_dev_com = makedev(COM_MAJOR, COM_MINOR);
+	cnputc_save = cn_tab->cn_putc;
+	cn_tab->cn_putc = cnputc_debug;
+#endif
 
 	return 0;
 }
