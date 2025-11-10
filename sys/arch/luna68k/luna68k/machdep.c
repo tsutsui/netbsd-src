@@ -110,7 +110,7 @@ int	maxmem;			/* max memory per process */
 
 extern	u_int lowram;
 
-void luna68k_init(void);
+void luna68k_init(paddr_t);
 void identifycpu(void);
 void dumpsys(void);
 
@@ -153,7 +153,7 @@ int	delay_divisor = 30;	/* for delay() loop count */
  * Early initialization, before main() is called.
  */
 void
-luna68k_init(void)
+luna68k_init(paddr_t nextpa)
 {
 	volatile uint8_t *pio0 = (void *)OBIO_PIO0_BASE;
 	int sw1, i;
@@ -173,6 +173,8 @@ luna68k_init(void)
 	 * Tell the VM system about available physical memory.  The
 	 * luna68k only has one segment.
 	 */
+	avail_start = nextpa;
+	avail_end = m68k_ptob(maxmem) - m68k_round_page(MSGBUFSIZE);
 	uvm_page_physload(atop(avail_start), atop(avail_end),
 	    atop(avail_start), atop(avail_end), VM_FREELIST_DEFAULT);
 
