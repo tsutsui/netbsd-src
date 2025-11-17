@@ -188,8 +188,9 @@
 #define NAME(x,y) CONCAT3 (hp300hpux,_32_,y)
 #define ARCH_SIZE 32
 
-/* aoutx.h requires definitions for BMAGIC and QMAGIC.  */
+/* aoutx.h requires definitions for BMAGIC, BMAGIC2 and QMAGIC.  */
 #define BMAGIC HPUX_DOT_O_MAGIC
+#define BMAGIC2 HPUX_DOT_SL_MAGIC
 #define QMAGIC 0314
 
 #include "aoutx.h"

@@ -71,10 +71,12 @@ struct hp300hpux_header_extension
 /* read hpux .o files, we add an special define and use it below in    */
 /* offset and address calculations.                                    */
 
-#define HPUX_DOT_O_MAGIC 0x106
+#define HPUX_DOT_O_MAGIC 0x106 /* relocatable executable.        */
 #define OMAGIC 0x107       /* object file or impure executable.  */
 #define NMAGIC 0x108       /* Code indicating pure executable.   */
 #define ZMAGIC 0x10B       /* demand-paged executable.           */
+#define HPUX_DOT_DL_MAGIC 0x10d /* dynamic library.              */
+#define HPUX_DOT_SL_MAGIC 0x10e /* shared library.               */
 
 #define N_HEADER_IN_TEXT(x) 0
 
@@ -87,24 +89,61 @@ struct hp300hpux_header_extension
 
 #define N_BADMAG(x) ((_N_BADMAG (x)) || (_N_BADMACH (x)))
 
+#if 0
 #define N_DATADDR(x) \
   ((N_MAGIC (x) == OMAGIC || N_MAGIC (x) == HPUX_DOT_O_MAGIC)		\
    ? (N_TXTADDR (x) + N_TXTSIZE (x))					\
    : (N_SEGSIZE (x) + ((N_TXTADDR (x) + N_TXTSIZE (x) - 1)		\
 		       & ~ (bfd_vma) (N_SEGSIZE (x) - 1))))
+#endif
 
 #define _N_BADMACH(x) \
   (((N_MACHTYPE (x)) != HP9000S200_ID) && ((N_MACHTYPE (x)) != HP98x6_ID))
 
 #define _N_BADMAG(x)	  (N_MAGIC(x) != HPUX_DOT_O_MAGIC \
+                        && N_MAGIC(x) != HPUX_DOT_SL_MAGIC \
                         && N_MAGIC(x) != OMAGIC		\
 			&& N_MAGIC(x) != NMAGIC		\
   			&& N_MAGIC(x) != ZMAGIC )
 
+/*
+ * header, data and text sections are padedd to a multiple of SEGMENT_SIZE
+ * in demand-load files, as well as shared and dynamic libraries.
+ */
+
+#define        _N_PADDED(x) \
+  (N_MAGIC (x) == ZMAGIC || N_MAGIC (x) == HPUX_DOT_DL_MAGIC ||	\
+   N_MAGIC (x) == HPUX_DOT_SL_MAGIC)
+
 #undef _N_HDROFF
-#define _N_HDROFF(x) (SEGMENT_SIZE - (sizeof (struct exec)))
+#define _N_HDROFF(x) \
+  (_N_PADDED (x) ? (SEGMENT_SIZE - EXEC_BYTES_SIZE) : 0)
+
+#undef N_TXTOFF
+#define N_TXTOFF(x) \
+  (_N_PADDED (x) ? SEGMENT_SIZE : EXEC_BYTES_SIZE)
+
+#undef N_TXTSIZE
+#define N_TXTSIZE(x) \
+  (_N_PADDED (x)                                                       \
+   ? (((x)->a_text + SEGMENT_SIZE - 1) & ~(SEGMENT_SIZE - 1))           \
+   : (x)->a_text)
 
 #undef N_DATOFF
+#define N_DATOFF(x)    ( N_TXTOFF(x) + N_TXTSIZE(x) )
+
+#undef N_DATSIZE
+#define N_DATSIZE(x) \
+  (_N_PADDED (x)                                                       \
+   ? (((x)->a_data + SEGMENT_SIZE - 1) & ~(SEGMENT_SIZE - 1))           \
+   : (x)->a_data)
+
+#define N_DATADDR(x) \
+  (_N_PADDED (x) || N_MAGIC (x) == OMAGIC || N_MAGIC (x) == HPUX_DOT_O_MAGIC \
+   ? (N_TXTADDR (x) + N_TXTSIZE (x))                                   \
+   : (N_SEGSIZE (x) + ((N_TXTADDR (x) + N_TXTSIZE (x) - 1)             \
+                      & ~ (bfd_vma) (N_SEGSIZE (x) - 1))))
+
 #undef N_PASOFF
 #undef N_SYMOFF
 #undef N_SUPOFF
@@ -112,8 +151,7 @@ struct hp300hpux_header_extension
 #undef N_DRELOFF
 #undef N_STROFF
 
-#define N_DATOFF(x)	( N_TXTOFF(x) + N_TXTSIZE(x) )
-#define N_PASOFF(x)     ( N_DATOFF(x) + (x)->a_data)
+#define N_PASOFF(x)	( N_DATOFF(x) + N_DATSIZE(x))
 #define N_SYMOFF(x)	( N_PASOFF(x)   /* + (x)->a_passize*/ )
 #define N_SUPOFF(x)     ( N_SYMOFF(x) + (x)->a_syms )
 #define N_TRELOFF(x)	( N_SUPOFF(x)    /* + (x)->a_supsize*/ )
@@ -129,3 +167,6 @@ struct hp300hpux_header_extension
 #define TARGET_PAGE_SIZE 0x1000
 #define SEGMENT_SIZE 0x1000
 #define TEXT_START_ADDR 0
+
+#undef N_SHARED_LIB
+#define N_SHARED_(x)  ( N_MAGIC(x) == HPUX_DOT_SL_MAGIC )

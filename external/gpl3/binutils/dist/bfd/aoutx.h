@@ -502,7 +502,11 @@ NAME (aout, some_aout_object_p) (bfd *abfd,
       adata (abfd).magic = z_magic;
       adata (abfd).subformat = q_magic_format;
     }
-  else if (N_MAGIC (execp) == NMAGIC)
+  else if (N_MAGIC (execp) == NMAGIC
+#ifdef BMAGIC2
+          || N_MAGIC (execp) == BMAGIC2
+#endif
+         )
     {
       abfd->flags |= WP_TEXT;
       adata (abfd).magic = n_magic;
