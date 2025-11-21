@@ -117,7 +117,7 @@ struct cpu_info cpu_info_store;
 
 struct vm_map *phys_map = NULL;
 
-extern paddr_t avail_end;
+extern paddr_t avail_start, avail_end;
 
 /*
  * bootinfo base (physical and virtual).  The bootinfo is placed, by
@@ -146,7 +146,7 @@ static void	cpu_init_kcore_hdr(void);
 
 /* functions called from locore.s */
 void    dumpsys(void);
-void	hp300_init(void);
+void	hp300_init(paddr_t);
 void    straytrap(int, u_short);
 void	nmihand(struct frame);
 
@@ -168,12 +168,10 @@ int	delay_divisor;		/* delay constant */
  * Early initialization, before main() is called.
  */
 void
-hp300_init(void)
+hp300_init(paddr_t nextpa)
 {
 	struct btinfo_magic *bt_mag;
 	int i;
-
-	extern paddr_t avail_start, avail_end;
 
 #ifdef CACHE_HAVE_VAC
 	/*
@@ -195,6 +193,10 @@ hp300_init(void)
 	 * Tell the VM system about available physical memory.  The
 	 * hp300 only has one segment.
 	 */
+	avail_start = nextpa;
+	avail_end = m68k_ptob(maxmem) - \
+	    (m68k_round_page(MSGBUFSIZE) + m68k_ptob(1));
+
 	uvm_page_physload(atop(avail_start), atop(avail_end),
 	    atop(avail_start), atop(avail_end), VM_FREELIST_DEFAULT);
 

@@ -397,11 +397,20 @@ Lstart1:
 	movl	#_C_LABEL(end),%a4	| end of static kernel text/data
 Lstart3:
 	addl	%a5,%a4			| convert to PA
-	pea	%a5@			| firstpa
+	pea	%a5@			| reloff
 	pea	%a4@			| nextpa
-	RELOC(pmap_bootstrap,%a0)
-	jbsr	%a0@			| pmap_bootstrap(firstpa, nextpa)
+	RELOC(pmap_bootstrap1,%a0)
+	jbsr	%a0@			| pmap_bootstrap1(firstpa, nextpa)
 	addql	#8,%sp
+
+	/*
+	 * Updated nextpa returned in %d0.  We need to squirrel
+	 * that away in a callee-saved register to use later,
+	 * after the MMU is enabled.
+	 */
+	movl	%d0, %d7
+
+	/* NOTE: %d7 is now off-limits!! */
 
 /*
  * Prepare to enable MMU.
@@ -531,7 +540,9 @@ Lenab2:
 	orl	#MMU_CEN,%a0@(MMUCMD)	| turn on external cache
 Lnocache0:
 /* Final setup for call to main(). */
+	movl	%d7,%sp@-		| push nextpa saved above
 	jbsr	_C_LABEL(hp300_init)
+	addql	#4,%sp
 
 /*
  * Create a fake exception frame so that cpu_lwp_fork() can copy it.

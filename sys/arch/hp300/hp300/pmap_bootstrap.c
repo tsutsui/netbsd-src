@@ -53,8 +53,6 @@ __KERNEL_RCSID(0, "$NetBSD: pmap_bootstrap.c,v 1.66 2025/11/20 13:48:05 tsutsui 
 extern char *etext;
 extern vaddr_t CLKbase, MMUbase;
 
-extern int maxmem;
-extern paddr_t avail_start, avail_end;
 extern vaddr_t kernel_reloc_offset;
 
 /*
@@ -69,7 +67,7 @@ void *CADDR1, *CADDR2;
 char *vmmap;
 void *msgbufaddr;
 
-paddr_t pmap_bootstrap(paddr_t, paddr_t);
+paddr_t pmap_bootstrap1(paddr_t, paddr_t);
 
 /*
  * Bootstrap the VM system.
@@ -83,7 +81,7 @@ paddr_t pmap_bootstrap(paddr_t, paddr_t);
  * XXX a PIC compiler would make this much easier.
  */
 paddr_t
-pmap_bootstrap(paddr_t nextpa, paddr_t firstpa)
+pmap_bootstrap1(paddr_t nextpa, paddr_t firstpa)
 {
 	paddr_t lwp0upa, kstpa, kptmpa, kptpa;
 	paddr_t lkptpa;
@@ -456,9 +454,6 @@ pmap_bootstrap(paddr_t nextpa, paddr_t firstpa)
 	 * To work around this, we move avail_end back one more
 	 * page so the msgbuf can be preserved.
 	 */
-	RELOC(avail_start, paddr_t) = nextpa;
-	RELOC(avail_end, paddr_t) = m68k_ptob(RELOC(maxmem, int)) -
-	    (m68k_round_page(MSGBUFSIZE) + m68k_ptob(1));
 
 	RELOC(virtual_end, vaddr_t) = VM_MAX_KERNEL_ADDRESS;
 
