@@ -8,3 +8,6 @@ include		"conf/std"			# MI standard options
 include		"arch/m68k/conf/std.m68k"	# m68k standard options
 
 options 	EXEC_AOUT	# support for exec'ing a.out
+
+# Experimental new pmap module
+#options 	__HAVE_NEW_PMAP_68K

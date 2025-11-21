@@ -164,6 +164,32 @@ static cpu_kcore_hdr_t cpu_kcore_hdr;
 int	cpuspeed;		/* relative CPU speed; XXX skewed on 68040 */
 int	delay_divisor;		/* delay constant */
 
+#ifdef __HAVE_NEW_PMAP_68K
+/*
+ * machine_bootmap[] is checked in pmap_bootstrap1() of the new m68k pmap
+ * and it allocates kernel address space for intio devices.
+ */
+static vaddr_t intiova, extiova;
+#define PMBM_INTIO	0
+#define PMBM_EXTIO	1
+#define PMBM_BOOTINFO	2
+const struct pmap_bootmap machine_bootmap[] = {
+	{ .pmbm_vaddr_ptr = &intiova,
+	  .pmbm_paddr = INTIOBASE,
+	  .pmbm_size  = INTIOSIZE,
+	  .pmbm_flags = PMBM_F_CI },
+	{ .pmbm_vaddr_ptr = &extiova,
+	  .pmbm_paddr = 0,	/* VAONLY, so no PA mappings */
+	  .pmbm_size  = ctob(EIOMAPSIZE),
+	  .pmbm_flags = PMBM_F_VAONLY | PMBM_F_CI },
+	{ .pmbm_vaddr_ptr = &bootinfo_va,
+	  .pmbm_paddr = 0,	/* VAONLY, so no PA mappings */
+	  .pmbm_size  = ctob(1),
+	  .pmbm_flags = PMBM_F_VAONLY },
+	{ .pmbm_vaddr = -1 },
+};
+#endif
+
 /*
  * Early initialization, before main() is called.
  */
@@ -187,6 +213,12 @@ hp300_init(paddr_t nextpa)
 	default:
 		break;
 	}
+#endif
+
+#ifdef __HAVE_NEW_PMAP_68K
+	/* Initialize IO space regions */
+	intiobase = (uint8_t *)intiova;
+	extiobase = (uint8_t *)extiova;
 #endif
 
 	/*
@@ -218,8 +250,10 @@ hp300_init(paddr_t nextpa)
 	 * exists by searching for the MAGIC record.  If it's not
 	 * there, disable bootinfo.
 	 */
+#ifndef __HAVE_NEW_PMAP_68K
 	bootinfo_va = virtual_avail;
 	virtual_avail += PAGE_SIZE;
+#endif
 	pmap_enter(pmap_kernel(), bootinfo_va, bootinfo_pa,
 	    VM_PROT_READ|VM_PROT_WRITE,
 	    VM_PROT_READ|VM_PROT_WRITE|PMAP_WIRED);
@@ -231,7 +265,9 @@ hp300_init(paddr_t nextpa)
 		pmap_remove(pmap_kernel(), bootinfo_va,
 		    bootinfo_va + PAGE_SIZE);
 		pmap_update(pmap_kernel());
+#ifndef __HAVE_NEW_PMAP_68K
 		virtual_avail -= PAGE_SIZE;
+#endif
 		bootinfo_va = 0;
 	}
 }
