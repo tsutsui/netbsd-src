@@ -169,18 +169,17 @@ int	delay_divisor;		/* delay constant */
  * machine_bootmap[] is checked in pmap_bootstrap1() of the new m68k pmap
  * and it allocates kernel address space for intio devices.
  */
-static vaddr_t intiova, extiova;
 static paddr_t vapamap_ptpa;
 #define PMBM_INTIO	0
 #define PMBM_EXTIO	1
 #define PMBM_BOOTINFO	2
 #define PMBM_VAPAMAP	3
 const struct pmap_bootmap machine_bootmap[] = {
-	{ .pmbm_vaddr_ptr = &intiova,
+	{ .pmbm_vaddr_ptr = (vaddr_t *)&intiobase,
 	  .pmbm_paddr = INTIOBASE,
 	  .pmbm_size  = INTIOSIZE,
 	  .pmbm_flags = PMBM_F_CI },
-	{ .pmbm_vaddr_ptr = &extiova,
+	{ .pmbm_vaddr_ptr = (vaddr_t *)&extiobase,
 	  .pmbm_paddr = 0,	/* VAONLY, so no PA mappings */
 	  .pmbm_size  = ctob(EIOMAPSIZE),
 	  .pmbm_flags = PMBM_F_VAONLY | PMBM_F_CI },
@@ -219,12 +218,6 @@ hp300_init(paddr_t nextpa)
 	default:
 		break;
 	}
-#endif
-
-#ifdef __HAVE_NEW_PMAP_68K
-	/* Initialize IO space regions */
-	intiobase = (uint8_t *)intiova;
-	extiobase = (uint8_t *)extiova;
 #endif
 
 	/*

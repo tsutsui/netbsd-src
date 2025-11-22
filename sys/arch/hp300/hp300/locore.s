@@ -412,6 +412,20 @@ Lstart3:
 
 	/* NOTE: %d7 is now off-limits!! */
 
+	/*
+	 * CLKbase, MMUbase: important registers in internal IO space
+	 * accessed from assembly language.
+	 */
+	ASRELOC(intiobase,%a0)
+	movl	%a0@,%d0
+	movl	%d0,%d1
+	addl	#CLKBASE,%d1
+	RELOC(CLKbase,%a0)
+	movl	%d1,%a0@
+	addl	#MMUBASE,%d0
+	RELOC(MMUbase,%a0)
+	movl	%d0,%a0@
+
 /*
  * Prepare to enable MMU.
  * Since the kernel is not mapped logical == physical we must insure

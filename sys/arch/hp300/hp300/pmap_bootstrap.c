@@ -51,7 +51,6 @@ __KERNEL_RCSID(0, "$NetBSD: pmap_bootstrap.c,v 1.66 2025/11/20 13:48:05 tsutsui 
 #define RELOC(v, t)	*((t*)((uintptr_t)&(v) + firstpa))
 
 extern char *etext;
-extern vaddr_t CLKbase, MMUbase;
 
 extern vaddr_t kernel_reloc_offset;
 
@@ -426,14 +425,6 @@ pmap_bootstrap1(paddr_t nextpa, paddr_t firstpa)
 	 * Allocated at the end of KVA space.
 	 */
 	RELOC(Sysmap, pt_entry_t *) = (pt_entry_t *)SYSMAP_VA;
-	/*
-	 * CLKbase, MMUbase: important registers in internal IO space
-	 * accessed from assembly language.
-	 */
-	RELOC(CLKbase, vaddr_t) =
-		(vaddr_t)RELOC(intiobase, char *) + CLKBASE;
-	RELOC(MMUbase, vaddr_t) =
-		(vaddr_t)RELOC(intiobase, char *) + MMUBASE;
 
 	/*
 	 * Remember the u-area address so it can be loaded in the lwp0

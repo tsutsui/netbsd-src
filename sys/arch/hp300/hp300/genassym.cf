@@ -181,6 +181,7 @@ define	SPL6			PSL_S | PSL_IPL6
 # magic
 define	FC_USERD		FC_USERD
 define	INTIOBASE		INTIOBASE
+define	CLKBASE			CLKBASE
 define	MMUBASE			MMUBASE
 define	MMUSTAT			MMUSTAT
 define	MMUCMD			MMUCMD
