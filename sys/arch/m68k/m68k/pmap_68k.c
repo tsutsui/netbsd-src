@@ -1627,7 +1627,7 @@ pmap_pv_enter(pmap_t pmap, struct vm_page *pg, vaddr_t va,
 	 */
 	for (pv = VM_MDPAGE_PVS(pg); pv != NULL; pv = pv->pv_next) {
 		if (pmap == pv->pv_pmap && va == PV_VA(pv)) {
-			panic("%s: pmap=%p va=0x%08x already in PV table",
+			panic("%s: pmap=%p va=0x%08lx already in PV table",
 			    __func__, pmap, va);
 		}
 	}
