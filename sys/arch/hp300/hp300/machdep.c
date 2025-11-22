@@ -323,7 +323,7 @@ cpu_startup(void)
 {
 	vaddr_t minaddr, maxaddr;
 	char pbuf[9];
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(__HAVE_NEW_PMAP_68K)
 	extern int pmapdebug;
 	int opmapdebug = pmapdebug;
 
@@ -356,7 +356,7 @@ cpu_startup(void)
 	phys_map = uvm_km_suballoc(kernel_map, &minaddr, &maxaddr,
 	    VM_PHYS_SIZE, 0, false, NULL);
 
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(__HAVE_NEW_PMAP_68K)
 	pmapdebug = opmapdebug;
 #endif
 	format_bytes(pbuf, sizeof(pbuf), ptoa(uvm_availmem(false)));
