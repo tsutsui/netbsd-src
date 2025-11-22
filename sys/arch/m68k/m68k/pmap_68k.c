@@ -3669,7 +3669,7 @@ pmap_bootstrap1(paddr_t nextpa, paddr_t reloff)
 	const struct pmap_bootmap *pmbm =
 	    (const struct pmap_bootmap *)VA_TO_PA(machine_bootmap);
 	for (; pmbm->pmbm_vaddr != (vaddr_t)-1; pmbm++) {
-		if (pmbm->pmbm_flags & PMBM_F_KEEPOUT) {
+		if (pmbm->pmbm_flags & (PMBM_F_KEEPOUT | PMBM_F_VAPAMAP)) {
 			va = m68k_trunc_page(pmbm->pmbm_vaddr);
 			if (va < RELOC(kernel_virtual_max, vaddr_t)) {
 				RELOC(kernel_virtual_max, vaddr_t) = va;
@@ -3714,6 +3714,16 @@ pmap_bootstrap1(paddr_t nextpa, paddr_t reloff)
 	nextpa += nptpages * PAGE_SIZE;
 	kern_ptpages_end = nextpa;
 
+#ifdef __HAVE_MACHINE_BOOTMAP
+	/* Prepare pt pages for PA==VA mappings; assume only one page */
+	pmbm = (const struct pmap_bootmap *)VA_TO_PA(machine_bootmap);
+	for (; pmbm->pmbm_vaddr != (vaddr_t)-1; pmbm++) {
+		if (pmbm->pmbm_flags & PMBM_F_VAPAMAP) {
+			*(paddr_t *)VA_TO_PA(pmbm->pmbm_ptpa_ptr) = nextpa;
+			nextpa += PAGE_SIZE;
+		}
+	}
+#endif
 	/*
 	 * The bulk of the dynamic memory allocation is done (there
 	 * may be more below if we have to allocate more inner segment
@@ -3778,7 +3788,8 @@ pmap_bootstrap1(paddr_t nextpa, paddr_t reloff)
 	 */
 	pmbm = (const struct pmap_bootmap *)VA_TO_PA(machine_bootmap);
 	for (; pmbm->pmbm_vaddr != (vaddr_t)-1; pmbm++) {
-		if (pmbm->pmbm_flags & (PMBM_F_VAONLY | PMBM_F_KEEPOUT)) {
+		if (pmbm->pmbm_flags &
+		    (PMBM_F_VAONLY | PMBM_F_KEEPOUT | PMBM_F_VAPAMAP)) {
 			continue;
 		}
 		va = *(vaddr_t *)VA_TO_PA(pmbm->pmbm_vaddr_ptr);
@@ -3844,6 +3855,48 @@ pmap_bootstrap1(paddr_t nextpa, paddr_t reloff)
 			stes[LA2L_RI(va)] = proto_ste | pa;
 		}
 	}
+#ifdef __HAVE_MACHINE_BOOTMAP
+	/* Setup ste/pte for PA==VA mappings */
+	pmbm = (const struct pmap_bootmap *)VA_TO_PA(machine_bootmap);
+	for (; pmbm->pmbm_vaddr != (vaddr_t)-1; pmbm++) {
+		if (!(pmbm->pmbm_flags & PMBM_F_VAPAMAP)) {
+			continue;
+		}
+		paddr_t ptpa = *(paddr_t *)VA_TO_PA(pmbm->pmbm_ptpa_ptr);
+		pa = va = pmbm->pmbm_vaddr;	/* PA==VA mapping */
+		if (use_3l) {
+			pt_entry_t *stes;
+			pt_entry_t *stes1 = (pt_entry_t *)kern_lev1pa;
+			if ((stes1[LA40_RI(va)] & UTE40_RESIDENT) == 0) {
+				if (stnext_pa == stnext_endpa) {
+					/* No more slots left */
+					stnext_pa = nextpa;
+					nextpa += PAGE_SIZE;
+					stnext_endpa = nextpa;
+					nstpages++;
+					pte = (pt_entry_t *)stnext_pa;
+					while ((vaddr_t)pte < stnext_endpa) {
+						*pte++ = 0;
+					}
+				}
+				stes1[LA40_RI(va)] = proto_ste | stnext_pa;
+				stnext_pa += TBL40_L2_SIZE;
+			}
+			stes = (pt_entry_t *)
+			    (uintptr_t)(stes1[LA40_RI(va)] & UTE40_PTA);
+			stes[LA40_PI(va)] = proto_ste | ptpa;
+			pte = (pt_entry_t *)ptpa;
+			pte[LA40_PGI(va)] = proto_rw_pte | pa;
+			entry_count++;
+		} else {
+			pt_entry_t *stes = (pt_entry_t *)kern_lev1pa;
+			stes[LA2L_RI(va)] = proto_ste | ptpa;
+			pte = (pt_entry_t *)ptpa;
+			pte[LA2L_PGI(va)] = proto_rw_pte | pa;
+			entry_count++;
+		}
+	}
+#endif /* __HAVE_MACHINE_BOOTMAP */
 
 	/* Instrumentation. */
 	RELOC(pmap_nkptpages_initial_ev.ev_count32, uint32_t) =

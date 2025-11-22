@@ -197,7 +197,10 @@ struct pmap_bootmap {
 		vaddr_t		pmbm_vaddr;
 		vaddr_t *	pmbm_vaddr_ptr;
 	};
-	paddr_t			pmbm_paddr;
+	union {
+		paddr_t		pmbm_paddr;
+		paddr_t	*	pmbm_ptpa_ptr;
+	};
 	size_t			pmbm_size;
 	int			pmbm_flags;
 };
@@ -205,6 +208,7 @@ struct pmap_bootmap {
 #define	PMBM_F_VAONLY	__BIT(0)
 #define	PMBM_F_KEEPOUT	__BIT(1)
 #define	PMBM_F_CI	__BIT(2)	/* cache-inhibited mapping */
+#define	PMBM_F_VAPAMAP	__BIT(3)
 
 /*
  * Abstract definitions for PTE bits / fields.  C code will compile-time-

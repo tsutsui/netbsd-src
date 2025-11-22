@@ -170,9 +170,11 @@ int	delay_divisor;		/* delay constant */
  * and it allocates kernel address space for intio devices.
  */
 static vaddr_t intiova, extiova;
+static paddr_t vapamap_ptpa;
 #define PMBM_INTIO	0
 #define PMBM_EXTIO	1
 #define PMBM_BOOTINFO	2
+#define PMBM_VAPAMAP	3
 const struct pmap_bootmap machine_bootmap[] = {
 	{ .pmbm_vaddr_ptr = &intiova,
 	  .pmbm_paddr = INTIOBASE,
@@ -186,6 +188,10 @@ const struct pmap_bootmap machine_bootmap[] = {
 	  .pmbm_paddr = 0,	/* VAONLY, so no PA mappings */
 	  .pmbm_size  = ctob(1),
 	  .pmbm_flags = PMBM_F_VAONLY },
+	{ .pmbm_vaddr = MAXADDR,
+	  .pmbm_ptpa_ptr = &vapamap_ptpa,
+	  .pmbm_size  = ctob(1),	/* unused */
+	  .pmbm_flags = PMBM_F_VAPAMAP },
 	{ .pmbm_vaddr = -1 },
 };
 #endif
