@@ -96,11 +96,11 @@ remote_event_signal(REMOTE_EVENT_T *event)
 {
 	wmb();
 
-	event->fired = 1;
+	event->fired = htole32(1);
 
 	dsb(sy);		/* data barrier operation */
 
-	if (event->armed) {
+	if (/*le32toh*/(event->armed)) {
 		bus_space_write_4(vchiq_softc->sc_iot, vchiq_softc->sc_ioh,
 		    VCHIQ_DOORBELL2, 0);
 		bus_space_barrier(vchiq_softc->sc_iot, vchiq_softc->sc_ioh,

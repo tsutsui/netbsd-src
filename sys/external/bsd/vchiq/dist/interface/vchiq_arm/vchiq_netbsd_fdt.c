@@ -93,11 +93,6 @@ vchiq_fdt_attach(device_t parent, device_t self, void *aux)
 	sc->sc_iot = faa->faa_bst;
 	fsc->sc_phandle = phandle;
 
-#if BYTE_ORDER == BIG_ENDIAN
-	aprint_error_dev(sc->sc_dev, "not supported yet in big-endian mode\n");
-	return;
-#endif
-
 	bus_addr_t addr;
 	bus_size_t size;
 
