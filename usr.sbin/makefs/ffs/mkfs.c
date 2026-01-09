@@ -283,9 +283,8 @@ ffs_mkfs(const char *fsys, const fsinfo_t *fsopts, time_t tstamp)
 		sblock.fs_sblockloc = SBLOCK_UFS1;
 		sblock.fs_nindir = sblock.fs_bsize / sizeof(int32_t);
 		sblock.fs_inopb = sblock.fs_bsize / sizeof(struct ufs1_dinode);
-		sblock.fs_maxsymlinklen = ((UFS_NDADDR + UFS_NIADDR) *
-		    sizeof (int32_t));
-		sblock.fs_old_inodefmt = FS_44INODEFMT;
+		/* sblock.fs_maxsymlinklen is already initialized */
+		/* sblock.fs_old_inodefmt is already initialized */
 		sblock.fs_old_cgoffset = 0;
 		sblock.fs_old_cgmask = 0xffffffff;
 		sblock.fs_old_size = sblock.fs_size;
@@ -310,8 +309,7 @@ ffs_mkfs(const char *fsys, const fsinfo_t *fsopts, time_t tstamp)
 #endif
 		sblock.fs_nindir = sblock.fs_bsize / sizeof(int64_t);
 		sblock.fs_inopb = sblock.fs_bsize / sizeof(struct ufs2_dinode);
-		sblock.fs_maxsymlinklen = ((UFS_NDADDR + UFS_NIADDR) *
-		    sizeof (int64_t));
+		/* sblock.fs_maxsymlinklen is already initialized */
 	}
 
 	sblock.fs_sblkno =
@@ -643,11 +641,12 @@ initcg(uint32_t cylno, time_t utime, const fsinfo_t *fsopts)
 	if (Oflag == 2) {
 		acg.cg_iusedoff = start;
 	} else {
-		if (cylno == sblock.fs_ncg - 1)
-			acg.cg_old_ncyl = howmany(acg.cg_ndblk,
-			    sblock.fs_fpg / sblock.fs_old_cpg);
-		else
-			acg.cg_old_ncyl = sblock.fs_old_cpg;
+		acg.cg_old_ncyl = sblock.fs_old_cpg;
+		if ((sblock.fs_old_flags & FS_FLAGS_UPDATED) == 0 &&
+		    (cylno == sblock.fs_ncg - 1)) {
+			acg.cg_old_ncyl =
+			    sblock.fs_old_ncyl % sblock.fs_old_cpg;
+		}
 		acg.cg_old_time = acg.cg_time;
 		acg.cg_time = 0;
 		acg.cg_old_niblk = acg.cg_niblk;
@@ -696,6 +695,12 @@ initcg(uint32_t cylno, time_t utime, const fsinfo_t *fsopts)
 			if (sblock.fs_contigsumsize > 0)
 				setbit(cg_clustersfree(&acg, 0), blkno);
 			acg.cg_cs.cs_nbfree++;
+			if (Oflag <= 1) {
+				int cn = old_cbtocylno(&sblock, d);
+				old_cg_blktot(&acg, 0)[cn]++;
+				old_cg_blks(&sblock, &acg,
+				    cn, 0)[old_cbtorpos(&sblock, d)]++;
+			}
 			d += sblock.fs_frag;
 			blkno++;
 		}
@@ -713,6 +718,12 @@ initcg(uint32_t cylno, time_t utime, const fsinfo_t *fsopts)
 		if (sblock.fs_contigsumsize > 0)
 			setbit(cg_clustersfree(&acg, 0), blkno);
 		acg.cg_cs.cs_nbfree++;
+		if (Oflag <= 1) {
+			int cn = old_cbtocylno(&sblock, d);
+			old_cg_blktot(&acg, 0)[cn]++;
+			old_cg_blks(&sblock, &acg,
+			    cn, 0)[old_cbtorpos(&sblock, d)]++;
+		}
 		d += sblock.fs_frag;
 		blkno++;
 	}

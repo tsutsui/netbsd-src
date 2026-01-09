@@ -388,8 +388,13 @@ Optimization preference; one of
 or
 .Ql time .
 .It Sy version
-UFS version.
-1 for FFS (default), 2 for UFS2.
+File system format version, compatible with the
+.Fl O
+option of
+.Xr newfs 8 .
+0 for FFSv1 with the old level 1 format.
+1 for FFSv1 (default, level 4), and
+2 for FFSv2 (UFS2).
 .El
 .Ss CD9660-specific options
 .Sy cd9660
