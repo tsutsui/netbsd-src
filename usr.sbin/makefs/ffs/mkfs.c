@@ -642,10 +642,30 @@ initcg(uint32_t cylno, time_t utime, const fsinfo_t *fsopts)
 		acg.cg_iusedoff = start;
 	} else {
 		acg.cg_old_ncyl = sblock.fs_old_cpg;
-		if ((sblock.fs_old_flags & FS_FLAGS_UPDATED) == 0 &&
-		    (cylno == sblock.fs_ncg - 1)) {
-			acg.cg_old_ncyl =
-			    sblock.fs_old_ncyl % sblock.fs_old_cpg;
+		if (cylno == sblock.fs_ncg - 1) {
+			if ((sblock.fs_old_flags & FS_FLAGS_UPDATED) == 0) {
+				/*
+				 * With fs_old_cpg fixed at 1 here,
+				 * this is always zero (% 1 == 0).
+				 * fsck_ffs(8) also uses the value as-is
+				 * and notes about this:
+				 * "Avoid fighting old fsck for this value."
+				 */
+				acg.cg_old_ncyl =
+				    sblock.fs_old_ncyl % sblock.fs_old_cpg;
+			} else {
+				/*
+				 * When FS_FLAGS_UPDATED is set,
+				 * fsck_ffs(8) also computes cg_old_ncyl
+				 * for the last cg as:
+				 *   howmany(cg_ndblk, fs_fpg / fs_old_cpg)
+				 * With fs_old_cpg fixed at 1 here,
+				 * this evaluates to 1 and matches
+				 * fs_old_cpg, as newfs(8) does.
+				 */
+				acg.cg_old_ncyl = howmany(acg.cg_ndblk,
+				    sblock.fs_fpg / sblock.fs_old_cpg);
+			}
 		}
 		acg.cg_old_time = acg.cg_time;
 		acg.cg_time = 0;
