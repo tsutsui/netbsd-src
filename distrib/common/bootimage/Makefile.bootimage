@@ -310,6 +310,8 @@ DISKPROTO_IN?=	${DISTRIBDIR}/common/bootimage/diskproto.in
 .  endif
 .endif
 
+DISKPROTO2SUNLABEL?=	${DISTRIBDIR}/common/bootimage/diskproto2sunlabel.awk
+
 MBR_DEFAULT_BOOTCODE?=	mbr
 
 WORKMBR?=	work.mbr
@@ -624,9 +626,7 @@ ${IMGBASE}.img:	${TARGET_BLOCKS}
 .endif	# USE_GPT != "no"
 .if ${USE_SUNLABEL} != "no"
 	@echo Creating sun disklabel...
-	printf 'V ncyl %d\nV nhead %d\nV nsect %d\na %d %d/0/0\nb %d %d/0/0\nW\n' \
-	    ${CYLINDERS} ${HEADS} ${SECTORS} \
-	    ${FSOFFSET} ${FSCYLINDERS} ${FSCYLINDERS} ${SWAPCYLINDERS} | \
+	${TOOL_AWK} -f ${DISKPROTO2SUNLABEL} < ${WORKLABEL} | \
 	    ${TOOL_SUNLABEL} -nq ${WORKIMG}
 .endif
 .if ${USE_GPT} == "no"
