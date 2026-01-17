@@ -1,0 +1,2 @@
+# $NetBSD$
+./boot		type=dir mode=755 uname=root gname=wheel
