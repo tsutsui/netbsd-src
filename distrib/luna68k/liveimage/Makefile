@@ -36,10 +36,12 @@ ${WORKMDBOOTPART}: ${MDBOOTPARTFILES}
 		false; 							\
 	fi
 	${INSTALL} ${COPY} -m 0644 ${f} ${WORKMDBOOTPARTDIR}
+	echo "./$$(basename ${f}) type=file uname=root gname=wheel mode=0644" \
+	    >> ${SPEC_BOOT}
 .endfor
 	${RM} -f ${WORKMDBOOTPART}
 	${TOOL_MAKEFS} -M ${MDBOOTPARTMB}m -m ${MDBOOTPARTMB}m		\
-	    -x -F ${SPEC_BOOT}						\
+	    -xx -F ${SPEC_BOOT}						\
 	    -B ${TARGET_ENDIANNESS}					\
 	    ${MAKEFS_TIMESTAMP}						\
 	    ${MDBOOTPARTMAKEFSOPTIONS}					\
