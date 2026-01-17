@@ -27,7 +27,7 @@ ${MDBOOTPARTFILES}: ${TARGETFS}
 	# ${MDBOOTPARTFILES} are assumed extracted during to ${WORKDIR}
 	# from binary sets during ${TARGETFS} image build
 
-${WORKMDBOOTPART}: ${MDBOOTPARTFILES}
+${WORKMDBOOTPART}: ${TARGETFS} ${MDBOOTPARTFILES}
 	@echo create MD boot partition for bootstrap files...
 	@${MKDIR} ${MKDIRPERM} ${WORKMDBOOTPARTDIR}
 	rm -f ${SPEC_BOOT}
