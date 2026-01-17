@@ -20,7 +20,8 @@ SPEC_EXTRA=	${.CURDIR}/spec.in
 
 MDBOOTPARTFILES=	${WORKDIR}/usr/mdec/boot
 MDBOOTPARTMAKEFSOPTIONS= -t ffs -o version=0,bsize=4096,fsize=512,density=2048
-SPEC_BOOT=		${.CURDIR}/spec.boot.in
+SPEC_BOOT=		spec.boot
+CLEANFILES+=		${SPEC_BOOT}
 
 ${MDBOOTPARTFILES}: ${TARGETFS}
 	# ${MDBOOTPARTFILES} are assumed extracted during to ${WORKDIR}
@@ -29,6 +30,8 @@ ${MDBOOTPARTFILES}: ${TARGETFS}
 ${WORKMDBOOTPART}: ${MDBOOTPARTFILES}
 	@echo create MD boot partition for bootstrap files...
 	@${MKDIR} ${MKDIRPERM} ${WORKMDBOOTPARTDIR}
+	rm -f ${SPEC_BOOT}
+	cp ${.CURDIR}/spec.boot.in ${SPEC_BOOT}
 	@echo Copying files for MD boot partition...
 .for f in ${MDBOOTPARTFILES}
 	@if [ ! -f ${f} ]; then 					\
