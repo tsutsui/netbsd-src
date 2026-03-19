@@ -188,8 +188,8 @@ genet_setup_txdesc(struct genet_softc *sc, int index, int flags,
 
 	status = flags | __SHIFTIN(len, GENET_TX_DESC_STATUS_BUFLEN);
 
-	WR4(sc, GENET_TX_DESC_ADDRESS_LO(index), (uint32_t)paddr);
-	WR4(sc, GENET_TX_DESC_ADDRESS_HI(index), (uint32_t)(paddr >> 32));
+	WR4(sc, GENET_TX_DESC_ADDRESS_LO(index), BUS_ADDR_LO32(paddr));
+	WR4(sc, GENET_TX_DESC_ADDRESS_HI(index), BUS_ADDR_HI32(paddr));
 	WR4(sc, GENET_TX_DESC_STATUS(index), status);
 }
 
@@ -258,8 +258,8 @@ static void
 genet_setup_rxdesc(struct genet_softc *sc, int index,
     bus_addr_t paddr, bus_size_t len)
 {
-	WR4(sc, GENET_RX_DESC_ADDRESS_LO(index), (uint32_t)paddr);
-	WR4(sc, GENET_RX_DESC_ADDRESS_HI(index), (uint32_t)(paddr >> 32));
+	WR4(sc, GENET_RX_DESC_ADDRESS_LO(index), BUS_ADDR_LO32(paddr));
+	WR4(sc, GENET_RX_DESC_ADDRESS_HI(index), BUS_ADDR_HI32(paddr));
 }
 
 static int
