@@ -213,7 +213,8 @@ arm_simplefb_preattach(void)
 		return;
 
 	if (strcmp(format, "a8b8g8r8") == 0 ||
-	    strcmp(format, "x8r8g8b8") == 0) {
+	    strcmp(format, "x8r8g8b8") == 0 ||
+	    strcmp(format, "a8r8g8b8") == 0) {
 		depth = 32;
 	} else if (strcmp(format, "r8g8b8a8") == 0 ||
 		   strcmp(format, "b8g8r8x8") == 0) {
