@@ -184,7 +184,7 @@ _bus_dma_busaddr_to_paddr(bus_dma_tag_t t, bus_addr_t curaddr)
 		    && curaddr < dr->dr_busbase + dr->dr_len)
 			return curaddr - dr->dr_busbase + dr->dr_sysbase;
 	}
-	panic("%s: curaddr %#" PRIxBUSADDR "not in range", __func__, curaddr);
+	panic("%s: curaddr %#" PRIxBUSADDR " not in range", __func__, curaddr);
 }
 
 /*
