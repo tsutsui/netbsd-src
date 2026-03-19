@@ -1,0 +1,5 @@
+/* $NetBSD$ */
+
+#include "../../../external/gpl2/dts/dist/arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dts"
+
+#include "bcm2711-cpus.dtsi"
