@@ -872,7 +872,26 @@ cpu_enable_bcm2836(int phandle)
 
 	return 0;
 }
+
+static int
+cpu_enable_bcm2711(int phandle)
+{
+	bus_space_tag_t iot = &bcm2711_bs_tag;
+	bus_space_handle_t ioh = BCM2711_ARM_LOCAL_VBASE;
+	uint64_t mpidr;
+
+	fdtbus_get_reg64(phandle, 0, &mpidr, NULL);
+
+	const u_int cpuno = __SHIFTOUT(mpidr, MPIDR_AFF0);
+
+	bus_space_write_4(iot, ioh, BCM2836_LOCAL_MAILBOX3_SETN(cpuno),
+	    KERN_VTOPHYS((vaddr_t)cpu_mpstart));
+
+	return 0;
+}
 ARM_CPU_METHOD(bcm2836, "brcm,bcm2836-smp", cpu_enable_bcm2836);
+/* patched in src/sys/arch/arm/dts/bcm2711-cpus.dtsi */
+ARM_CPU_METHOD(bcm2711, "brcm,bcm2711-smp", cpu_enable_bcm2711);
 #endif
 
 #endif	/* SOC_BCM2836 */
