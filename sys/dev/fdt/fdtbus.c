@@ -93,6 +93,11 @@ static const struct device_compatible_entry compat_data[] = {
 	DEVICE_COMPAT_EOL
 };
 
+static const struct device_compatible_entry chosen_compat_data[] = {
+	{ .compat = "simple_bus" },
+	DEVICE_COMPAT_EOL
+};
+
 CFATTACH_DECL2_NEW(simplebus, sizeof(struct fdt_softc),
     fdt_match, fdt_attach, NULL, NULL, fdt_rescan, fdt_childdet);
 
@@ -115,6 +120,15 @@ fdt_match(device_t parent, cfdata_t cf, void *aux)
 		if (OF_finddevice("/chosen") == phandle)
 			return 1;
 	}
+
+	/*
+	 * Raspberry Pi 4 firmware (start4.elf) may populate /chosen node
+	 * dynamically and set a non-standard compatible string "simple_bus".
+	 * Treat that case like the existing /chosen special case above.
+	 */
+	if (OF_finddevice("/chosen") == phandle &&
+	    of_compatible_match(phandle, chosen_compat_data))
+		return 1;
 
 	/* Always match the root node */
 	return OF_finddevice("/") == phandle;
