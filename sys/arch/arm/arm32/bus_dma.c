@@ -160,7 +160,7 @@ _bus_dma_paddr_inrange(struct arm32_dma_range *ranges, int nranges,
 
 	for (i = 0, dr = ranges; i < nranges; i++, dr++) {
 		if (pa >= dr->dr_sysbase &&
-		    pa < dr->dr_sysbase + dr->dr_len)
+		    pa - dr->dr_sysbase < dr->dr_len)
 			return dr;
 	}
 
@@ -180,8 +180,8 @@ _bus_dma_busaddr_to_paddr(bus_dma_tag_t t, bus_addr_t curaddr)
 		return curaddr;
 
 	for (i = 0, dr = t->_ranges; i < t->_nranges; i++, dr++) {
-		if (dr->dr_busbase <= curaddr
-		    && curaddr < dr->dr_busbase + dr->dr_len)
+		if (curaddr >= dr->dr_busbase &&
+		    curaddr - dr->dr_busbase < dr->dr_len)
 			return curaddr - dr->dr_busbase + dr->dr_sysbase;
 	}
 	panic("%s: curaddr %#" PRIxBUSADDR " not in range", __func__, curaddr);
