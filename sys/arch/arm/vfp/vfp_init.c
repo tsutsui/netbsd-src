@@ -115,6 +115,7 @@ load_vfpregs(const struct vfpreg *fregs)
 	case FPU_VFP_CORTEXA15_QEMU:
 	case FPU_VFP_CORTEXA53:
 	case FPU_VFP_CORTEXA57:
+	case FPU_VFP_CORTEXA72:
 #endif
 		load_vfpregs_hi(fregs->vfp_regs);
 #ifdef CPU_ARM11
@@ -139,6 +140,7 @@ save_vfpregs(struct vfpreg *fregs)
 	case FPU_VFP_CORTEXA15_QEMU:
 	case FPU_VFP_CORTEXA53:
 	case FPU_VFP_CORTEXA57:
+	case FPU_VFP_CORTEXA72:
 #endif
 		save_vfpregs_hi(fregs->vfp_regs);
 #ifdef CPU_ARM11
@@ -322,6 +324,7 @@ vfp_attach(struct cpu_info *ci)
 	case FPU_VFP_CORTEXA17:
 	case FPU_VFP_CORTEXA53:
 	case FPU_VFP_CORTEXA57:
+	case FPU_VFP_CORTEXA72:
 		if (armreg_cpacr_read() & CPACR_V7_ASEDIS) {
 			model = "VFP 4.0+";
 		} else {
