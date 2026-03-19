@@ -74,6 +74,8 @@ __KERNEL_RCSID(0, "$NetBSD: bcm283x_platform.c,v 1.54 2026/01/08 00:51:20 christ
 
 #include <libfdt.h>
 
+#include <dev/ofw/openfirm.h>
+
 #include <arm/broadcom/bcm2835reg.h>
 #include <arm/broadcom/bcm2835var.h>
 #include <arm/broadcom/bcm283x_platform.h>
@@ -856,12 +858,42 @@ bcm2711_bootparams(void)
 }
 
 #if defined(MULTIPROCESSOR)
+static bool
+bcm283x_is_2711(void)
+{
+	static const struct device_compatible_entry compat_data[] = {
+		{ .compat = "brcm,bcm2711" },
+		DEVICE_COMPAT_EOL
+	};
+	const int root = OF_finddevice("/");
+
+	if (root < 0) {
+		return false;
+	}
+
+	if (of_compatible_match(root, compat_data) > 0) {
+		return true;
+	}
+
+	return false;
+}
+
 static int
 cpu_enable_bcm2836(int phandle)
 {
-	bus_space_tag_t iot = &bcm2836_bs_tag;
-	bus_space_handle_t ioh = BCM2836_ARM_LOCAL_VBASE;
+	bus_space_tag_t iot;
+	bus_space_handle_t ioh;
 	uint64_t mpidr;
+	bool is2711;
+
+	is2711 = bcm283x_is_2711();
+	if (is2711) {
+		iot = &bcm2711_bs_tag;
+		ioh = BCM2711_ARM_LOCAL_VBASE;
+	} else {
+		iot = &bcm2836_bs_tag;
+		ioh = BCM2836_ARM_LOCAL_VBASE;
+	}
 
 	fdtbus_get_reg64(phandle, 0, &mpidr, NULL);
 
