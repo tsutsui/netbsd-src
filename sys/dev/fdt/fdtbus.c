@@ -90,6 +90,7 @@ static void	fdt_post_attach(struct fdt_node *);
 static const struct device_compatible_entry compat_data[] = {
 	{ .compat = "simple-bus" },
 	{ .compat = "simple-pm-bus" },
+	{ .compat = "simple_bus" },
 	DEVICE_COMPAT_EOL
 };
 
