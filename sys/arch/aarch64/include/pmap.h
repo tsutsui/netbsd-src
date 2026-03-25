@@ -225,7 +225,7 @@ aarch64_mmap_flags(paddr_t mdpgno)
 	return pflag;
 }
 
-#define pmap_phys_address(pa)		aarch64_ptob((pa))
+#define pmap_phys_address(ppn)		aarch64_ptob((ppn) & ~ARM_MMAP_MASK)
 #define pmap_mmap_flags(ppn)		aarch64_mmap_flags((ppn))
 
 void pmap_bootstrap(vaddr_t, vaddr_t);
