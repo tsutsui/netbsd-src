@@ -2732,6 +2732,59 @@ pmap_is_referenced(struct vm_page *pg)
 	return false;
 }
 
+u_int
+aarch64_mmap_flags(paddr_t mdpgno)
+{
+	u_int nflag, pflag;
+	paddr_t pa;
+
+	/*
+	 * aarch64 arch has 5 memory attributes defined:
+	 *
+	 *  WriteBack      - write back cache
+	 *  WriteThru      - write through cache
+	 *  NoCache        - no cache
+	 *  Device(nGnRE)  - no Gathering, no Reordering, Early write ack
+	 *  Device(nGnRnE) - no Gathering, no Reordering, no Early write ack
+	 *
+	 * but pmap has PMAP_{NOCACHE,WRITE_COMBINE,WRITE_BACK} flags.
+	 */
+
+	nflag = (mdpgno >> AARCH64_MMAP_FLAG_SHIFT) & AARCH64_MMAP_FLAG_MASK;
+
+	/*
+	 * If AARCH64_MMAP_FLAG is 0 (i.e. no way to distinguish explicit
+	 * AARCH64_MMAP_WRITEBACK from "0" as "not specified"),
+	 * the specified page is unmanaged and is within devmap region,
+	 * assume MMIO device mappings.
+	 */
+	pa = pmap_phys_address(mdpgno);
+       	if (nflag == 0 &&
+	    PHYS_TO_VM_PAGE(pa) == NULL &&
+	    pmap_devmap_find_pa(pa, PAGE_SIZE) != NULL) {
+		return PMAP_DEV_NP;
+	}
+
+	switch (nflag) {
+	case AARCH64_MMAP_DEVICE:
+		pflag = PMAP_DEV;
+		break;
+	case AARCH64_MMAP_WRITECOMBINE:
+		pflag = PMAP_WRITE_COMBINE;
+		break;
+	case AARCH64_MMAP_WRITEBACK:
+		pflag = PMAP_WRITE_BACK;
+		break;
+	case AARCH64_MMAP_NOCACHE:
+		pflag = PMAP_NOCACHE;
+		break;
+	default:
+		pflag = PMAP_NOCACHE;
+                break;
+	}
+	return pflag;
+}
+
 /* get pointer to kernel segment L2 or L3 table entry */
 pt_entry_t *
 kvtopte(vaddr_t va)
