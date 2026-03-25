@@ -1420,6 +1420,18 @@ bcm2711_platform_early_putchar(char c)
 	bcm283x_aux_platform_early_putchar(va, pa, c);
 }
 
+static bool
+rpi_genfb_is_bcmgenfb(device_t dev, void *aux)
+{
+	static const struct device_compatible_entry compat_data[] = {
+		{ .compat = "brcm,bcm2835-fb" },
+		DEVICE_COMPAT_EOL
+	};
+	struct fdt_attach_args *faa = aux;
+
+	return of_compatible_match(faa->faa_phandle, compat_data) != 0;
+}
+
 #define	BCM283x_REF_FREQ	19200000
 
 static void
@@ -1458,13 +1470,15 @@ bcm283x_platform_device_register(device_t dev, void *aux)
 	if (device_is_a(dev, "genfb")) {
 		char *ptr;
 
-		bcmgenfb_set_console_dev(dev);
-		bcmgenfb_set_ioctl(&rpi_ioctl);
+		if (rpi_genfb_is_bcmgenfb(dev, aux)) {
+			bcmgenfb_set_console_dev(dev);
+			bcmgenfb_set_ioctl(&rpi_ioctl);
 #ifdef DDB
-		db_trap_callback = bcmgenfb_ddb_trap_callback;
+			db_trap_callback = bcmgenfb_ddb_trap_callback;
 #endif
-		if (rpi_fb_init(dict, aux) == false)
-			return;
+			if (rpi_fb_init(dict, aux) == false)
+				return;
+		}
 		if (get_bootconf_option(boot_args, "console",
 		    BOOTOPT_TYPE_STRING, &ptr) && strncmp(ptr, "fb", 2) == 0) {
 			device_setprop_bool(dev, "is_console", true);
