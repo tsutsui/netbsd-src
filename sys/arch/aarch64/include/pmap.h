@@ -189,41 +189,7 @@ paddr_t vtophys(vaddr_t);
 #define	PMAP_DEV_NP			0x40000000 /* kenter_pa */
 #define	PMAP_DEV_MASK			(PMAP_DEV | PMAP_DEV_NP)
 
-static inline u_int
-aarch64_mmap_flags(paddr_t mdpgno)
-{
-	u_int nflag, pflag;
-
-	/*
-	 * aarch64 arch has 5 memory attributes defined:
-	 *
-	 *  WriteBack      - write back cache
-	 *  WriteThru      - write through cache
-	 *  NoCache        - no cache
-	 *  Device(nGnRE)  - no Gathering, no Reordering, Early write ack
-	 *  Device(nGnRnE) - no Gathering, no Reordering, no Early write ack
-	 *
-	 * but pmap has PMAP_{NOCACHE,WRITE_COMBINE,WRITE_BACK} flags.
-	 */
-
-	nflag = (mdpgno >> AARCH64_MMAP_FLAG_SHIFT) & AARCH64_MMAP_FLAG_MASK;
-	switch (nflag) {
-	case AARCH64_MMAP_DEVICE:
-		pflag = PMAP_DEV;
-		break;
-	case AARCH64_MMAP_WRITECOMBINE:
-		pflag = PMAP_WRITE_COMBINE;
-		break;
-	case AARCH64_MMAP_WRITEBACK:
-		pflag = PMAP_WRITE_BACK;
-		break;
-	case AARCH64_MMAP_NOCACHE:
-	default:
-		pflag = PMAP_NOCACHE;
-		break;
-	}
-	return pflag;
-}
+u_int   aarch64_mmap_flags(paddr_t);
 
 #define pmap_phys_address(ppn)		aarch64_ptob((ppn) & ~ARM_MMAP_MASK)
 #define pmap_mmap_flags(ppn)		aarch64_mmap_flags((ppn))
