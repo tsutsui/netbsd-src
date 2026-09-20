@@ -438,12 +438,17 @@ m8820x_initialize_cpu(cpuid_t cpu)
 		sctr |= CMMU_SCTR_SE;
 		cmmu->cmmu_regs[CMMU_SCTR] = sctr;
 
-		cmmu->cmmu_regs[CMMU_SAPR] = cmmu->cmmu_regs[CMMU_UAPR] = apr;
+		cmmu->cmmu_regs[CMMU_SAPR] = apr;
+		cmmu->cmmu_regs[CMMU_UAPR] = apr;
 
-		cmmu->cmmu_regs[CMMU_BWP0] = cmmu->cmmu_regs[CMMU_BWP1] =
-		cmmu->cmmu_regs[CMMU_BWP2] = cmmu->cmmu_regs[CMMU_BWP3] =
-		cmmu->cmmu_regs[CMMU_BWP4] = cmmu->cmmu_regs[CMMU_BWP5] =
-		cmmu->cmmu_regs[CMMU_BWP6] = cmmu->cmmu_regs[CMMU_BWP7] = 0;
+		cmmu->cmmu_regs[CMMU_BWP0] = 0;
+		cmmu->cmmu_regs[CMMU_BWP1] = 0;
+		cmmu->cmmu_regs[CMMU_BWP2] = 0;
+		cmmu->cmmu_regs[CMMU_BWP3] = 0;
+		cmmu->cmmu_regs[CMMU_BWP4] = 0;
+		cmmu->cmmu_regs[CMMU_BWP5] = 0;
+		cmmu->cmmu_regs[CMMU_BWP6] = 0;
+		cmmu->cmmu_regs[CMMU_BWP7] = 0;
 		cmmu->cmmu_regs[CMMU_SCR] = CMMU_FLUSH_CACHE_INV_ALL;
 		__asm__ __volatile__ ("|or r0, r0, %0" ::
 		    "r" (cmmu->cmmu_regs[CMMU_SSR]));
