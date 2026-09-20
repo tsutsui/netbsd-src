@@ -341,67 +341,79 @@ struct devm {
  */
 struct hashtab;
 
-const char *conffile;		/* source file, e.g., "GENERIC.sparc" */
-const char *machine;		/* machine type, e.g., "sparc" or "sun3" */
-const char *machinearch;	/* machine arch, e.g., "sparc" or "m68k" */
-struct	nvlist *machinesubarches;
+extern const char *conffile;		/* source file, e.g., "GENERIC.sparc" */
+extern const char *machine;		/* machine type, e.g., "sparc" or "sun3" */
+extern const char *machinearch;	/* machine arch, e.g., "sparc" or "m68k" */
+extern struct	nvlist *machinesubarches;
 				/* machine subarches, e.g., "sun68k" or "hpc" */
-const char *srcdir;		/* path to source directory (rel. to build) */
-const char *builddir;		/* path to build directory */
-const char *defbuilddir;	/* default build directory */
-const char *ident;		/* kernel "ident"ification string */
-int	errors;			/* counts calls to error() */
-int	minmaxusers;		/* minimum "maxusers" parameter */
-int	defmaxusers;		/* default "maxusers" parameter */
-int	maxmaxusers;		/* default "maxusers" parameter */
-int	maxusers;		/* configuration's "maxusers" parameter */
-int	maxpartitions;		/* configuration's "maxpartitions" parameter */
-struct	nvlist *options;	/* options */
-struct	nvlist *fsoptions;	/* filesystems */
-struct	nvlist *mkoptions;	/* makeoptions */
-struct	nvlist *appmkoptions;	/* appending mkoptions */
-struct	hashtab *condmkopttab;	/* conditional makeoption table */
-struct	hashtab *devbasetab;	/* devbase lookup */
-struct	hashtab *devatab;	/* devbase attachment lookup */
-struct	hashtab *devitab;	/* device instance lookup */
-struct	hashtab *selecttab;	/* selects things that are "optional foo" */
-struct	hashtab *needcnttab;	/* retains names marked "needs-count" */
-struct	hashtab *opttab;	/* table of configured options */
-struct	hashtab *fsopttab;	/* table of configured file systems */
-struct	hashtab *defopttab;	/* options that have been "defopt"'d */
-struct	hashtab *defflagtab;	/* options that have been "defflag"'d */
-struct	hashtab *defparamtab;	/* options that have been "defparam"'d */
-struct	hashtab *deffstab;	/* defined file systems */
-struct	hashtab *optfiletab;	/* "defopt"'d option .h files */
-struct	hashtab *attrtab;	/* attributes (locators, etc.) */
-struct	hashtab *bdevmtab;	/* block devm lookup */
-struct	hashtab *cdevmtab;	/* character devm lookup */
+extern const char *srcdir;		/* path to source directory (rel. to build) */
+extern const char *builddir;		/* path to build directory */
+extern const char *defbuilddir;	/* default build directory */
+extern const char *ident;		/* kernel "ident"ification string */
+extern int	errors;			/* counts calls to error() */
+extern int	minmaxusers;		/* minimum "maxusers" parameter */
+extern int	defmaxusers;		/* default "maxusers" parameter */
+extern int	maxmaxusers;		/* default "maxusers" parameter */
+extern int	maxusers;		/* configuration's "maxusers" parameter */
+extern int	maxpartitions;		/* configuration's "maxpartitions" parameter */
+extern struct	nvlist *options;	/* options */
+extern struct	nvlist *fsoptions;	/* filesystems */
+extern struct	nvlist *mkoptions;	/* makeoptions */
+extern struct	nvlist *appmkoptions;	/* appending mkoptions */
+extern struct	hashtab *condmkopttab;	/* conditional makeoption table */
+extern struct	hashtab *devbasetab;	/* devbase lookup */
+extern struct	hashtab *devatab;	/* devbase attachment lookup */
+extern struct	hashtab *devitab;	/* device instance lookup */
+extern struct	hashtab *selecttab;	/* selects things that are "optional foo" */
+extern struct	hashtab *needcnttab;	/* retains names marked "needs-count" */
+extern struct	hashtab *opttab;	/* table of configured options */
+extern struct	hashtab *fsopttab;	/* table of configured file systems */
+extern struct	hashtab *defopttab;	/* options that have been "defopt"'d */
+extern struct	hashtab *defflagtab;	/* options that have been "defflag"'d */
+extern struct	hashtab *defparamtab;	/* options that have been "defparam"'d */
+extern struct	hashtab *deffstab;	/* defined file systems */
+extern struct	hashtab *optfiletab;	/* "defopt"'d option .h files */
+extern struct	hashtab *attrtab;	/* attributes (locators, etc.) */
+extern struct	hashtab *bdevmtab;	/* block devm lookup */
+extern struct	hashtab *cdevmtab;	/* character devm lookup */
 
-TAILQ_HEAD(, devbase)	allbases;	/* list of all devbase structures */
-TAILQ_HEAD(, deva)	alldevas;	/* list of all devbase attachments */
-TAILQ_HEAD(, config)	allcf;		/* list of configured kernels */
-TAILQ_HEAD(, devi)	alldevi,	/* list of all instances */
-			allpseudo;	/* list of all pseudo-devices */
-TAILQ_HEAD(, devm)	alldevms;	/* list of all device-majors */
-TAILQ_HEAD(, pspec)	allpspecs;	/* list of all parent specs */
-int	ndevi;				/* number of devi's (before packing) */
-int	npspecs;			/* number of parent specs */
-int	maxbdevm;			/* max number of block major */
-int	maxcdevm;			/* max number of character major */
-int	do_devsw;			/* 0 if pre-devsw config */
+TAILQ_HEAD(devbasetq, devbase);
+TAILQ_HEAD(devatq, deva);
+TAILQ_HEAD(conftq, config);
+TAILQ_HEAD(devitq, devi);
+TAILQ_HEAD(devmtq, devm);
+TAILQ_HEAD(pspectq, pspec);
 
-TAILQ_HEAD(, files)	allfiles;	/* list of all kernel source files */
-TAILQ_HEAD(, objects)	allobjects;	/* list of all kernel object and
+extern struct devbasetq allbases;	/* list of all devbase structures */
+extern struct devatq alldevas;		/* list of all devbase attachments */
+extern struct conftq allcf;		/* list of configured kernels */
+extern struct devitq alldevi,		/* list of all instances */
+		     allpseudo;		/* list of all pseudo-devices */
+extern struct devmtq alldevms;		/* list of all device-majors */
+extern struct pspectq allpspecs;	/* list of all parent specs */
+extern int	ndevi;			/* number of devi's (before packing) */
+extern int	npspecs;		/* number of parent specs */
+extern int	maxbdevm;		/* max number of block major */
+extern int	maxcdevm;		/* max number of character major */
+extern int	do_devsw;		/* 0 if pre-devsw config */
+
+TAILQ_HEAD(filetq, files);
+TAILQ_HEAD(objecttq, objects);
+
+extern struct filetq allfiles;		/* list of all kernel source files */
+extern struct objecttq allobjects;	/* list of all kernel object and
 					   library files */
 
-SLIST_HEAD(, prefix)	prefixes,	/* prefix stack */
+SLIST_HEAD(prefixtq, prefix);
+
+extern struct prefixtq prefixes,	/* prefix stack */
 			allprefixes;	/* all prefixes used (after popped) */
-SLIST_HEAD(, prefix)	curdirs;	/* curdir stack */
+extern struct prefixtq curdirs;	/* curdir stack */
 
-struct	devi **packed;		/* arrayified table for packed devi's */
-int	npacked;		/* size of packed table, <= ndevi */
+extern struct devi **packed;		/* arrayified table for packed devi's */
+extern int npacked;			/* size of packed table, <= ndevi */
 
-struct {			/* loc[] table for config */
+extern struct locators {		/* loc[] table for config */
 	const char **vec;
 	int	used;
 } locators;
