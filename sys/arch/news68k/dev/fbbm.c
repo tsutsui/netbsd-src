@@ -137,7 +137,7 @@ static int fbbm_allocattr(void *, int, int, int, long *);
 
 /* wsdisplay_accessops functions */
 static int fbbm_ioctl(void *, void *, u_long, void *, int, struct lwp *);
-static int fbbm_hwrite(struct fbbm_softc *, const struct fbbmio_hwrite *,
+static int fbbm_putbitmap(struct fbbm_softc *, const struct fbbmio_putbitmap *,
     int);
 static int fbbm_alloc_screen(void *, const struct wsscreen_descr *, void **,
     int *, int *, long *);
@@ -1016,8 +1016,8 @@ fbbm_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 		sc->sc_wsmode = *(int *)data;
 		return 0;
 
-	case FBBMIO_HWRITE:
-		return fbbm_hwrite(sc, data, flag);
+	case FBBMIO_PUTBITMAP:
+		return fbbm_putbitmap(sc, data, flag);
 
 	default:
 		break;
@@ -1027,7 +1027,8 @@ fbbm_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 }
 
 static int
-fbbm_hwrite(struct fbbm_softc *sc, const struct fbbmio_hwrite *fh, int flag)
+fbbm_putbitmap(struct fbbm_softc *sc, const struct fbbmio_putbitmap *fp,
+    int flag)
 {
 	struct fbbm_devconfig *dc = sc->sc_dc;
 	uint8_t *stage;
@@ -1043,35 +1044,35 @@ fbbm_hwrite(struct fbbm_softc *sc, const struct fbbmio_hwrite *fh, int flag)
 	if ((flag & FWRITE) == 0)
 		return EPERM;
 
-	if (fh->fh_width == 0 || fh->fh_height == 0 ||
-	    (fh->fh_x & 7) != 0)
+	if (fp->fp_width == 0 || fp->fp_height == 0 ||
+	    (fp->fp_x & 7) != 0)
 		return EINVAL;
-	if (fh->fh_x >= dc->dc_width || fh->fh_y >= dc->dc_height ||
-	    fh->fh_width > dc->dc_width - fh->fh_x ||
-	    fh->fh_height > dc->dc_height - fh->fh_y)
+	if (fp->fp_x >= dc->dc_width || fp->fp_y >= dc->dc_height ||
+	    fp->fp_width > dc->dc_width - fp->fp_x ||
+	    fp->fp_height > dc->dc_height - fp->fp_y)
 		return EINVAL;
 
-	line_bytes = howmany(fh->fh_width, NBBY);
-	if (fh->fh_stride < line_bytes ||
-	    fh->fh_stride > howmany(dc->dc_width, NBBY))
+	line_bytes = howmany(fp->fp_width, NBBY);
+	if (fp->fp_stride < line_bytes ||
+	    fp->fp_stride > howmany(dc->dc_width, NBBY))
 		return EINVAL;
 
 	stage_stride = roundup(line_bytes, sizeof(uint16_t));
-	if (fh->fh_height > SIZE_MAX / stage_stride)
+	if (fp->fp_height > SIZE_MAX / stage_stride)
 		return EINVAL;
-	stage_size = stage_stride * fh->fh_height;
+	stage_size = stage_stride * fp->fp_height;
 
 	/* Check the last row and byte before forming any user address. */
-	uaddr = (uintptr_t)fh->fh_data;
-	if (fh->fh_height > 1 &&
-	    fh->fh_height - 1 > (UINTPTR_MAX - uaddr) / fh->fh_stride)
+	uaddr = (uintptr_t)fp->fp_data;
+	if (fp->fp_height > 1 &&
+	    fp->fp_height - 1 > (UINTPTR_MAX - uaddr) / fp->fp_stride)
 		return EINVAL;
-	lastaddr = uaddr + (fh->fh_height - 1) * fh->fh_stride;
+	lastaddr = uaddr + (fp->fp_height - 1) * fp->fp_stride;
 	if (line_bytes - 1 > UINTPTR_MAX - lastaddr)
 		return EINVAL;
 
 	stage = kmem_alloc(stage_size, KM_SLEEP);
-	for (row = 0; row < fh->fh_height; row++) {
+	for (row = 0; row < fp->fp_height; row++) {
 		error = copyin((const void *)uaddr,
 		    stage + row * stage_stride, line_bytes);
 		if (error != 0) {
@@ -1080,8 +1081,8 @@ fbbm_hwrite(struct fbbm_softc *sc, const struct fbbmio_hwrite *fh, int flag)
 		}
 		if (stage_stride != line_bytes)
 			stage[row * stage_stride + line_bytes] = 0;
-		if (row + 1 < fh->fh_height)
-			uaddr += fh->fh_stride;
+		if (row + 1 < fp->fp_height)
+			uaddr += fp->fp_stride;
 	}
 
 	if (sc->sc_wsmode != WSDISPLAYIO_MODE_MAPPED) {
@@ -1090,7 +1091,7 @@ fbbm_hwrite(struct fbbm_softc *sc, const struct fbbmio_hwrite *fh, int flag)
 	}
 	error = nwb225_rop_hwrite(dc, (const uint16_t *)stage,
 	    stage_stride / sizeof(uint16_t), 0, 0,
-	    fh->fh_width, fh->fh_height, fh->fh_x, fh->fh_y,
+	    fp->fp_width, fp->fp_height, fp->fp_x, fp->fp_y,
 	    dc->dc_planemask, 0);
 
  out:

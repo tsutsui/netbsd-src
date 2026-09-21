@@ -31,16 +31,20 @@
 #include <sys/ioccom.h>
 
 /* Private and experimental NWB-225 stored-rectangle upload interface. */
-struct fbbmio_hwrite {
-	const void *fh_data;
-	uint32_t fh_stride;
-	uint16_t fh_x;
-	uint16_t fh_y;
-	uint16_t fh_width;
-	uint16_t fh_height;
+struct fbbmio_putbitmap {
+	const void *fp_data;
+	uint32_t fp_stride;
+	uint16_t fp_x;
+	uint16_t fp_y;
+	uint16_t fp_width;
+	uint16_t fp_height;
 };
 
-/* Command 225 is mnemonic for the NWB-225; this ioctl is fbbm-private. */
-#define FBBMIO_HWRITE	_IOW('F', 225, struct fbbmio_hwrite)
+/*
+ * This ioctl is fbbm-private.
+ * 'g' is also used by qdss(4) for vax and its allocation is 1-22;
+ * fbbm starts at 32.
+ */
+#define FBBMIO_PUTBITMAP	_IOW('g', 32, struct fbbmio_putbitmap)
 
 #endif /* _NEWS68K_FBBMIO_H_ */
