@@ -30,11 +30,13 @@ __KERNEL_RCSID(0, "$NetBSD: fbbm.c,v 1.2 2026/09/20 11:52:56 tsutsui Exp $");
 #include <sys/param.h>
 #include <sys/device.h>
 #include <sys/errno.h>
+#include <sys/fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/kmem.h>
 #include <sys/systm.h>
 
 #include <machine/bus.h>
+#include <machine/fbbmio.h>
 
 #include <news68k/dev/hbvar.h>
 #include <news68k/dev/nwb225reg.h>
@@ -135,6 +137,8 @@ static int fbbm_allocattr(void *, int, int, int, long *);
 
 /* wsdisplay_accessops functions */
 static int fbbm_ioctl(void *, void *, u_long, void *, int, struct lwp *);
+static int fbbm_hwrite(struct fbbm_softc *, const struct fbbmio_hwrite *,
+    int);
 static int fbbm_alloc_screen(void *, const struct wsscreen_descr *, void **,
     int *, int *, long *);
 static void fbbm_free_screen(void *, void *);
@@ -1012,11 +1016,86 @@ fbbm_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 		sc->sc_wsmode = *(int *)data;
 		return 0;
 
+	case FBBMIO_HWRITE:
+		return fbbm_hwrite(sc, data, flag);
+
 	default:
 		break;
 	}
 
 	return EPASSTHROUGH;
+}
+
+static int
+fbbm_hwrite(struct fbbm_softc *sc, const struct fbbmio_hwrite *fh, int flag)
+{
+	struct fbbm_devconfig *dc = sc->sc_dc;
+	uint8_t *stage;
+	uintptr_t uaddr, lastaddr;
+	size_t line_bytes, stage_stride, stage_size;
+	u_int row;
+	int error;
+
+	/*
+	 * This is a private NWB-225 demo interface, not an MI wsdisplay ABI.
+	 */
+
+	if ((flag & FWRITE) == 0)
+		return EPERM;
+
+	if (fh->fh_width == 0 || fh->fh_height == 0 ||
+	    (fh->fh_x & 7) != 0)
+		return EINVAL;
+	if (fh->fh_x >= dc->dc_width || fh->fh_y >= dc->dc_height ||
+	    fh->fh_width > dc->dc_width - fh->fh_x ||
+	    fh->fh_height > dc->dc_height - fh->fh_y)
+		return EINVAL;
+
+	line_bytes = howmany(fh->fh_width, NBBY);
+	if (fh->fh_stride < line_bytes ||
+	    fh->fh_stride > howmany(dc->dc_width, NBBY))
+		return EINVAL;
+
+	stage_stride = roundup(line_bytes, sizeof(uint16_t));
+	if (fh->fh_height > SIZE_MAX / stage_stride)
+		return EINVAL;
+	stage_size = stage_stride * fh->fh_height;
+
+	/* Check the last row and byte before forming any user address. */
+	uaddr = (uintptr_t)fh->fh_data;
+	if (fh->fh_height > 1 &&
+	    fh->fh_height - 1 > (UINTPTR_MAX - uaddr) / fh->fh_stride)
+		return EINVAL;
+	lastaddr = uaddr + (fh->fh_height - 1) * fh->fh_stride;
+	if (line_bytes - 1 > UINTPTR_MAX - lastaddr)
+		return EINVAL;
+
+	stage = kmem_alloc(stage_size, KM_SLEEP);
+	for (row = 0; row < fh->fh_height; row++) {
+		error = copyin((const void *)uaddr,
+		    stage + row * stage_stride, line_bytes);
+		if (error != 0) {
+			error = EFAULT;
+			goto out;
+		}
+		if (stage_stride != line_bytes)
+			stage[row * stage_stride + line_bytes] = 0;
+		if (row + 1 < fh->fh_height)
+			uaddr += fh->fh_stride;
+	}
+
+	if (sc->sc_wsmode != WSDISPLAYIO_MODE_MAPPED) {
+		error = EBUSY;
+		goto out;
+	}
+	error = nwb225_rop_hwrite(dc, (const uint16_t *)stage,
+	    stage_stride / sizeof(uint16_t), 0, 0,
+	    fh->fh_width, fh->fh_height, fh->fh_x, fh->fh_y,
+	    dc->dc_planemask, 0);
+
+ out:
+	kmem_free(stage, stage_size);
+	return error;
 }
 
 static int
