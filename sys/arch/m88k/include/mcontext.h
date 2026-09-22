@@ -39,10 +39,8 @@
 #ifndef _M88K_MCONTEXT_H_
 #define _M88K_MCONTEXT_H_
 
-/*
- * General register state (important: 0-31 maps to `struct reg')
- */
-#define _NGREG		36	/* 0-31, EPSR, FPSR, FPCR, PC */
+/* General registers and logical user return addresses. */
+#define _NGREG		37	/* 0-31, EPSR, FPSR, FPCR, PC, nPC */
 typedef	long		__greg_t;
 typedef	__greg_t	__gregset_t[_NGREG];
 
@@ -83,19 +81,28 @@ typedef	__greg_t	__gregset_t[_NGREG];
 #define _REG_FPSR	33
 #define _REG_FPCR	34
 #define _REG_PC		35
+#define _REG_nPC	36
 
-/* XXX probably want to include SNIP and SFIP in mcontext.  See also pthread_md.h.  -TKM */
+/* MC88110 extended registers, stored as aligned quad-word memory images. */
+typedef struct {
+	unsigned char	__xrf[32][16];
+} __fpregset_t;
 
 typedef struct {
-    __gregset_t		__gregs;
+	__gregset_t	__gregs;
+	unsigned int	__pad[3];
+	__fpregset_t	__fpregs __attribute__((__aligned__(16)));
 } mcontext_t;
 
-/* Machine-dependent uc_flags - None */
+#define _UC_UCONTEXT_ALIGN	(~0xf)
 
 #define _UC_MACHINE_SP(uc)	((uc)->uc_mcontext.__gregs[_REG_R31])
 #define _UC_MACHINE_PC(uc)	((uc)->uc_mcontext.__gregs[_REG_PC])
 #define _UC_MACHINE_INTRV(uc)	((uc)->uc_mcontext.__gregs[_REG_R2])
 
-#define	_UC_MACHINE_SET_PC(uc, pc)	_UC_MACHINE_PC(uc) = (pc)
+#define	_UC_MACHINE_SET_PC(uc, pc) do {                         \
+	(uc)->uc_mcontext.__gregs[_REG_PC] = (pc);              \
+	(uc)->uc_mcontext.__gregs[_REG_nPC] = (pc) + 4;         \
+} while (/* CONSTCOND */ 0)
 
 #endif	/* !_M88K_MCONTEXT_H_ */

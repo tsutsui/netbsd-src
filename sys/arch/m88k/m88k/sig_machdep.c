@@ -70,6 +70,36 @@ int sigpid = 0;
 #define SDB_KSTACK	0x02
 #endif
 
+static register_t
+m88k_read_fpsr(void)
+{
+	register_t value;
+
+	__asm__ __volatile__ ("fldcr %0,fcr62" : "=r" (value));
+	return value;
+}
+
+static register_t
+m88k_read_fpcr(void)
+{
+	register_t value;
+
+	__asm__ __volatile__ ("fldcr %0,fcr63" : "=r" (value));
+	return value;
+}
+
+static void
+m88k_write_fpsr(register_t value)
+{
+	__asm__ __volatile__ ("fstcr %0,fcr62" : : "r" (value));
+}
+
+static void
+m88k_write_fpcr(register_t value)
+{
+	__asm__ __volatile__ ("fstcr %0,fcr63" : : "r" (value));
+}
+
 void *
 getframe(const struct lwp *l, int sig, int *onstack)
 {
@@ -128,9 +158,9 @@ sendsig(const ksiginfo_t *ksi, const sigset_t *mask)
 
 	fp--;
 
-	/* make sure the frame is aligned on a 8 byte boundary */
-	if (((vaddr_t)fp & 0x07) != 0)
-		fp = (struct sigframe_siginfo *)((vaddr_t)fp & ~0x07);
+	/* The embedded ucontext requires 16-byte alignment. */
+	if (((vaddr_t)fp & 0x0f) != 0)
+		fp = (struct sigframe_siginfo *)((vaddr_t)fp & ~0x0f);
 
 	/* Build stack frame for signal trampoline. */
 	switch (ps->sa_sigdesc[sig].sd_vers) {
@@ -221,17 +251,30 @@ cpu_getmcontext(l, mcp, flags)
 {
 	struct trapframe *tf = l->l_md.md_tf;
 	__greg_t *gr = mcp->__gregs;
+	int i;
 
-	/*
-	 * Copy the whole user context into signal context that we
-	 * are building.
-	 *
-	 * Note that order of registers in __greg_t is designed to match the
-	 * order in struct reg.
-	 */
-	memcpy(gr, &tf->tf_regs, sizeof *gr);
-	
-	gr[_REG_PC] &= XIP_ADDR;
+	memset(mcp, 0, sizeof(*mcp));
+	for (i = 0; i < 32; i++)
+		gr[i] = tf->tf_r[i];
+	gr[_REG_PSR] = tf->tf_epsr;
+	gr[_REG_FPSR] = m88k_read_fpsr();
+	gr[_REG_FPCR] = m88k_read_fpcr();
+
+#ifdef M88100
+	if (CPU_IS88100) {
+		gr[_REG_PC] = tf->tf_snip & NIP_ADDR;
+		gr[_REG_nPC] = tf->tf_sfip & FIP_ADDR;
+	}
+#endif
+#ifdef M88110
+	if (CPU_IS88110) {
+		register_t pc = tf->tf_exip & XIP_ADDR;
+
+		gr[_REG_PC] = pc;
+		gr[_REG_nPC] = (tf->tf_exip & XIP_E) ?
+		    (tf->tf_enip & XIP_ADDR) : pc + 4;
+	}
+#endif
 
 	*flags |= _UC_CPU;
 }
@@ -244,33 +287,68 @@ cpu_setmcontext(l, mcp, flags)
 {
 	struct trapframe *tf = l->l_md.md_tf;
 	const __greg_t *gr = mcp->__gregs;
-
-	/* Restore register context, if any. */
-	if (flags & _UC_CPU) {
-
-		/* Check for security violations first. */
-		if ((gr[_REG_PSR] & (PSR_MODE|PSR_IND|PSR_SFRZ)) != 0)
-			return (EINVAL);
-
-		/* Restore user registers */
-		memcpy(&tf->tf_regs, gr, sizeof *gr);
-
-		/* Update instruction pointers */
+	register_t pc, npc, epsr, fpsr, fpcr;
 #ifdef M88100
-		if (CPU_IS88100) {
-			tf->tf_sxip = 0;
-			tf->tf_snip = (gr[_REG_PC] & NIP_ADDR) | NIP_V;
-			tf->tf_sfip = (tf->tf_snip + 4) | FIP_V;
-		}
+	register_t new_sxip = 0, new_snip = 0, new_sfip = 0;
 #endif
 #ifdef M88110
-		if (CPU_IS88110) {
-			tf->tf_exip = (gr[_REG_PC] & XIP_ADDR);
-		}
+	register_t new_exip = 0, new_enip = 0;
 #endif
-	}
+	int i;
 
-	return (0);
+	if ((flags & _UC_CPU) == 0)
+		return 0;
+
+	/* Phase A: validate and prepare the return pipeline in local state. */
+	pc = gr[_REG_PC];
+	npc = gr[_REG_nPC];
+	if (((pc | npc) & 3) != 0)
+		return EINVAL;
+	epsr = gr[_REG_PSR];
+	if (((epsr ^ tf->tf_epsr) & PSR_USERSTATIC) != 0)
+		return EINVAL;
+	fpsr = gr[_REG_FPSR];
+	fpcr = gr[_REG_FPCR];
+
+#ifdef M88100
+	if (CPU_IS88100) {
+		new_sxip = 0;
+		new_snip = (pc & NIP_ADDR) | NIP_V;
+		new_sfip = (npc & FIP_ADDR) | FIP_V;
+	}
+#endif
+#ifdef M88110
+	if (CPU_IS88110) {
+		new_enip = npc & XIP_ADDR;
+		new_exip = (pc & XIP_ADDR) |
+		    ((npc == pc + 4) ? 0 : XIP_E);
+	}
+#endif
+
+	/* Phase B: the remaining operations cannot fail. */
+	tf->tf_r[0] = 0;
+	for (i = 1; i < 32; i++)
+		tf->tf_r[i] = gr[i];
+	tf->tf_epsr = epsr;
+	tf->tf_fpsr = fpsr;
+	tf->tf_fpcr = fpcr;
+#ifdef M88100
+	if (CPU_IS88100) {
+		tf->tf_sxip = new_sxip;
+		tf->tf_snip = new_snip;
+		tf->tf_sfip = new_sfip;
+	}
+#endif
+#ifdef M88110
+	if (CPU_IS88110) {
+		tf->tf_enip = new_enip;
+		tf->tf_exip = new_exip;
+	}
+#endif
+	m88k_write_fpsr(fpsr);
+	m88k_write_fpcr(fpcr);
+
+	return 0;
 }
 
 #if 0  /* XXX not needed? -TKM */

@@ -1225,7 +1225,6 @@ m88100_syscall(register_t code, struct trapframe *tf)
 		tf->tf_snip = tf->tf_sxip & ~NIP_E;
 		break;
 	case EJUSTRETURN:
-		tf->tf_epsr &= ~PSR_C;
 		break;
 	default:
 		if (p->p_emul->e_errno)
