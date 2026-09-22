@@ -57,6 +57,6 @@
  *	sp->	siginfo structure	[0]
  */
 ENTRY(__sigtramp_siginfo_2)
-	ld	r2,r31,128		/* restore ucontext pointer */
+	addu	r2,r31,128		/* restore ucontext pointer */
 	__DO_SYSCALL(setcontext)	/* restore machine state */
 	__DO_SYSCALL(exit)		/* or exit with errno if failed */
