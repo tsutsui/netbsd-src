@@ -2259,8 +2259,14 @@ ASLOCAL(no_softint)
 	ld	r2, FPTR, REG_OFF(EF_EPSR)
 	bb1	PSR_SUPERVISOR_MODE_BIT, r2, _ASM_LABEL(no_ast)
 
+	/* Match the curlwp representation selected by <sys/proc.h>. */
+#ifdef MULTIPROCESSOR
 	ldcr	r2,  CPU
 	ld	r3,  r2, CI_CURLWP
+#else
+	or.u	r2, r0, hi16(_C_LABEL(curlwp))
+	ld	r3, r2, lo16(_C_LABEL(curlwp))
+#endif
 	bcnd	eq0, r3, _ASM_LABEL(no_ast)	/* no AST if no lwp! */
 	ld	r2,  r3, L_PROC
 	ld	r3,  r2, P_MD_ASTPENDING
