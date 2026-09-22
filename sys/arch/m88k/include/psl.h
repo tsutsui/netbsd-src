@@ -81,6 +81,9 @@
 #define PSR_IND		0x00000002	/* interrupt disable */
 #define PSR_SFRZ	0x00000001	/* shadow freeze */
 
+#define PSR_USERSTATIC	(PSR_MODE | PSR_BO | PSR_SER | PSR_SGN | \
+			 PSR_SRM | PSR_SFD | PSR_MXM | PSR_IND | PSR_SFRZ)
+
 #define FIP_V		0x00000002	/* valid */
 #define FIP_E		0x00000001	/* exception */
 #define FIP_ADDR	0xfffffffc	/* address mask */
