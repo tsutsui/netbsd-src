@@ -60,7 +60,7 @@ const struct cdevsw mem_cdevsw = {
 	nostop, notty, nopoll, mmmmap, nokqfilter,
 };
 
-caddr_t zeropage;
+static caddr_t devzeropage;
 extern vaddr_t last_addr;
 
 /*ARGSUSED*/
@@ -129,14 +129,14 @@ mmrw(dev_t dev, struct uio *uio, int flags)
 				 * and EFAULT for writes.
 				 */
 				if (uio->uio_rw == UIO_READ) {
-					if (zeropage == NULL) {
-						zeropage = (caddr_t)
+					if (devzeropage == NULL) {
+						devzeropage = (caddr_t)
 						    malloc(PAGE_SIZE, M_TEMP,
 						    M_WAITOK);
-						bzero(zeropage, PAGE_SIZE);
+						bzero(devzeropage, PAGE_SIZE);
 					}
 					c = min(c, NBPG - (int)v);
-					v = (vaddr_t)zeropage;
+					v = (vaddr_t)devzeropage;
 				} else
 #endif
 					return (EFAULT);
@@ -156,13 +156,13 @@ mmrw(dev_t dev, struct uio *uio, int flags)
 				c = iov->iov_len;
 				break;
 			}
-			if (zeropage == NULL) {
-				zeropage = (caddr_t)
+			if (devzeropage == NULL) {
+				devzeropage = (caddr_t)
 				    malloc(PAGE_SIZE, M_TEMP, M_WAITOK);
-				bzero(zeropage, PAGE_SIZE);
+				bzero(devzeropage, PAGE_SIZE);
 			}
 			c = min(iov->iov_len, PAGE_SIZE);
-			error = uiomove(zeropage, c, uio);
+			error = uiomove(devzeropage, c, uio);
 			continue;
 
 		default:
