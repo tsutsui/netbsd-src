@@ -2004,7 +2004,6 @@ dophase:
 		SPC_ASSERT(sc->sc_nexus != NULL);
 		acb = sc->sc_nexus;
 
-#ifndef NO_MANUAL_XFER /* XXX */
 		if ((bus_space_read_1(iot, ioh, PSNS) & PSNS_ATN) != 0)
 			bus_space_write_1(iot, ioh, SCMD, SCMD_RST_ATN);
 		bus_space_write_1(iot, ioh, PCTL, PCTL_BFINT_ENAB | PH_STAT);
@@ -2015,9 +2014,6 @@ dophase:
 		while ((bus_space_read_1(iot, ioh, PSNS) & PSNS_REQ) != 0)
 			DELAY(1);	/* XXX needs timeout */
 		bus_space_write_1(iot, ioh, SCMD, SCMD_RST_ACK);
-#else
-		spc_datain_pio(sc, &acb->target_stat, 1);
-#endif
 
 		SPC_MISC(("target_stat=0x%02x  ", acb->target_stat));
 		sc->sc_prevphase = PH_STAT;
