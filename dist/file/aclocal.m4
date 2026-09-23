@@ -17,7 +17,10 @@ AC_DEFUN([AC_C_LONG_LONG],
 [if test "$GCC" = yes; then
   ac_cv_c_long_long=yes
 else
-AC_TRY_RUN([int main() {
+AC_TRY_RUN([
+#include <stdlib.h>
+
+int main() {
 long long foo = 0;
 exit(sizeof(long long) < sizeof(long)); }],
 ac_cv_c_long_long=yes, ac_cv_c_long_long=no)
@@ -116,7 +119,9 @@ AC_MSG_CHECKING(size of $1)
 AC_CACHE_VAL(AC_CV_NAME,
 [AC_TRY_RUN([$3
 #include <stdio.h>
-main()
+#include <stdlib.h>
+
+int main()
 {
   FILE *f=fopen("conftestval", "w");
   if (!f) exit(1);
