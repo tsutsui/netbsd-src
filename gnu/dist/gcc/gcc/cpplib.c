@@ -196,7 +196,7 @@ DIRECTIVE_TABLE
    did use this notation in its preprocessed output.  */
 static const directive linemarker_dir =
 {
-  do_linemarker, U"#", 1, KANDR, IN_I
+  do_linemarker, UC"#", 1, KANDR, IN_I
 };
 
 #define SEEN_EOL() (pfile->cur_token[-1].type == CPP_EOF)
@@ -623,7 +623,7 @@ parse_include (pfile)
   const cpp_token *header;
 
   if (pfile->directive == &dtable[T_PRAGMA])
-    dir = U"pragma dependency";
+    dir = UC"pragma dependency";
   else
     dir = pfile->directive->name;
 
@@ -1041,7 +1041,7 @@ cpp_register_pragma (pfile, space, name, handler)
 
   if (space)
     {
-      node = cpp_lookup (pfile, U space, strlen (space));
+      node = cpp_lookup (pfile, UC space, strlen (space));
       entry = lookup_pragma_entry (*chain, node);
       if (!entry)
 	entry = insert_pragma_entry (pfile, chain, node, NULL);
@@ -1051,7 +1051,7 @@ cpp_register_pragma (pfile, space, name, handler)
     }
 
   /* Check for duplicates.  */
-  node = cpp_lookup (pfile, U name, strlen (name));
+  node = cpp_lookup (pfile, UC name, strlen (name));
   entry = lookup_pragma_entry (*chain, node);
   if (entry)
     {
