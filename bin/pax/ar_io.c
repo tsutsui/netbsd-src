@@ -61,6 +61,7 @@ __RCSID("$NetBSD: ar_io.c,v 1.44 2004/08/02 10:20:48 yamt Exp $");
 #include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <time.h>
 #ifdef SUPPORT_RMT
 #define __RMTLIB_PRIVATE
 #include <rmt.h>

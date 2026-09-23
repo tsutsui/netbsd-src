@@ -61,6 +61,7 @@ __RCSID("$NetBSD: pax.c,v 1.36 2004/10/10 21:53:23 christos Exp $");
 #include <string.h>
 #include <errno.h>
 #include <paths.h>
+#include <time.h>
 #include "pax.h"
 #include "extern.h"
 static int gen_init(void);
