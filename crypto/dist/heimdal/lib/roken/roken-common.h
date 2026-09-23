@@ -247,7 +247,7 @@
 #define SHUT_RDWR 2
 #endif
 
-#ifndef HAVE___ATTRIBUTE__
+#if !defined(HAVE___ATTRIBUTE__) && !defined(__GNUC__)
 #define __attribute__(x)
 #endif
 
