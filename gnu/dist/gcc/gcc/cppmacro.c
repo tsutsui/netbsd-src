@@ -233,8 +233,8 @@ _cpp_builtin_macro_text (pfile, node)
 	      cpp_errno (pfile, DL_WARNING,
 			 "could not determine date and time");
 		
-	      pfile->date = U"\"??? ?? ????\"";
-	      pfile->time = U"\"??:??:??\"";
+	      pfile->date = UC"\"??? ?? ????\"";
+	      pfile->time = UC"\"??:??:??\"";
 	    }
 	}
 

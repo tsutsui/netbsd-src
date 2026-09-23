@@ -32,7 +32,7 @@ struct op;
 #ifndef HAVE_UCHAR
 typedef unsigned char uchar;
 #endif
-#define U (const uchar *)  /* Intended use: U"string" */
+#define UC (const uchar *)  /* Intended use: UC"string" */
 
 #define BITS_PER_CPPCHAR_T (CHAR_BIT * sizeof (cppchar_t))
 
