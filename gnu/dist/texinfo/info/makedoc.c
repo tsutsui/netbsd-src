@@ -207,18 +207,18 @@ main (int argc, char **argv)
 
 #if defined (NAMED_FUNCTIONS)
   fprintf (doc_stream,
-           "   { (VFunction *)NULL, (char *)NULL, (FUNCTION_KEYSEQ *)NULL, (char *)NULL }\n};\n");
+           "   { NULL, (char *)NULL, (FUNCTION_KEYSEQ *)NULL, (char *)NULL }\n};\n");
 #else /* !NAMED_FUNCTIONS */
-  fprintf (doc_stream, "   { (VFunction *)NULL, (FUNCTION_KEYSEQ *)NULL, (char *)NULL }\n};\n");
+  fprintf (doc_stream, "   { NULL, (FUNCTION_KEYSEQ *)NULL, (char *)NULL }\n};\n");
 #endif /* !NAMED_FUNCTIONS */
 
 #else /* !INFOKEY */
 
 #if defined (NAMED_FUNCTIONS)
   fprintf (doc_stream,
-           "   { (VFunction *)NULL, (char *)NULL, (char *)NULL }\n};\n");
+           "   { NULL, (char *)NULL, (char *)NULL }\n};\n");
 #else /* !NAMED_FUNCTIONS */
-  fprintf (doc_stream, "   { (VFunction *)NULL, (char *)NULL }\n};\n");
+  fprintf (doc_stream, "   { NULL, (char *)NULL }\n};\n");
 #endif /* !NAMED_FUNCTIONS */
 
 #endif /* !INFOKEY */
@@ -500,11 +500,11 @@ process_one_file (char *filename, FILE *doc_stream,
 
 #if defined (NAMED_FUNCTIONS)
       fprintf (doc_stream,
-          "   { (VFunction *)%s, \"%s\", (FUNCTION_KEYSEQ *)0, %s },\n",
+          "   { %s, \"%s\", (FUNCTION_KEYSEQ *)0, %s },\n",
           func, func_name, doc);
 #else /* !NAMED_FUNCTIONS */
       fprintf (doc_stream,
-          "   { (VFunction *) %s, (FUNCTION_KEYSEQ *)0, %s },\n", func, doc);
+          "   { %s, (FUNCTION_KEYSEQ *)0, %s },\n", func, doc);
 #endif /* !NAMED_FUNCTIONS */
 
       fprintf (key_stream, "   { \"%s\", A_%s },\n", func_name, func);

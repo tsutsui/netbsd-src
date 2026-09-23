@@ -39,7 +39,7 @@ int info_aborted_echo_area = 0;
 int echo_area_is_active = 0;
 
 /* The address of the last command executed in the echo area. */
-VFunction *ea_last_executed_command = (VFunction *)NULL;
+COMMAND_FUNCTION *ea_last_executed_command = NULL;
 
 /* Non-zero means that the last command executed while reading input
    killed some text. */
@@ -579,8 +579,8 @@ DECLARE_INFO_COMMAND (ea_yank_pop, _("Yank back a previous kill"))
 {
   register int len;
 
-  if (((ea_last_executed_command != (VFunction *) ea_yank) &&
-       (ea_last_executed_command != (VFunction *) ea_yank_pop)) ||
+  if (((ea_last_executed_command !=  ea_yank) &&
+       (ea_last_executed_command !=  ea_yank_pop)) ||
       (kill_ring_index == 0))
     return;
 
@@ -1099,7 +1099,7 @@ DECLARE_INFO_COMMAND (ea_complete, _("Insert completion"))
       return;
     }
 
-  if (ea_last_executed_command == (VFunction *) ea_complete)
+  if (ea_last_executed_command ==  ea_complete)
     {
       /* If the keypress is a SPC character, and we have already tried
          completing once, and there are several completions, then check

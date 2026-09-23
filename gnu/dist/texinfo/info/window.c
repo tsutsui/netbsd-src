@@ -101,7 +101,7 @@ window_initialize_windows (int width, int height)
 
 /* If non-null, a function to call with WINDOW as argument when the function
    window_new_screen_size () has deleted WINDOW. */
-VFunction *window_deletion_notifier = NULL;
+void (*window_deletion_notifier) (WINDOW *window) = NULL;
 
 void
 window_new_screen_size (int width, int height)

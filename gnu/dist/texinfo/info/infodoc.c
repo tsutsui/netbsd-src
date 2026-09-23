@@ -336,7 +336,7 @@ create_internal_info_help_node (int help_is_only_window_p)
         {
           InfoCommand *cmd = DocInfoCmd(&function_doc_array[i]);
 
-          if (InfoFunction(cmd) != (VFunction *) info_do_lowercase_version
+          if (InfoFunction(cmd) !=  info_do_lowercase_version
               && !where_is_internal (info_keymap, cmd)
               && !where_is_internal (echo_area_keymap, cmd))
             {
@@ -700,7 +700,7 @@ DECLARE_INFO_COMMAND (describe_key, _("Print documentation for KEY"))
              confusing to see a message "Home (do-lowercase-version)"
              or some such when Home is unbound.  */
           if (InfoFunction(map[keystroke].function)
-              == (VFunction *) info_do_lowercase_version)
+              ==  info_do_lowercase_version)
             {
               unsigned char lowerkey = Meta_p(keystroke)
                                        ? Meta (tolower (UnMeta (keystroke)))

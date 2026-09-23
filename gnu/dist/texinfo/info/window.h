@@ -128,7 +128,7 @@ extern void window_delete_window (WINDOW *window);
    to get deleted.  The function is called with the window to be deleted
    as an argument, and it can't do anything about the window getting deleted;
    it can only clean up dangling references to that window. */
-extern VFunction *window_deletion_notifier;
+extern void (*window_deletion_notifier) (WINDOW *window);
 
 /* Set WINDOW to display NODE. */
 extern void window_set_node_of_window (WINDOW *window, NODE *node);

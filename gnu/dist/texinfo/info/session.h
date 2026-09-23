@@ -38,7 +38,7 @@
 void name (WINDOW *window, int count, unsigned char key)
 
 /* Variables found in session.h. */
-extern VFunction *info_last_executed_command;
+extern COMMAND_FUNCTION *info_last_executed_command;
 
 /* Variable controlling the garbage collection of files briefly visited
    during searches.  Such files are normally gc'ed, unless they were
