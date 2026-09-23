@@ -51,7 +51,7 @@ char *node_printed_rep (NODE *node);
 static FILE *info_input_stream = NULL;
 
 /* The last executed command. */
-VFunction *info_last_executed_command = NULL;
+COMMAND_FUNCTION *info_last_executed_command = NULL;
 
 /* Becomes non-zero when 'q' is typed to an Info window. */
 int quit_info_immediately = 0;
@@ -199,8 +199,8 @@ info_read_and_dispatch (void)
 
       /* If we haven't just gone up or down a line, there is no
          goal column for this window. */
-      if ((info_last_executed_command != (VFunction *) info_next_line) &&
-          (info_last_executed_command != (VFunction *) info_prev_line))
+      if ((info_last_executed_command !=  info_next_line) &&
+          (info_last_executed_command !=  info_prev_line))
         active_window->goal_column = -1;
 
       if (echo_area_is_active)
@@ -237,17 +237,17 @@ info_read_and_dispatch (void)
           if (lk == echo_area_last_command_was_kill)
             echo_area_last_command_was_kill = 0;
 
-          if (ea_last_executed_command == (VFunction *) ea_newline ||
+          if (ea_last_executed_command ==  ea_newline ||
               info_aborted_echo_area)
             {
-              ea_last_executed_command = (VFunction *)NULL;
+              ea_last_executed_command = NULL;
               done = 1;
             }
 
-          if (info_last_executed_command == (VFunction *) info_quit)
+          if (info_last_executed_command ==  info_quit)
             quit_info_immediately = 1;
         }
-      else if (info_last_executed_command == (VFunction *) info_quit)
+      else if (info_last_executed_command ==  info_quit)
         done = 1;
     }
 }
@@ -286,7 +286,7 @@ initialize_info_session (NODE *node, int clear_screen)
 
   /* Tell the window system how to notify us when a window needs to be
      asynchronously deleted (e.g., user resizes window very small). */
-  window_deletion_notifier = (VFunction *) forget_window_and_nodes;
+  window_deletion_notifier = forget_window_and_nodes;
 
   /* If input has not been redirected yet, make it come from unbuffered
      standard input. */
@@ -3918,7 +3918,7 @@ incremental_search (WINDOW *window, int count, unsigned char ignore)
 
   while (isearch_is_active)
     {
-      VFunction *func = (VFunction *)NULL;
+      COMMAND_FUNCTION *func = NULL;
       int quoted = 0;
 
       /* If a recent display was interrupted, then do the redisplay now if
@@ -3985,16 +3985,16 @@ incremental_search (WINDOW *window, int count, unsigned char ignore)
               isearch_string[isearch_string_index] = '\0';
               goto search_now;
             }
-          else if (func == (VFunction *) isearch_forward
-              || func == (VFunction *) isearch_backward)
+          else if (func ==  isearch_forward
+              || func ==  isearch_backward)
             {
 	      /* If this key invokes an incremental search, then this
 		 means that we will either search again in the same
 		 direction, search again in the reverse direction, or
 		 insert the last search string that was accepted through
 		 incremental searching. */
-              if ((func == (VFunction *) isearch_forward && dir > 0) ||
-                  (func == (VFunction *) isearch_backward && dir < 0))
+              if ((func ==  isearch_forward && dir > 0) ||
+                  (func ==  isearch_backward && dir < 0))
                 {
                   /* If the user has typed no characters, then insert the
                      last successful search into the current search string. */
@@ -4030,7 +4030,7 @@ incremental_search (WINDOW *window, int count, unsigned char ignore)
                   dir = -dir;
                 }
             }
-          else if (func == (VFunction *) info_abort_key)
+          else if (func ==  info_abort_key)
             {
               /* If C-g pressed, and the search is failing, pop the search
                  stack back to the last unfailed search. */
@@ -4058,7 +4058,7 @@ incremental_search (WINDOW *window, int count, unsigned char ignore)
              non-null.  Exit the search, remembering the search string.  If
              the key is not the same as the isearch_terminate_search_key,
              then push it into pending input. */
-          if (isearch_string_index && func != (VFunction *) info_abort_key)
+          if (isearch_string_index && func !=  info_abort_key)
             {
               maybe_free (last_isearch_accepted);
               last_isearch_accepted = xstrdup (isearch_string);
@@ -4077,7 +4077,7 @@ incremental_search (WINDOW *window, int count, unsigned char ignore)
 		  || info_any_buffered_input_p ()))
             info_set_pending_input (key);
 
-          if (func == (VFunction *) info_abort_key)
+          if (func ==  info_abort_key)
             {
               if (isearch_states_index)
                 window_set_state (window, &orig_state);
@@ -4392,7 +4392,7 @@ DECLARE_INFO_COMMAND (info_abort_key, _("Cancel current operation"))
 
   info_initialize_numeric_arg ();
   info_clear_pending_input ();
-  info_last_executed_command = (VFunction *)NULL;
+  info_last_executed_command = NULL;
 }
 
 /* Move the cursor to the desired line of the window. */
@@ -4611,13 +4611,13 @@ info_dispatch_on_key (unsigned char key, Keymap map)
     {
     case ISFUNC:
       {
-        VFunction *func;
+        COMMAND_FUNCTION *func;
 
         func = InfoFunction(map[key].function);
-        if (func != (VFunction *)NULL)
+        if (func != NULL)
           {
             /* Special case info_do_lowercase_version (). */
-            if (func == (VFunction *) info_do_lowercase_version)
+            if (func ==  info_do_lowercase_version)
               {
 #if defined(INFOKEY)
 		unsigned char lowerkey;
@@ -4768,7 +4768,7 @@ DECLARE_INFO_COMMAND (info_numeric_arg_digit_loop,
 
       if (keymap[key].type == ISFUNC
           && InfoFunction(keymap[key].function)
-              == (VFunction *) info_universal_argument)
+              ==  info_universal_argument)
         {
           info_numeric_arg *= 4;
           key = 0;

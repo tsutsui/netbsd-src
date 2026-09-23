@@ -46,7 +46,7 @@ static char *default_suffixes[] =
    standard meaning for expanding a tilde fails.  The function is called
    with the text (sans tilde, as in "foo"), and returns a malloc()'ed string
    which is the expansion, or a NULL pointer if there is no expansion. */
-CFunction *tilde_expansion_failure_hook = (CFunction *)NULL;
+char *(*tilde_expansion_failure_hook) (char *username) = NULL;
 
 /* When non-null, this is a NULL terminated array of strings which
    are duplicates for a tilde prefix.  Bash uses this to expand
@@ -341,4 +341,3 @@ memory_error_and_abort ()
   abort ();
 }
 #endif /* TEST */
-

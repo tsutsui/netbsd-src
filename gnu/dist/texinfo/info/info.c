@@ -449,7 +449,7 @@ For more information about these matters, see the files named COPYING.\n"));
               {
                 terminal_prep_terminal ();
                 terminal_clear_screen ();
-                info_last_executed_command = (VFunction *)NULL;
+                info_last_executed_command = NULL;
 
                 if (index_search_p)
                   do_info_index_search (windows, 0, index_search_string);

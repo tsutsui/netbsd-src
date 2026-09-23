@@ -38,7 +38,7 @@ extern int echo_area_last_command_was_kill;
 extern void inform_in_echo_area (char *message);
 extern void echo_area_inform_of_deleted_window (WINDOW *window);
 extern void echo_area_prep_read (void);
-extern VFunction *ea_last_executed_command;
+extern COMMAND_FUNCTION *ea_last_executed_command;
 extern char * info_read_completing_internal (WINDOW *window, char *prompt,
     REFERENCE **completions, int force);
 
