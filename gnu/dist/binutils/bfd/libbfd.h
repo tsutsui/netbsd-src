@@ -179,6 +179,8 @@ bfd_boolean coff_write_armap
 
 extern void *_bfd_generic_read_ar_hdr
   (bfd *);
+extern void _bfd_ar_spacepad
+  (char *, size_t, const char *, long);
 
 extern void *_bfd_generic_read_ar_hdr_mag
   (bfd *, const char *);
@@ -1558,4 +1560,3 @@ bfd_boolean bfd_default_scan
 
 /* Extracted from elf.c.  */
 struct elf_internal_shdr *bfd_elf_find_section (bfd *abfd, char *name);
-
