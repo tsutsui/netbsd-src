@@ -44,9 +44,6 @@ extern int errno;
 #define waitpid(pid, status, flags) wait(status)
 #endif
 
-extern int execv ();
-extern int execvp ();
-
 int
 pexecute (program, argv, this_pname, temp_base, errmsg_fmt, errmsg_arg, flags)
      const char *program;
@@ -56,7 +53,7 @@ pexecute (program, argv, this_pname, temp_base, errmsg_fmt, errmsg_arg, flags)
      char **errmsg_fmt, **errmsg_arg;
      int flags;
 {
-  int (*func)() = (flags & PEXECUTE_SEARCH ? execvp : execv);
+  int (*func)(const char *, char * const *) = (flags & PEXECUTE_SEARCH ? execvp : execv);
   int pid;
   int pdes[2];
   int input_desc, output_desc;
