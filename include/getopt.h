@@ -66,7 +66,7 @@ struct option {
 };
 #endif
 
-#if defined(_NETBSD_SOURCE)
+#if defined(_NETBSD_SOURCE) || defined(HAVE_NBTOOL_CONFIG_H)
 __BEGIN_DECLS
 int getopt_long(int, char * const *, const char *,
     const struct option *, int *);
