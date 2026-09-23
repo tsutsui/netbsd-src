@@ -49,10 +49,10 @@ struct token_spelling
 };
 
 static const unsigned char *const digraph_spellings[] =
-{ U"%:", U"%:%:", U"<:", U":>", U"<%", U"%>" };
+{ UC"%:", UC"%:%:", UC"<:", UC":>", UC"<%", UC"%>" };
 
-#define OP(e, s) { SPELL_OPERATOR, U s           },
-#define TK(e, s) { s,              U STRINGX (e) },
+#define OP(e, s) { SPELL_OPERATOR, UC s           },
+#define TK(e, s) { s,              UC STRINGX (e) },
 static const struct token_spelling token_spellings[N_TTYPES] = { TTYPE_TABLE };
 #undef OP
 #undef TK

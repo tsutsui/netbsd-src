@@ -1000,6 +1000,7 @@ else
 #line 1001 "configure"
 #include "confdefs.h"
 #include <ctype.h>
+#include <stdlib.h>
 #define ISLOWER(c) ('a' <= (c) && (c) <= 'z')
 #define TOUPPER(c) (ISLOWER(c) ? 'A' + ((c) - 'a') : (c))
 #define XOR(e, f) (((e) && !(f)) || (!(e) && (f)))
@@ -1625,7 +1626,7 @@ else
 #include <time.h>
 #endif
 #endif
-main ()
+int main (void)
 {
   struct timeval time;
   struct timezone dummy;
