@@ -491,7 +491,7 @@ set_current_output_filename (const char *fname)
    It is an error not to do so.
    The defaults come from the menu in this node's parent. */
 void
-cm_node (void)
+cm_node (int arg, int arg2, int arg3)
 {
   static long epilogue_len = 0L;
   char *node, *prev, *next, *up;
@@ -1054,7 +1054,7 @@ cm_node (void)
 
 /* Cross-reference target at an arbitrary spot.  */
 void
-cm_anchor (int arg)
+cm_anchor (int arg, int arg2, int arg3)
 {
   char *anchor;
   char *fname_for_anchor = NULL;

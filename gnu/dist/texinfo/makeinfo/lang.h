@@ -131,11 +131,11 @@ extern encoding_type encoding_table[];
 
 
 /* The commands.  */
-extern void cm_documentlanguage (void),
-     cm_documentencoding (void);
+extern void cm_documentlanguage (int arg, int arg2, int arg3),
+     cm_documentencoding (int arg, int arg2, int arg3);
 
 /* Accents, other non-English characters.  */
-void cm_accent (int arg), cm_special_char (int arg),
+void cm_accent (int arg, int arg2, int arg3), cm_special_char (int arg, int arg2, int arg3),
      cm_dotless (int arg, int start, int end);
 
 extern void cm_accent_umlaut (int arg, int start, int end),

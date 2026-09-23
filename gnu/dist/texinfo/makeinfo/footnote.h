@@ -30,8 +30,8 @@ extern int number_footnotes;
 extern int already_outputting_pending_notes;
 
 /* The Texinfo @commands.  */
-extern void cm_footnote (void);
-extern void cm_footnotestyle (void);
+extern void cm_footnote (int arg, int arg2, int arg3);
+extern void cm_footnotestyle (int arg, int arg2, int arg3);
 
 extern int set_footnote_style (char *string);    /* called for -s option */
 
