@@ -91,7 +91,7 @@ static int no_op(void);
 static void printflg(unsigned int);
 static int c_frmt(const void *, const void *);
 static off_t str_offt(char *);
-static char *getline(FILE *fp);
+static char *get_line(FILE *fp);
 static void pax_options(int, char **);
 static void pax_usage(void);
 static void tar_options(int, char **);
@@ -99,10 +99,10 @@ static void tar_usage(void);
 static void cpio_options(int, char **);
 static void cpio_usage(void);
 
-/* errors from getline */
+/* errors from get_line */
 #define GETLINE_FILE_CORRUPT 1
 #define GETLINE_OUT_OF_MEM 2
-static int getline_error;
+static int get_line_error;
 
 #define BZIP2_CMD	"bzip2"		/* command to run as bzip2 */
 #define GZIP_CMD	"gzip"		/* command to run as gzip */
@@ -1160,7 +1160,7 @@ tar_options(int argc, char **argv)
 						tty_warn(1, "Unable to open file '%s' for read", file);
 						tar_usage();
 					}
-					while ((str = getline(fp)) != NULL) {
+					while ((str = get_line(fp)) != NULL) {
 						if (dirisnext) {
 							dir = str;
 							dirisnext = 0;
@@ -1183,7 +1183,7 @@ tar_options(int argc, char **argv)
 						tar_usage();
 					if (strcmp(file, "-") != 0)
 						fclose(fp);
-					if (getline_error) {
+					if (get_line_error) {
 						tty_warn(1, "Problem with file '%s'", file);
 						tar_usage();
 					}
@@ -1250,7 +1250,7 @@ tar_options(int argc, char **argv)
 					tty_warn(1, "Unable to open file '%s' for read", file);
 					tar_usage();
 				}
-				while ((str = getline(fp)) != NULL) {
+				while ((str = get_line(fp)) != NULL) {
 					if (dirisnext) {
 						if (ftree_add(str, 1) < 0)
 							tar_usage();
@@ -1274,7 +1274,7 @@ tar_options(int argc, char **argv)
 					tar_usage();
 				if (strcmp(file, "-") != 0)
 					fclose(fp);
-				if (getline_error) {
+				if (get_line_error) {
 					tty_warn(1, "Problem with file '%s'",
 					    file);
 					tar_usage();
@@ -1565,11 +1565,11 @@ cpio_options(int argc, char **argv)
 				    optarg);
 				cpio_usage();
 			}
-			while ((str = getline(fp)) != NULL) {
+			while ((str = get_line(fp)) != NULL) {
 				pat_add(str, NULL);
 			}
 			fclose(fp);
-			if (getline_error) {
+			if (get_line_error) {
 				tty_warn(1, "Problem with file '%s'", optarg);
 				cpio_usage();
 			}
@@ -1721,10 +1721,10 @@ cpio_options(int argc, char **argv)
 		 * no read errors allowed on updates/append operation!
 		 */
 		maxflt = 0;
-		while ((str = getline(stdin)) != NULL) {
+		while ((str = get_line(stdin)) != NULL) {
 			ftree_add(str, 0);
 		}
-		if (getline_error) {
+		if (get_line_error) {
 			tty_warn(1, "Problem while reading stdin");
 			cpio_usage();
 		}
@@ -1949,21 +1949,21 @@ str_offt(char *val)
 }
 
 char *
-getline(FILE *f)
+get_line(FILE *f)
 {
 	char *name, *temp;
 	size_t len;
 
 	name = fgetln(f, &len);
 	if (!name) {
-		getline_error = ferror(f) ? GETLINE_FILE_CORRUPT : 0;
+		get_line_error = ferror(f) ? GETLINE_FILE_CORRUPT : 0;
 		return(0);
 	}
 	if (name[len-1] != '\n')
 		len++;
 	temp = malloc(len);
 	if (!temp) {
-		getline_error = GETLINE_OUT_OF_MEM;
+		get_line_error = GETLINE_OUT_OF_MEM;
 		return(0);
 	}
 	memcpy(temp, name, len-1);
