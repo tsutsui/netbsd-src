@@ -732,6 +732,10 @@ int	 cgetustr(char *, const char *, char **);
 
 /* <sys/syslimits.h> */
 
+#ifndef ARG_MAX
+#define ARG_MAX (256 * 1024)
+#endif
+
 #ifndef LINE_MAX
 #define LINE_MAX 2048
 #endif
