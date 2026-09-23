@@ -31,7 +31,7 @@
 # define __GT_FILE 0
 #endif
 
-int __gen_tempname ();
+int __gen_tempname (char *, int); /* GCC 15.1 conflicting prototypes */;
 
 /* Generate a unique temporary file name from TEMPLATE.
    The last six characters of TEMPLATE must be "XXXXXX";
