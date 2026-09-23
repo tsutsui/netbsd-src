@@ -166,12 +166,12 @@ expr(expbuf)
 static int
 query()
 {
-	int bool, true_val, false_val;
+	int result, true_val, false_val;
 
-	bool = lor();
+	result = lor();
 	if (skipws() != '?') {
 		ungetch();
-		return bool;
+		return result;
 	}
 
 	true_val = query();
@@ -179,7 +179,7 @@ query()
 		experr("bad query");
 
 	false_val = query();
-	return bool ? true_val : false_val;
+	return result ? true_val : false_val;
 }
 
 /*
