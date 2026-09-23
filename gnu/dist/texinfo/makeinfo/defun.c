@@ -688,7 +688,7 @@ defun_internal (int type, int x_p)
    If the name of the calling command ends in `x', then this is an extra
    entry included in the body of an insertion of the same type. */
 void
-cm_defun (void)
+cm_defun (int arg, int arg2, int arg3)
 {
   int type;
   char *base_command = xstrdup (command);  /* command with any `x' removed */

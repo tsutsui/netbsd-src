@@ -145,7 +145,7 @@ int merge_direct (char **infiles, int nfiles, char *outfile);
 void pfatal_with_name (const char *name);
 void fatal (const char *format, const char *arg);
 void error (const char *format, const char *arg);
-void *xmalloc (), *xrealloc ();
+void *xmalloc (size_t), *xrealloc (void *, size_t);
 char *concat (char *s1, char *s2);
 void flush_tempfiles (int to_count);
 
@@ -553,7 +553,7 @@ find_field (struct keyfield *keyfield, char *str, long int *lengthptr)
 {
   char *start;
   char *end;
-  char *(*fun) ();
+  char *(*fun) (char*, int, int, int);
 
   if (keyfield->braced)
     fun = find_braced_pos;

@@ -405,7 +405,7 @@ static void
 init_column (void)
 {
   /* don't indent 1st paragraph in the item */
-  cm_noindent ();
+  cm_noindent (0, 0, 0);
 
   /* throw away possible whitespace after @item or @tab command */
   skip_whitespace ();
@@ -580,7 +580,7 @@ multitable_item (void)
 
 /* select a new column in current row of multitable */
 void
-cm_tab (void)
+cm_tab (int arg, int arg2, int arg3)
 {
   if (!multitable_active)
     error (_("ignoring @tab outside of multitable"));
