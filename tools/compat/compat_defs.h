@@ -391,6 +391,10 @@ size_t strlcat(char *, const char *, size_t);
 size_t strlcpy(char *, const char *, size_t);
 #endif
 
+#if !HAVE_STRMODE
+void strmode(mode_t, char *);
+#endif
+
 #if !HAVE_STRSEP || defined(__NetBSD__)
 char *strsep(char **, const char *);
 #endif

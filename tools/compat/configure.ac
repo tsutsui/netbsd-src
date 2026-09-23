@@ -119,8 +119,8 @@ AC_CHECK_FUNCS(atoll asprintf asnprintf basename devname dirfd dirname \
 	heapsort isblank issetugid lchflags lchmod lchown lutimes mkstemp \
 	mkdtemp poll pread putc_unlocked pwcache_userdb pwcache_groupdb \
 	pwrite random setenv \
-	setgroupent setprogname setpassent snprintf strlcat strlcpy strsep \
-	strsuftoll strtoll \
+	setgroupent setprogname setpassent snprintf strlcat strlcpy strmode \
+	strsep strsuftoll strtoll \
 	user_from_uid uid_from_user vasprintf vasnprintf vsnprintf)
 
 AC_CHECK_DECLS([user_from_uid, uid_from_user, pwcache_userdb],,,[
