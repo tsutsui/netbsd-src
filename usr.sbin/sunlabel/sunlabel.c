@@ -240,7 +240,7 @@ trydisk(const char *s, int mustsucceed)
 
 	diskname = s;
 	if ((diskfd = open(s, O_RDWR)) == -1 ||
-	    (diskfd = open(s, O_RDWR | O_NDELAY)) == -1) {
+	    (diskfd = open(s, O_RDWR | O_NONBLOCK)) == -1) {
 		if ((diskfd = open(s, O_RDONLY)) == -1) {
 			if (mustsucceed)
 				err(1, "Cannot open `%s'", s);
