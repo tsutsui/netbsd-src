@@ -24,7 +24,7 @@
 #if !defined (DOC_H)
 #define DOC_H
 
-#include "info.h" /* for NAMED_FUNCTIONS, VFunction, etc.  */
+#include "info.h" /* for NAMED_FUNCTIONS, COMMAND_FUNCTION, etc.  */
 
 #if defined (INFOKEY)
 /* For each function, we keep track of the first defined key sequence
@@ -56,7 +56,7 @@ typedef struct function_keyseq
    housekeeping and avoids errors of omission.  */
 typedef struct
 {
-  VFunction *func;
+  COMMAND_FUNCTION *func;
 #if defined (NAMED_FUNCTIONS)
   char *func_name;
 #endif /* NAMED_FUNCTIONS */
@@ -75,13 +75,11 @@ extern FUNCTION_DOC function_doc_array[];
    easily divined using the InfoFunction() extractor.  */
 #if defined(INFOKEY)
 typedef FUNCTION_DOC InfoCommand;
-/* The cast to VFunction * prevents pgcc from complaining about
-   dereferencing a void *.  */
-#define InfoFunction(ic) ((ic) ? (ic)->func : (VFunction *) NULL)
+#define InfoFunction(ic) ((ic) ? (ic)->func : NULL)
 #define InfoCmd(fn) (&function_doc_array[A_##fn])
 #define DocInfoCmd(fd) ((fd) && (fd)->func ? (fd) : NULL)
 #else /* !INFOKEY */
-typedef VFunction InfoCommand;
+typedef COMMAND_FUNCTION InfoCommand;
 #define InfoFunction(vf) ((vf))
 #define InfoCmd(fn) fn
 #define DocInfoCmd(fd) ((fd)->func)

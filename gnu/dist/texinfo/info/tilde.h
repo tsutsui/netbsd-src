@@ -34,7 +34,7 @@
    standard meaning for expanding a tilde fails.  The function is called
    with the text (sans tilde, as in "foo"), and returns a malloc()'ed string
    which is the expansion, or a NULL pointer if there is no expansion. */
-extern CFunction *tilde_expansion_failure_hook;
+extern char *(*tilde_expansion_failure_hook) (char *username);
 
 /* When non-null, this is a NULL terminated array of strings which
    are duplicates for a tilde prefix.  Bash uses this to expand

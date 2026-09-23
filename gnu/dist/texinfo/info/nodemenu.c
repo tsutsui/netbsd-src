@@ -24,7 +24,7 @@
 
 #include "info.h"
 
-NODE * get_visited_nodes (Function *filter_func);
+NODE * get_visited_nodes (int (*filter_func) (NODE *));
 
 /* Return a line describing the format of a node information line. */
 static const char *
@@ -129,7 +129,7 @@ static char *nodemenu_nodename = "*Node Menu*";
    which nodes will appear in the listing.  FILTER_FUNC takes an argument
    of NODE, and returns non-zero if the node should appear in the listing. */
 NODE *
-get_visited_nodes (Function *filter_func)
+get_visited_nodes (int (*filter_func) (NODE *))
 {
   register int i, iw_index;
   INFO_WINDOW *info_win;
@@ -268,7 +268,7 @@ DECLARE_INFO_COMMAND (list_visited_nodes,
 
   /* Lines do not wrap in this window. */
   new->flags |= W_NoWrap;
-  node = get_visited_nodes ((Function *)NULL);
+  node = get_visited_nodes (NULL);
   name_internal_node (node, nodemenu_nodename);
 
 #if 0
@@ -309,7 +309,7 @@ DECLARE_INFO_COMMAND (select_visited_node,
   NODE *node;
   REFERENCE **menu;
 
-  node = get_visited_nodes ((Function *)NULL);
+  node = get_visited_nodes (NULL);
 
   menu = info_menu_of_node (node);
   free (node);

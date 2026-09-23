@@ -33,10 +33,9 @@
 /* System dependencies.  */
 #include "system.h"
 
-/* Some of our other include files use these.  */
-typedef int Function ();
-typedef void VFunction ();
-typedef char *CFunction ();
+struct window_struct;
+typedef void COMMAND_FUNCTION (struct window_struct *window, int count,
+                               unsigned char key);
 
 #include "filesys.h"
 #include "doc.h"
