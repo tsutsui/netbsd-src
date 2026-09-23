@@ -260,7 +260,7 @@ m88100_trap(u_int type, struct trapframe *frame)
 
 		/* data fault on the user address? */
 		if ((frame->tf_dmt0 & DMT_DAS) == 0) {
-			type = T_DATAFLT + T_USER;
+			KERNEL_LOCK(LK_CANRECURSE | LK_EXCLUSIVE);
 			goto user_fault;
 		}
 
@@ -334,6 +334,7 @@ m88100_trap(u_int type, struct trapframe *frame)
 		/* User mode instruction access fault */
 		/* FALLTHROUGH */
 	case T_DATAFLT+T_USER:
+		KERNEL_PROC_LOCK(l);
 user_fault:
 		if (type == T_INSTFLT + T_USER) {
 			pbus_type = CMMU_PFSR_FAULT(frame->tf_ipfsr);
@@ -362,7 +363,6 @@ user_fault:
 
 		va = trunc_page((vaddr_t)fault_addr);
 
-		KERNEL_PROC_LOCK(l);
 		vm = p->p_vmspace;
 		map = &vm->vm_map;
 		if ((pcb_onfault = l->l_addr->u_pcb.pcb_onfault) != 0)
@@ -389,7 +389,6 @@ user_fault:
 			else if (result == EACCES)
 				result = EFAULT;
 		}
-		KERNEL_PROC_UNLOCK(l);
 
 		/*
 		 * This could be a fault caused in copyin*()
@@ -408,7 +407,15 @@ user_fault:
 		}
 
 		if (result == 0) {
-			if (type == T_DATAFLT+T_USER) {
+			if (type == T_INSTFLT + T_USER) {
+				/*
+				 * back up SXIP, SNIP,
+				 * clearing the Error bit
+				 */
+				frame->tf_sfip = frame->tf_snip & ~FIP_E;
+				frame->tf_snip = frame->tf_sxip & ~NIP_E;
+				frame->tf_ipfsr = 0;
+			} else {
 				/*
 			 	 * We could resolve the fault. Call
 			 	 * data_access_emulation to drain the data unit
@@ -418,20 +425,16 @@ user_fault:
 				data_access_emulation((u_int *)frame);
 				frame->tf_dpfsr = 0;
 				frame->tf_dmt0 = 0;
-			} else {
-				/*
-				 * back up SXIP, SNIP,
-				 * clearing the Error bit
-				 */
-				frame->tf_sfip = frame->tf_snip & ~FIP_E;
-				frame->tf_snip = frame->tf_sxip & ~NIP_E;
-				frame->tf_ipfsr = 0;
 			}
 		} else {
 			sig = result == EACCES ? SIGBUS : SIGSEGV;
 			fault_type = result == EACCES ?
 			    BUS_ADRERR : SEGV_MAPERR;
 		}
+		if (type == T_DATAFLT)
+			KERNEL_UNLOCK();
+		else
+			KERNEL_PROC_UNLOCK(l);
 		break;
 	case T_MISALGNFLT+T_USER:
 #ifdef TRAPDEBUG
