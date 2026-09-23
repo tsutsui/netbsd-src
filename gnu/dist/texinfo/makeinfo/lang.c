@@ -438,7 +438,7 @@ language_type language_table[] = {
    a language block, we just output an empty element.  Anyways, a stream based
    parser can make good use of it.  */
 void
-cm_documentlanguage (void)
+cm_documentlanguage (int arg, int arg2, int arg3)
 {
   language_code_type c;
   char *lang_arg;
@@ -497,7 +497,7 @@ cm_search_iso_map (char *html)
 /* @documentencoding.  Set the translation table.  */
 
 void
-cm_documentencoding (void)
+cm_documentencoding (int arg, int arg2, int arg3)
 {
   if (!handling_delayed_writes)
     {
@@ -718,7 +718,7 @@ cm_accent_generic_no_headers (int arg, int start, int end, int single,
    special HTML support.  */
 
 void
-cm_accent (int arg)
+cm_accent (int arg, int arg2, int arg3)
 {
   int old_escape_html = escape_html;
   escape_html = 0;
@@ -824,7 +824,7 @@ cm_accent_tilde (int arg, int start, int end)
 
 /* Non-English letters/characters that don't insert themselves.  */
 void
-cm_special_char (int arg)
+cm_special_char (int arg, int arg2, int arg3)
 {
   int old_escape_html = escape_html;
   escape_html = 0;
