@@ -79,7 +79,6 @@ static int optreset;
 __weak_alias(getopt_long,_getopt_long)
 #endif
 
-#if !HAVE_GETOPT_LONG
 #define IGNORE_FIRST	(*options == '-' || *options == '+')
 #define PRINT_ERROR	((opterr) && ((*options != ':') \
 				      || (IGNORE_FIRST && options[1] != ':')))
@@ -493,4 +492,3 @@ getopt_long(nargc, nargv, options, long_options, idx)
 	}
 	return retval;
 }
-#endif /* !GETOPT_LONG */
