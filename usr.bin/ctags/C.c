@@ -165,7 +165,7 @@ c_entries(void)
 				 *	foo\n
 				 *	(arg1,
 				 */
-				getline();
+				get_line();
 				curline = lineno;
 				if (func_entry()) {
 					++level;
@@ -194,7 +194,7 @@ c_entries(void)
 		case ';':
 			if (t_def && level == t_level) {
 				t_def = NO;
-				getline();
+				get_line();
 				if (sp != tok)
 					*sp = EOS;
 				pfnote(tok, lineno);
@@ -229,7 +229,7 @@ c_entries(void)
 						 * get line immediately;
 						 * may change before '{'
 						 */
-						getline();
+						get_line();
 						if (str_entry(c))
 							++level;
 						break;
@@ -394,7 +394,7 @@ hash_entry(void)
 	}
 	*sp = EOS;
 	if (dflag || c == '(') {	/* only want macros */
-		getline();
+		get_line();
 		pfnote(tok, curline);
 	}
 skip:	if (c == '\n') {		/* get rid of rest of define */
