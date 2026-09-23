@@ -44,6 +44,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if HAVE_ERR_H
+#include <err.h>
+#endif
 
 #if HAVE_SYS_CDEFS_H
 #include <sys/cdefs.h>
