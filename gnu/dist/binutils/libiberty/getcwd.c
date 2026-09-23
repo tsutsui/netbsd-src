@@ -29,9 +29,9 @@ directory's path doesn't fit in @var{len} characters, the result is
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-
-extern char *getwd ();
-extern int errno;
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 1024
