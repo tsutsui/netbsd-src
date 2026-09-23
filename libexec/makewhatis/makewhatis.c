@@ -103,10 +103,10 @@ static void	addwhatis(whatis **, char *, char *);
 static char	*makesection(int);
 static char	*makewhatisline(const char *, const char *, const char *);
 static void	catpreprocess(char *);
-static char	*parsecatpage(const char *, gzFile *);
+static char	*parsecatpage(const char *, gzFile);
 static int	manpreprocess(char *);
-static char	*nroff(const char *, gzFile *);
-static char	*parsemanpage(const char *, gzFile *, int);
+static char	*nroff(const char *, gzFile);
+static char	*parsemanpage(const char *, gzFile, int);
 static char	*getwhatisdata(char *);
 static void	processmanpages(manpage **,whatis **);
 static void	dumpwhatis(FILE *, whatis *);
@@ -544,7 +544,7 @@ makewhatisline(const char *file, const char *line, const char *section)
 }
 
 static char *
-parsecatpage(const char *name, gzFile *in)
+parsecatpage(const char *name, gzFile in)
 {
 	char	 buffer[8192];
 	char	*section, *ptr, *last;
@@ -689,7 +689,7 @@ manpreprocess(char *line)
 }
 
 static char *
-nroff(const char *inname, gzFile *in)
+nroff(const char *inname, gzFile in)
 {
 	char tempname[MAXPATHLEN], buffer[65536], *data;
 	int tempfd, bytes, pipefd[2], status;
@@ -788,7 +788,7 @@ nroff(const char *inname, gzFile *in)
 }
 
 static char *
-parsemanpage(const char *name, gzFile *in, int defaultsection)
+parsemanpage(const char *name, gzFile in, int defaultsection)
 {
 	char	*section, buffer[8192], *ptr;
 
@@ -1000,7 +1000,7 @@ parsemanpage(const char *name, gzFile *in, int defaultsection)
 static char *
 getwhatisdata(char *name)
 {
-	gzFile	*in;
+	gzFile	in;
 	char	*data;
 	int	 section;
 
