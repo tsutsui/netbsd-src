@@ -28,6 +28,14 @@ Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. */
 #ifndef _GROFF_GETOPT_H
 #define _GROFF_GETOPT_H
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifndef __THROW
+#define __THROW
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,17 +59,17 @@ struct option
 
 extern int getopt(int, 			// __argc
 		  char *const *,	// __argv
-		  const char *);	// __shortopts
+		  const char *) __THROW;// __shortopts
 extern int getopt_long(int,			// __argc
 		       char *const *,		// __argv
 		       const char *,		// __shortopts
 		       const struct option *,	// __longopts
-		       int *);			// __longind
+		       int *) __THROW;		// __longind
 extern int getopt_long_only(int, 			// __argc
 			    char *const *,		// __argv
 			    const char *,		// __shortopts
 			    const struct option *,	// __longopts
-			    int *);			// __longind
+			    int *) __THROW;		// __longind
 
 #ifdef __cplusplus
 }
