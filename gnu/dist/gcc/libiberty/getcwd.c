@@ -29,9 +29,9 @@ directory's path doesn't fit in @var{len} characters, the result is
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-
-extern char *getwd ();
-extern int errno;
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 1024
@@ -40,7 +40,7 @@ extern int errno;
 char *
 getcwd (buf, len)
   char *buf;
-  int len;
+  size_t len;
 {
   char ourbuf[MAXPATHLEN];
   char *result;
