@@ -46,6 +46,7 @@ __RCSID("$NetBSD: prt3270.c,v 1.8 2003/08/07 11:16:44 agc Exp $");
 
 #include <stdio.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 #define DEFINING_INSTANCES
 #include "../general/general.h"
