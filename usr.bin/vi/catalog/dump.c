@@ -41,6 +41,7 @@ static char sccsid[] = "@(#)dump.c	8.1 (Berkeley) 8/31/94";
 
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static void
 parse(fp)
