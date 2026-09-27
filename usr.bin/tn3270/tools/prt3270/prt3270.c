@@ -561,7 +561,8 @@ unsigned char outbound[8192], inbound[8192],
 void
 termblock(old, new, control)
 int old,
-	new;		/* old and new directions */
+	new,		/* old and new directions */
+	control;
 {
     int count;
 
