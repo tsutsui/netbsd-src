@@ -320,7 +320,7 @@ allocsb(void)
 	} else {
 		sb = xmalloc(sizeof (sbuf_t));
 	}
-	(void)memset(sb, 0, sizeof (sb));
+	(void)memset(sb, 0, sizeof (*sb));
 	return (sb);
 }
 
