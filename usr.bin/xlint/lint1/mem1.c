@@ -192,7 +192,9 @@ xgetblk(mbl_t **mbp, size_t s)
 	void	*p;
 	size_t	t = 0;
 
-	s = ALIGN(s);
+	size_t worst_align = 2 * sizeof(long) - 1;
+	s = (s + worst_align) & ~worst_align;
+
 	if ((mb = *mbp) == NULL || mb->nfree < s) {
 		if ((mb = frmblks) == NULL) {
 			if (s > mblklen) {
