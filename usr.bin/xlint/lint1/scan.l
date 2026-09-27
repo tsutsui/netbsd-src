@@ -524,8 +524,10 @@ icon(int base)
 			/* ok */
 		} else if (ul <= (unsigned)UINT_MAX && base != 10) {
 			typ = UINT;
+#if INT_MAX != LONG_MAX
 		} else if (ul <= LONG_MAX) {
 			typ = LONG;
+#endif
 		} else {
 			typ = ULONG;
 		}
