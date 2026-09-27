@@ -226,7 +226,7 @@ TEXINFO_TEX = doc/texinfo.tex
 # Do intl, m4, and lib first since the C programs depend on them.
 # Do doc last so makeinfo will be built when we get there.
 # Others are alphabetical.
-SUBDIRS = intl m4 lib info makeinfo po util doc
+SUBDIRS = intl m4 lib makeinfo po util doc
 
 # for gettext.
 ACLOCAL_AMFLAGS = -I m4
