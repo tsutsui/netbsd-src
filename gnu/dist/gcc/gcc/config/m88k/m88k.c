@@ -210,6 +210,8 @@ condition_value (condition)
 {
   switch (GET_CODE (condition))
     {
+    case UNORDERED: return 0;
+    case ORDERED: return 1;
     case EQ: return 2;
     case NE: return 3;
     case GT: return 4;
