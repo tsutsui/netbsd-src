@@ -530,61 +530,40 @@ static void output_short_branch_defs PARAMS ((FILE *));
 static int output_option PARAMS ((FILE *, const char *, const char *,
 				  const char *, const char *, int, int));
 
-/* Emit code to perform a block move.  Choose the best method.
+/* Emit code to perform an inline block move, and return 1 if successful.
+   Return 0 to let GCC choose a libcall or a loop.  In particular,
+   BLOCK_OP_CALL_PARM must not emit a nested libcall unconditionally.
 
    OPERANDS[0] is the destination.
    OPERANDS[1] is the source.
    OPERANDS[2] is the size.
    OPERANDS[3] is the alignment safe to use.  */
 
-void
+int
 expand_block_move (operands)
      rtx *operands;
 {
-  rtx dest, src;
   int align = INTVAL (operands[3]);
   int constp = (GET_CODE (operands[2]) == CONST_INT);
   int bytes = (constp ? INTVAL (operands[2]) : 0);
 
-  if (constp && bytes <= 0)
-    return;
+  if (!constp)
+    return 0;
+
+  if (bytes <= 0)
+    return 1; /* nothing to do.  */
 
   /* Determine machine mode to do move with.  */
   if (align > 4 && !TARGET_88110)
     align = 4;
   else if (align <= 0 || align == 3)
-    abort ();	/* block move invalid alignment.  */
+    abort (); /* block move invalid alignment.  */
 
-  dest = operands[0];
-  src = operands[1];
+  if (bytes > (optimize_size ? 3 : 6) * align)
+    return 0;
 
-  if (constp && bytes <= (optimize_size ? 3 : 6) * align)
-    {
-      block_move_sequence (dest, src, bytes, align);
-      return;
-    }
-
-  dest = copy_to_mode_reg (SImode, XEXP (dest, 0));
-  src = copy_to_mode_reg (SImode, XEXP (src, 0));
-
-#ifdef TARGET_MEM_FUNCTIONS
-  emit_library_call (gen_rtx_SYMBOL_REF (Pmode, "memcpy"), 0,
-		     VOIDmode, 3,
-		     dest, Pmode,
-		     src, Pmode,
-		     convert_to_mode (TYPE_MODE (sizetype), operands[2],
-				      TREE_UNSIGNED (sizetype)),
-		     TYPE_MODE (sizetype));
-#else
-  emit_library_call (gen_rtx_SYMBOL_REF (Pmode, "bcopy"), 0,
-		     VOIDmode, 3,
-		     src, Pmode,
-		     dest, Pmode,
-		     convert_to_mode (TYPE_MODE (integer_type_node),
-				      operands[2],
-				      TREE_UNSIGNED (integer_type_node)),
-		     TYPE_MODE (integer_type_node));
-#endif
+  block_move_sequence (operands[0], operands[1], bytes, align);
+  return 1;
 }
 
 /* Emit code to perform a block move with an offset sequence of ld/st
