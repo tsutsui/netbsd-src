@@ -305,9 +305,9 @@ m88100_trap(u_int type, struct trapframe *frame)
 			frame->tf_dmt0 = 0;
 			KERNEL_UNLOCK();
 			return;
-		case CMMU_PFSR_SFAULT:
-		case CMMU_PFSR_PFAULT:
-		case CMMU_PFSR_WRITE:
+		case CMMU_PFSR_BERROR:
+			break;
+		default:
 			if ((pcb_onfault = l->l_addr->u_pcb.pcb_onfault) != 0)
 				l->l_addr->u_pcb.pcb_onfault = 0;
 			result = uvm_fault(map, va, VM_FAULT_INVALID, ftype);
