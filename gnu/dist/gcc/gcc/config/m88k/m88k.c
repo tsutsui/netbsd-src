@@ -583,8 +583,10 @@ static const int best_from_align[3][9] = {
    0, 0, 0, MOVSTR_DI_LIMIT_88000}
 };
 
+#if 0
 static void block_move_loop PARAMS ((rtx, rtx, rtx, rtx, int, int));
 static void block_move_no_loop PARAMS ((rtx, rtx, rtx, rtx, int, int));
+#endif
 static void block_move_sequence PARAMS ((rtx, rtx, rtx, rtx, int, int, int));
 static void output_short_branch_defs PARAMS ((FILE *));
 static int output_option PARAMS ((FILE *, const char *, const char *,
@@ -606,7 +608,9 @@ expand_block_move (dest_mem, src_mem, operands)
   int align = INTVAL (operands[3]);
   int constp = (GET_CODE (operands[2]) == CONST_INT);
   int bytes = (constp ? INTVAL (operands[2]) : 0);
+#if 0
   int target = (int) m88k_cpu;
+#endif
 
   if (! (PROCESSOR_M88100 == 0
 	 && PROCESSOR_M88110 == 1
@@ -626,6 +630,7 @@ expand_block_move (dest_mem, src_mem, operands)
     block_move_sequence (operands[0], dest_mem, operands[1], src_mem,
 			 bytes, align, 0);
 
+#if 0
   else if (constp && bytes <= best_from_align[target][align])
     block_move_no_loop (operands[0], dest_mem, operands[1], src_mem,
 			bytes, align);
@@ -633,6 +638,7 @@ expand_block_move (dest_mem, src_mem, operands)
   else if (constp && align == 4 && TARGET_88100)
     block_move_loop (operands[0], dest_mem, operands[1], src_mem,
 		     bytes, align);
+#endif
 
   else
     {
@@ -657,6 +663,7 @@ expand_block_move (dest_mem, src_mem, operands)
     }
 }
 
+#if 0
 /* Emit code to perform a block move by calling a looping movstr library
    function.  SIZE and ALIGN are known constants.  DEST and SRC are
    registers.  */
@@ -781,6 +788,7 @@ block_move_no_loop (dest, dest_mem, src, src_mem, size, align)
 			 gen_rtx_REG (Pmode, 3), src_mem,
 			 remainder, align, most);
 }
+#endif
 
 /* Emit code to perform a block move with an offset sequence of ld/st
    instructions (..., ld 0, st 1, ld 1, st 0, ...).  SIZE and ALIGN are
