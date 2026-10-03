@@ -223,8 +223,6 @@ extern int flag_pic;				/* -fpic */
     { "no-ocs-debug-info",		-MASK_OCS_DEBUG_INFO }, \
     { "ocs-frame-position",		 MASK_OCS_FRAME_POSITION }, \
     { "no-ocs-frame-position",		-MASK_OCS_FRAME_POSITION }, \
-    { "svr4",			         MASK_SVR4 }, \
-    { "svr3",			        -MASK_SVR4 }, \
     { "no-underscores",			 MASK_NO_UNDERSCORES }, \
     { "big-pic",			 MASK_BIG_PIC }, \
     { "trap-large-shift",		 MASK_TRAP_LARGE_SHIFT }, \
