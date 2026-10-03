@@ -28,8 +28,12 @@ Boston, MA 02111-1307, USA.  */
 /* Default switches */
 #undef	TARGET_DEFAULT
 #define TARGET_DEFAULT	(MASK_CHECK_ZERO_DIV | \
-			 MASK_NO_POUND_SIGN  | \
-			 MASK_SVR4)
+			 MASK_NO_POUND_SIGN)
+
+/* NetBSD/m88k ELF always uses the SVR4 assembler and section conventions.
+   Keep the generic m88k backend's SVR3 paths for other target headers.  */
+#undef TARGET_SVR4
+#define TARGET_SVR4 1
 
 /* Make sure this is undefined.  */
 #undef CPP_PREDEFINES
@@ -111,4 +115,3 @@ Here, the CPU_DEFAULT is assumed to be -m88100.  */
 #define CTORS_SECTION_ASM_OP    "\tsection\t.ctors,\"aw\""
 #undef  DTORS_SECTION_ASM_OP
 #define DTORS_SECTION_ASM_OP    "\tsection\t.dtors,\"aw\""
-
