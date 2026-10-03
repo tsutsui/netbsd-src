@@ -370,6 +370,38 @@ elf_m88k_relocate_lo16 (input_bfd, rello, contents, value)
   return bfd_reloc_ok;
 }
 
+static bfd_boolean
+elf_m88k_set_private_flags (abfd, flags)
+     bfd *abfd;
+     flagword flags;
+{
+  elf_elfheader (abfd)->e_flags = flags;
+  elf_flags_init (abfd) = TRUE;
+  return TRUE;
+}
+
+/* Retain the first input's flags when linking.  */
+static bfd_boolean
+elf_m88k_merge_private_bfd_data (ibfd, obfd)
+     bfd *ibfd;
+     bfd *obfd;
+{
+  flagword in_flags;
+
+  if (bfd_get_flavour (ibfd) != bfd_target_elf_flavour
+      || bfd_get_flavour (obfd) != bfd_target_elf_flavour)
+    return TRUE;
+
+  in_flags = elf_elfheader (ibfd)->e_flags;
+  if (!elf_flags_init (obfd))
+    {
+      elf_flags_init (obfd) = TRUE;
+      elf_elfheader (obfd)->e_flags = in_flags;
+    }
+
+  return TRUE;
+}
+
 #define TARGET_BIG_SYM		bfd_elf32_m88k_vec
 #define TARGET_BIG_NAME		"elf32-m88k"
 #define ELF_ARCH		bfd_arch_m88k
@@ -378,6 +410,10 @@ elf_m88k_relocate_lo16 (input_bfd, rello, contents, value)
 
 #define bfd_elf32_bfd_link_hash_table_create \
 					elf_m88k_link_hash_table_create
+#define bfd_elf32_bfd_merge_private_bfd_data \
+					elf_m88k_merge_private_bfd_data
+#define bfd_elf32_bfd_set_private_flags \
+					elf_m88k_set_private_flags
 #define elf_backend_relocate_section	elf_m88k_relocate_section
 
 

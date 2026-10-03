@@ -53,6 +53,8 @@ START_RELOC_NUMBERS (elf_m88k_reloc_type)
      RELOC_NUMBER (R_88K_GNU_VTENTRY, 24) */
 END_RELOC_NUMBERS (R_88K_max)
 
+#define EF_M88110   0x00000004  /* Uses 88110-specific features.  */
+
 #define EF_CPU32    0x00810000 XX!!
 #define EF_M88000   0x01000000 XX!!
 
