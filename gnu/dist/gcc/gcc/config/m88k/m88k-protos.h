@@ -98,6 +98,8 @@ extern int mak_mask_p PARAMS ((int));
 extern struct rtx_def *m88k_function_arg PARAMS ((CUMULATIVE_ARGS,
 						  enum machine_mode, tree,
 						  int));
+extern void m88k_function_arg_advance PARAMS ((CUMULATIVE_ARGS *,
+                                                enum machine_mode, tree, int));
 extern struct rtx_def *m88k_va_arg PARAMS ((tree, tree));
 extern tree m88k_build_va_list PARAMS ((void));
 #endif /* TREE_CODE */
