@@ -1117,7 +1117,7 @@ m88100_syscall(register_t code, struct trapframe *tf)
 	struct proc *p;
 	struct lwp  *l;
 	int error;
-	register_t args[11], rval[2], *ap;
+	register_t args[8], rval[2], *ap;
 	u_quad_t sticks;
 
 	uvmexp.syscalls++;
@@ -1132,13 +1132,14 @@ m88100_syscall(register_t code, struct trapframe *tf)
 	l->l_md.md_tf = tf;
 
 	/*
-	 * For 88k, all the arguments are passed in the registers (r2-r12)
+	 * For 88k, the first eight argument words are in r2-r9;
+	 * additional words are on the user stack.
 	 * For syscall (and __syscall), r2 (and r3) has the actual code.
 	 * __syscall  takes a quad syscall number, so that other
 	 * arguments are at their natural alignments.
 	 */
 	ap = &tf->tf_r[2];
-	nap = 11; /* r2-r12 */
+	nap = 8; /* r2-r9 */
 
 	switch (code) {
 	case SYS_syscall:
@@ -1154,20 +1155,27 @@ m88100_syscall(register_t code, struct trapframe *tf)
 		break;
 	}
 
+	rval[0] = 0;
+	rval[1] = tf->tf_r[3];
+
 	/* Callp currently points to syscall, which returns ENOSYS. */
 	if (code < 0 || code >= nsys)
 		callp += p->p_emul->e_nosys;
-	else {
+	else
 		callp += code;
-		i = callp->sy_argsize / sizeof(register_t);
-		if (i > nap)
-			panic("syscall nargs");
-		/*
-		 * just copy them; syscall stub made sure all the
-		 * args are moved from user stack to registers.
-		 */
+	i = callp->sy_argsize / sizeof(register_t);
+	if (i > (int)(sizeof(args) / sizeof(args[0])))
+		panic("syscall nargs");
+	if (i > nap) {
+		bcopy((caddr_t)ap, (caddr_t)args, nap * sizeof(register_t));
+		error = copyin((caddr_t)tf->tf_r[31], args + nap,
+		    (i - nap) * sizeof(register_t));
+	} else {
 		bcopy((caddr_t)ap, (caddr_t)args, i * sizeof(register_t));
+		error = 0;
 	}
+	if (error != 0)
+		goto bad;
 
 	KERNEL_PROC_LOCK(l);
 #ifdef SYSCALL_DEBUG
@@ -1177,8 +1185,6 @@ m88100_syscall(register_t code, struct trapframe *tf)
 	if (KTRPOINT(p, KTR_SYSCALL))
 		ktrsyscall(p, 0, code, callp, args);
 #endif
-	rval[0] = 0;
-	rval[1] = tf->tf_r[3];
 #if NSYSTRACE > 0
 	if (ISSET(p->p_flag, P_SYSTRACE))
 		error = systrace_redirect(code, p, args, rval);
@@ -1187,9 +1193,6 @@ m88100_syscall(register_t code, struct trapframe *tf)
 		error = (*callp->sy_call)(l, args, rval);
 	/*
 	 * system call will look like:
-	 *	 ld r10, r31, 32; r10,r11,r12 might be garbage.
-	 *	 ld r11, r31, 36
-	 *	 ld r12, r31, 40
 	 *	 or r13, r0, <code>
 	 *       tb0 0, r0, <128> <- sxip
 	 *	 br err 	  <- snip
@@ -1234,6 +1237,7 @@ m88100_syscall(register_t code, struct trapframe *tf)
 	case EJUSTRETURN:
 		break;
 	default:
+bad:
 		if (p->p_emul->e_errno)
 			error = p->p_emul->e_errno[error];
 		tf->tf_r[2] = error;
@@ -1268,7 +1272,7 @@ m88110_syscall(register_t code, struct trapframe *tf)
 	struct proc *p;
 	struct lwp  *l;
 	int error;
-	register_t args[11], rval[2], *ap;
+	register_t args[8], rval[2], *ap;
 	u_quad_t sticks;
 
 	uvmexp.syscalls++;
@@ -1283,13 +1287,14 @@ m88110_syscall(register_t code, struct trapframe *tf)
 	l->l_md.md_tf = tf;
 
 	/*
-	 * For 88k, all the arguments are passed in the registers (r2-r12)
+	 * For 88k, the first eight argument words are in r2-r9;
+	 * additional words are on the user stack.
 	 * For syscall (and __syscall), r2 (and r3) has the actual code.
 	 * __syscall  takes a quad syscall number, so that other
 	 * arguments are at their natural alignments.
 	 */
 	ap = &tf->tf_r[2];
-	nap = 11;	/* r2-r12 */
+	nap = 8;	/* r2-r9 */
 
 	switch (code) {
 	case SYS_syscall:
@@ -1305,20 +1310,27 @@ m88110_syscall(register_t code, struct trapframe *tf)
 		break;
 	}
 
+	rval[0] = 0;
+	rval[1] = tf->tf_r[3];
+
 	/* Callp currently points to syscall, which returns ENOSYS. */
 	if (code < 0 || code >= nsys)
 		callp += p->p_emul->e_nosys;
-	else {
+	else
 		callp += code;
-		i = callp->sy_argsize / sizeof(register_t);
-		if (i > nap)
-			panic("syscall nargs");
-		/*
-		 * just copy them; syscall stub made sure all the
-		 * args are moved from user stack to registers.
-		 */
+	i = callp->sy_argsize / sizeof(register_t);
+	if (i > (int)(sizeof(args) / sizeof(args[0])))
+		panic("syscall nargs");
+	if (i > nap) {
+		bcopy((caddr_t)ap, (caddr_t)args, nap * sizeof(register_t));
+		error = copyin((caddr_t)tf->tf_r[31], args + nap,
+		    (i - nap) * sizeof(register_t));
+	} else {
 		bcopy((caddr_t)ap, (caddr_t)args, i * sizeof(register_t));
+		error = 0;
 	}
+	if (error != 0)
+		goto bad;
 	KERNEL_PROC_LOCK(l);
 #ifdef SYSCALL_DEBUG
 	scdebug_call(l, code, args);
@@ -1327,8 +1339,6 @@ m88110_syscall(register_t code, struct trapframe *tf)
 	if (KTRPOINT(p, KTR_SYSCALL))
 		ktrsyscall(p, 0, code, callp, args);
 #endif
-	rval[0] = 0;
-	rval[1] = tf->tf_r[3];
 #if NSYSTRACE > 0
 	if (ISSET(p->p_flag, P_SYSTRACE))
 		error = systrace_redirect(code, p, args, rval);
@@ -1337,9 +1347,6 @@ m88110_syscall(register_t code, struct trapframe *tf)
 		error = (*callp->sy_call)(l, args, rval);
 	/*
 	 * system call will look like:
-	 *	 ld r10, r31, 32; r10,r11,r12 might be garbage.
-	 *	 ld r11, r31, 36
-	 *	 ld r12, r31, 40
 	 *	 or r13, r0, <code>
 	 *       tb0 0, r0, <128> <- exip
 	 *	 br err 	  <- enip
@@ -1392,6 +1399,7 @@ m88110_syscall(register_t code, struct trapframe *tf)
 			tf->tf_exip += 4;
 		break;
 	default:
+bad:
 		if (p->p_emul->e_errno)
 			error = p->p_emul->e_errno[error];
 		tf->tf_r[2] = error;
