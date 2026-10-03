@@ -54,18 +54,10 @@
  * The system call code is passed in r13.
  *
  * The first 8 argument words are in registers r2-r9; the rest
- * are on the stack.  The first 3 stack-based argument words are
- * moved into r10-r12 for syscalls.  Syscalls with > 11 argument
- * words are not needed/allowed/supported on m88k.
- *
- * The compiler no longer reserves a 32-byte register argument area.
- * Stack argument words start at sp+0; keep preloading them for the
- * register-based kernel syscall entry until it gains stack copyin.
+ * are on the stack.  The kernel fetches any stack arguments from
+ * the user stack pointer.
  */
 #define	__DO_SYSCALL(x)							\
-	ld r10,r31,0;						\
-	ld r11,r31,4;						\
-	ld r12,r31,8;						\
 	or r13,r0,__SYSCALLNAME(SYS_,x);				\
 	tb0 0, r0, 128
 
