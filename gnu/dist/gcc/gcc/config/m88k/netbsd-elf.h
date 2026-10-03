@@ -70,6 +70,13 @@ Here, the CPU_DEFAULT is assumed to be -m88100.  */
 #define CPP_SPEC \
   "%(netbsd_cpp_spec) %(cpp_cpu_spec)"
 
+/* -m88000 and combined CPU switches select the common instruction set.
+   The default assembler mode already corresponds to the default 88100.  */
+#undef ASM_SPEC
+#define ASM_SPEC \
+  "%{m88100:%{!m88000:%{!m88110:-m88100}}} \
+   %{m88110:%{!m88000:%{!m88100:-m88110}}}"
+
 #undef LINK_SPEC
 #define LINK_SPEC NETBSD_LINK_SPEC_ELF
 
