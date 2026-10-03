@@ -516,78 +516,16 @@ legitimize_address (pic, orig, reg, scratch)
   return new;
 }
 
-/* Support functions for code to emit a block move.  There are four methods
+/* Support functions for code to emit a block move.  There are two methods
    used to perform the block move:
    + call memcpy
-   + call the looping library function, e.g. __movstrSI64n8
-   + call a non-looping library function, e.g. __movstrHI15x11
-   + produce an inline sequence of ld/st instructions
-
-   The parameters below describe the library functions produced by
-   movstr-m88k.sh.  */
-
-#define MOVSTR_LOOP	64 /* __movstrSI64n68 .. __movstrSI64n8 */
-#define MOVSTR_QI	16 /* __movstrQI16x16 .. __movstrQI16x2 */
-#define MOVSTR_HI	48 /* __movstrHI48x48 .. __movstrHI48x4 */
-#define MOVSTR_SI	96 /* __movstrSI96x96 .. __movstrSI96x8 */
-#define MOVSTR_DI	96 /* __movstrDI96x96 .. __movstrDI96x16 */
-#define MOVSTR_ODD_HI	16 /* __movstrHI15x15 .. __movstrHI15x5 */
-#define MOVSTR_ODD_SI	48 /* __movstrSI47x47 .. __movstrSI47x11,
-			      __movstrSI46x46 .. __movstrSI46x10,
-			      __movstrSI45x45 .. __movstrSI45x9 */
-#define MOVSTR_ODD_DI	48 /* __movstrDI47x47 .. __movstrDI47x23,
-			      __movstrDI46x46 .. __movstrDI46x22,
-			      __movstrDI45x45 .. __movstrDI45x21,
-			      __movstrDI44x44 .. __movstrDI44x20,
-			      __movstrDI43x43 .. __movstrDI43x19,
-			      __movstrDI42x42 .. __movstrDI42x18,
-			      __movstrDI41x41 .. __movstrDI41x17 */
-
-/* Limits for using the non-looping movstr functions.  For the m88100
-   processor, we assume the source and destination are word aligned.
-   The QImode and HImode limits are the break even points where memcpy
-   does just as well and beyond which memcpy does better.  For the
-   m88110, we tend to assume double word alignment, but also analyze
-   the word aligned cases.  The analysis is complicated because memcpy
-   may use the cache control instructions for better performance.  */
-
-#define MOVSTR_QI_LIMIT_88100   13
-#define MOVSTR_HI_LIMIT_88100   38
-#define MOVSTR_SI_LIMIT_88100   MOVSTR_SI
-#define MOVSTR_DI_LIMIT_88100   MOVSTR_SI
-  
-#define MOVSTR_QI_LIMIT_88000   16
-#define MOVSTR_HI_LIMIT_88000   38
-#define MOVSTR_SI_LIMIT_88000   72
-#define MOVSTR_DI_LIMIT_88000   72
-
-#define MOVSTR_QI_LIMIT_88110   16
-#define MOVSTR_HI_LIMIT_88110   38
-#define MOVSTR_SI_LIMIT_88110   72
-#define MOVSTR_DI_LIMIT_88110   72
+   + produce an inline sequence of ld/st instructions  */
 
 static const enum machine_mode mode_from_align[] =
 			      {VOIDmode, QImode, HImode, VOIDmode, SImode,
 			       VOIDmode, VOIDmode, VOIDmode, DImode};
-static const int max_from_align[] = {0, MOVSTR_QI, MOVSTR_HI, 0, MOVSTR_SI,
-				     0, 0, 0, MOVSTR_DI};
-static const int all_from_align[] = {0, MOVSTR_QI, MOVSTR_ODD_HI, 0,
-				     MOVSTR_ODD_SI, 0, 0, 0, MOVSTR_ODD_DI};
 
-static const int best_from_align[3][9] = {
-  {0, MOVSTR_QI_LIMIT_88100, MOVSTR_HI_LIMIT_88100, 0, MOVSTR_SI_LIMIT_88100,
-   0, 0, 0, MOVSTR_DI_LIMIT_88100},
-  {0, MOVSTR_QI_LIMIT_88110, MOVSTR_HI_LIMIT_88110, 0, MOVSTR_SI_LIMIT_88110,
-   0, 0, 0, MOVSTR_DI_LIMIT_88110},
-  {0, MOVSTR_QI_LIMIT_88000, MOVSTR_HI_LIMIT_88000, 0, MOVSTR_SI_LIMIT_88000,
-   0, 0, 0, MOVSTR_DI_LIMIT_88000}
-};
-
-#if 0
-static void block_move_loop PARAMS ((rtx, rtx, rtx, rtx, int, int));
-static void block_move_no_loop PARAMS ((rtx, rtx, rtx, rtx, int, int));
-#endif
-static void block_move_sequence PARAMS ((rtx, rtx, rtx, rtx, int, int, int));
+static void block_move_sequence PARAMS ((rtx, rtx, int, int));
 static void output_short_branch_defs PARAMS ((FILE *));
 static int output_option PARAMS ((FILE *, const char *, const char *,
 				  const char *, const char *, int, int));
@@ -600,22 +538,13 @@ static int output_option PARAMS ((FILE *, const char *, const char *,
    OPERANDS[3] is the alignment safe to use.  */
 
 void
-expand_block_move (dest_mem, src_mem, operands)
-     rtx dest_mem;
-     rtx src_mem;
+expand_block_move (operands)
      rtx *operands;
 {
+  rtx dest, src;
   int align = INTVAL (operands[3]);
   int constp = (GET_CODE (operands[2]) == CONST_INT);
   int bytes = (constp ? INTVAL (operands[2]) : 0);
-#if 0
-  int target = (int) m88k_cpu;
-#endif
-
-  if (! (PROCESSOR_M88100 == 0
-	 && PROCESSOR_M88110 == 1
-	 && PROCESSOR_M88000 == 2))
-    abort ();
 
   if (constp && bytes <= 0)
     return;
@@ -626,182 +555,48 @@ expand_block_move (dest_mem, src_mem, operands)
   else if (align <= 0 || align == 3)
     abort ();	/* block move invalid alignment.  */
 
+  dest = operands[0];
+  src = operands[1];
+
   if (constp && bytes <= 3 * align)
-    block_move_sequence (operands[0], dest_mem, operands[1], src_mem,
-			 bytes, align, 0);
-
-#if 0
-  else if (constp && bytes <= best_from_align[target][align])
-    block_move_no_loop (operands[0], dest_mem, operands[1], src_mem,
-			bytes, align);
-
-  else if (constp && align == 4 && TARGET_88100)
-    block_move_loop (operands[0], dest_mem, operands[1], src_mem,
-		     bytes, align);
-#endif
-
-  else
     {
-#ifdef TARGET_MEM_FUNCTIONS
-      emit_library_call (gen_rtx_SYMBOL_REF (Pmode, "memcpy"), 0,
-			 VOIDmode, 3,
-			 operands[0], Pmode,
-			 operands[1], Pmode,
-			 convert_to_mode (TYPE_MODE (sizetype), operands[2],
-					  TREE_UNSIGNED (sizetype)),
-			 TYPE_MODE (sizetype));
-#else
-      emit_library_call (gen_rtx_SYMBOL_REF (Pmode, "bcopy"), 0,
-			 VOIDmode, 3,
-			 operands[1], Pmode,
-			 operands[0], Pmode,
-			 convert_to_mode (TYPE_MODE (integer_type_node),
-					  operands[2],
-					  TREE_UNSIGNED (integer_type_node)),
-			 TYPE_MODE (integer_type_node));
-#endif
-    }
-}
-
-#if 0
-/* Emit code to perform a block move by calling a looping movstr library
-   function.  SIZE and ALIGN are known constants.  DEST and SRC are
-   registers.  */
-
-static void
-block_move_loop (dest, dest_mem, src, src_mem, size, align)
-     rtx dest, dest_mem;
-     rtx src, src_mem;
-     int size;
-     int align;
-{
-  enum machine_mode mode;
-  int count;
-  int units;
-  int remainder;
-  rtx offset_rtx;
-  rtx value_rtx;
-  char entry[30];
-  tree entry_name;
-
-  /* Determine machine mode to do move with.  */
-  if (align != 4)
-    abort ();
-
-  /* Determine the structure of the loop.  */
-  count = size / MOVSTR_LOOP;
-  units = (size - count * MOVSTR_LOOP) / align;
-
-  if (units < 2)
-    {
-      count--;
-      units += MOVSTR_LOOP / align;
-    }
-
-  if (count <= 0)
-    {
-      block_move_no_loop (dest, dest_mem, src, src_mem, size, align);
+      block_move_sequence (dest, src, bytes, align);
       return;
     }
 
-  remainder = size - count * MOVSTR_LOOP - units * align;
+  dest = copy_to_mode_reg (SImode, XEXP (dest, 0));
+  src = copy_to_mode_reg (SImode, XEXP (src, 0));
 
-  mode = mode_from_align[align];
-  sprintf (entry, "__movstr%s%dn%d",
-	   GET_MODE_NAME (mode), MOVSTR_LOOP, units * align);
-  entry_name = get_identifier (entry);
-
-  offset_rtx = GEN_INT (MOVSTR_LOOP + (1 - units) * align);
-
-  value_rtx = gen_rtx_MEM (MEM_IN_STRUCT_P (src_mem) ? mode : BLKmode,
-			   gen_rtx_PLUS (Pmode,
-					 gen_rtx_REG (Pmode, 3),
-					 offset_rtx));
-  MEM_COPY_ATTRIBUTES (value_rtx, src_mem);
-
-  emit_insn (gen_call_movstrsi_loop
-	     (gen_rtx_SYMBOL_REF (Pmode, IDENTIFIER_POINTER (entry_name)),
-	      dest, src, offset_rtx, value_rtx,
-	      gen_rtx_REG (mode, ((units & 1) ? 4 : 5)),
-	      GEN_INT (count)));
-
-  if (remainder)
-    block_move_sequence (gen_rtx_REG (Pmode, 2), dest_mem,
-			 gen_rtx_REG (Pmode, 3), src_mem,
-			 remainder, align, MOVSTR_LOOP + align);
-}
-
-/* Emit code to perform a block move by calling a non-looping library
-   function.  SIZE and ALIGN are known constants.  DEST and SRC are
-   registers.  OFFSET is the known starting point for the output pattern.  */
-
-static void
-block_move_no_loop (dest, dest_mem, src, src_mem, size, align)
-     rtx dest, dest_mem;
-     rtx src, src_mem;
-     int size;
-     int align;
-{
-  enum machine_mode mode = mode_from_align[align];
-  int units = size / align;
-  int remainder = size - units * align;
-  int most;
-  int value_reg;
-  rtx offset_rtx;
-  rtx value_rtx;
-  char entry[30];
-  tree entry_name;
-
-  if (remainder && size <= all_from_align[align])
-    {
-      most = all_from_align[align] - (align - remainder);
-      remainder = 0;
-    }
-  else
-    {
-      most = max_from_align[align];
-    }
-
-  sprintf (entry, "__movstr%s%dx%d",
-	   GET_MODE_NAME (mode), most, size - remainder);
-  entry_name = get_identifier (entry);
-
-  offset_rtx = GEN_INT (most - (size - remainder));
-
-  value_rtx = gen_rtx_MEM (MEM_IN_STRUCT_P (src_mem) ? mode : BLKmode,
-			   gen_rtx_PLUS (Pmode,
-					 gen_rtx_REG (Pmode, 3),
-					 offset_rtx));
-
-  MEM_COPY_ATTRIBUTES (value_rtx, src_mem);
-
-  value_reg = ((((most - (size - remainder)) / align) & 1) == 0
-	       ? (align == 8 ? 6 : 5) : 4);
-
-  emit_insn (gen_call_block_move
-	     (gen_rtx_SYMBOL_REF (Pmode, IDENTIFIER_POINTER (entry_name)),
-	      dest, src, offset_rtx, value_rtx,
-	      gen_rtx_REG (mode, value_reg)));
-
-  if (remainder)
-    block_move_sequence (gen_rtx_REG (Pmode, 2), dest_mem,
-			 gen_rtx_REG (Pmode, 3), src_mem,
-			 remainder, align, most);
-}
+#ifdef TARGET_MEM_FUNCTIONS
+  emit_library_call (gen_rtx_SYMBOL_REF (Pmode, "memcpy"), 0,
+		     VOIDmode, 3,
+		     dest, Pmode,
+		     src, Pmode,
+		     convert_to_mode (TYPE_MODE (sizetype), operands[2],
+				      TREE_UNSIGNED (sizetype)),
+		     TYPE_MODE (sizetype));
+#else
+  emit_library_call (gen_rtx_SYMBOL_REF (Pmode, "bcopy"), 0,
+		     VOIDmode, 3,
+		     src, Pmode,
+		     dest, Pmode,
+		     convert_to_mode (TYPE_MODE (integer_type_node),
+				      operands[2],
+				      TREE_UNSIGNED (integer_type_node)),
+		     TYPE_MODE (integer_type_node));
 #endif
+}
 
 /* Emit code to perform a block move with an offset sequence of ld/st
    instructions (..., ld 0, st 1, ld 1, st 0, ...).  SIZE and ALIGN are
-   known constants.  DEST and SRC are registers.  OFFSET is the known
-   starting point for the output pattern.  */
+   known constants.  DEST and SRC are memory addresses.  */
 
 static void
-block_move_sequence (dest, dest_mem, src, src_mem, size, align, offset)
-     rtx dest, dest_mem;
-     rtx src, src_mem;
+block_move_sequence (dest_mem, src_mem, size, align)
+     rtx dest_mem;
+     rtx src_mem;
      int size;
      int align;
-     int offset;
 {
   rtx temp[2];
   enum machine_mode mode[2];
@@ -809,8 +604,8 @@ block_move_sequence (dest, dest_mem, src, src_mem, size, align, offset)
   int active[2];
   int phase = 0;
   int next;
-  int offset_ld = offset;
-  int offset_st = offset;
+  int offset_ld = 0;
+  int offset_st = 0;
 
   active[0] = active[1] = FALSE;
 
