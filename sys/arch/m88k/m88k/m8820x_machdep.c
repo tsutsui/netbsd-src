@@ -470,18 +470,22 @@ m8820x_initialize_cpu(cpuid_t cpu)
 void
 m8820x_shutdown()
 {
-	unsigned cmmu_num;
-	struct m8820x_cmmu *cmmu;
+	u_int cmmu_num;
+	const struct m8820x_cmmu *cmmu;
+	apr_t apr;
 
 	CMMU_LOCK;
+
+	apr = ((0x00000 << PG_BITS) | CACHE_INH) &
+	    ~(CACHE_WT | CACHE_GLOBAL | APR_V);
 	cmmu = m8820x_cmmu;
 	for (cmmu_num = 0; cmmu_num < max_cmmus; cmmu_num++, cmmu++) {
 		cmmu->cmmu_regs[CMMU_SCTR] &=
 		    ~(CMMU_SCTR_PE | CMMU_SCTR_SE | CMMU_SCTR_PR);
-		cmmu->cmmu_regs[CMMU_SAPR] = cmmu->cmmu_regs[CMMU_UAPR] =
-		    ((0x00000 << PG_BITS) | CACHE_INH) &
-		    ~(CACHE_WT | CACHE_GLOBAL | APR_V);
+		cmmu->cmmu_regs[CMMU_SAPR] = apr;
+		cmmu->cmmu_regs[CMMU_UAPR] = apr;
 	}
+
 	CMMU_UNLOCK;
 }
 
