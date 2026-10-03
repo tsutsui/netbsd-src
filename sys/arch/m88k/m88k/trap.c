@@ -45,6 +45,7 @@
  *
  */
 #include "opt_ddb.h"
+#include "opt_ktrace.h"
 
 #include <sys/param.h>
 #include <sys/proc.h>
@@ -53,6 +54,9 @@
 #include <sys/syscall.h>
 #include <sys/systm.h>
 #include <sys/user.h>
+#ifdef KTRACE
+#include <sys/ktrace.h>
+#endif
 
 #include <uvm/uvm_extern.h>
 
@@ -1171,7 +1175,7 @@ m88100_syscall(register_t code, struct trapframe *tf)
 #endif
 #ifdef KTRACE
 	if (KTRPOINT(p, KTR_SYSCALL))
-		ktrsyscall(p, code, callp->sy_argsize, args);
+		ktrsyscall(p, 0, code, callp, args);
 #endif
 	rval[0] = 0;
 	rval[1] = tf->tf_r[3];
@@ -1247,7 +1251,7 @@ m88100_syscall(register_t code, struct trapframe *tf)
 #ifdef KTRACE
 	if (KTRPOINT(p, KTR_SYSRET)) {
 		KERNEL_PROC_LOCK(l);
-		ktrsysret(p, code, error, rval[0]);
+		ktrsysret(p, code, error, rval);
 		KERNEL_PROC_UNLOCK(l);
 	}
 #endif
@@ -1321,7 +1325,7 @@ m88110_syscall(register_t code, struct trapframe *tf)
 #endif
 #ifdef KTRACE
 	if (KTRPOINT(p, KTR_SYSCALL))
-		ktrsyscall(p, code, callp->sy_argsize, args);
+		ktrsyscall(p, 0, code, callp, args);
 #endif
 	rval[0] = 0;
 	rval[1] = tf->tf_r[3];
@@ -1409,7 +1413,7 @@ m88110_syscall(register_t code, struct trapframe *tf)
 #ifdef KTRACE
 	if (KTRPOINT(p, KTR_SYSRET)) {
 		KERNEL_PROC_LOCK(l);
-		ktrsysret(p, code, error, rval[0]);
+		ktrsysret(p, code, error, rval);
 		KERNEL_PROC_UNLOCK(l);
 	}
 #endif
@@ -1426,6 +1430,9 @@ child_return(arg)
 {
 	struct lwp  *l = arg;
 	struct trapframe *tf;
+#ifdef KTRACE
+	struct proc *p = l->l_proc;
+#endif
 
 	tf = (struct trapframe *)USER_REGS(l);
 	tf->tf_r[2] = 0;
@@ -1455,7 +1462,7 @@ child_return(arg)
 	if (KTRPOINT(p, KTR_SYSRET)) {
 		KERNEL_PROC_LOCK(l);
 		ktrsysret(p,
-		    (p->p_flag & P_PPWAIT) ? SYS_vfork : SYS_fork, 0, 0);
+		    (p->p_flag & P_PPWAIT) ? SYS_vfork : SYS_fork, 0, NULL);
 		KERNEL_PROC_UNLOCK(l);
 	}
 #endif
