@@ -114,3 +114,8 @@ extern void m88k_handle_align PARAMS ((fragS *));
 #define MAX_MEM_FOR_RS_ALIGN_CODE  (3 + 4)
 
 #endif /* M88KCOFF */
+
+#ifdef OBJ_ELF
+#define elf_tc_final_processing m88k_elf_final_processing
+extern void m88k_elf_final_processing (void);
+#endif

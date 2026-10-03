@@ -157,9 +157,14 @@ static int calcop PARAMS ((struct m88k_opcode *format,
 			   char *param, struct m88k_insn *insn));
 
 static void s_uacons PARAMS ((int));
+static void s_m88k_88110 PARAMS ((int));
 
 extern char *myname;
 static struct hash_control *op_hash = NULL;
+
+/* The selected CPU marks ELF output; instruction parsing uses the common
+   opcode table regardless of this selection.  */
+static int current_cpu;
 
 /* These bits should be turned off in the first address of every segment */
 int md_seg_align = 7;
@@ -199,6 +204,7 @@ const pseudo_typeS md_pseudo_table[] =
   {"dfloat", float_cons, 'd'},
   {"ffloat", float_cons, 'f'},
   {"half", cons, 2},
+  {"requires_88110", s_m88k_88110, 0},
   {"bss", s_lcomm, 1},
   {"string", stringer, 0},
   {"word", cons, 4},
@@ -209,6 +215,13 @@ const pseudo_typeS md_pseudo_table[] =
   {".set", s_set, 0},
   {NULL, NULL, 0}
 };
+
+static void
+s_m88k_88110 (ignore)
+     int ignore ATTRIBUTE_UNUSED;
+{
+  current_cpu = 88110;
+}
 
 void
 md_begin ()
@@ -234,9 +247,13 @@ md_begin ()
       for (i++; !strcmp (m88k_opcodes[i].name, name); i++)
 	;
     }
+
+#ifdef OBJ_ELF
+  bfd_set_private_flags (stdoutput, 0);
+#endif
 }
 
-const char *md_shortopts = "";
+const char *md_shortopts = "m:";
 struct option md_longopts[] = {
   {NULL, no_argument, NULL, 0}
 };
@@ -244,16 +261,29 @@ size_t md_longopts_size = sizeof (md_longopts);
 
 int
 md_parse_option (c, arg)
-     int c ATTRIBUTE_UNUSED;
-     char *arg ATTRIBUTE_UNUSED;
+     int c;
+     char *arg;
 {
-  return 0;
+  if (c != 'm')
+    return 0;
+
+  if (strcmp (arg, "88100") == 0)
+    current_cpu = 88100;
+  else if (strcmp (arg, "88110") == 0)
+    current_cpu = 88110;
+  else
+    as_bad (_("unknown m88k processor `%s'"), arg);
+
+  return 1;
 }
 
 void
 md_show_usage (stream)
-     FILE *stream ATTRIBUTE_UNUSED;
+     FILE *stream;
 {
+  fputs (_("\
+M88k options:\n\
+  -m88100 | -m88110       select processor type\n"), stream);
 }
 
 void
@@ -1252,6 +1282,14 @@ md_pcrel_from (fixp)
 }
 
 #ifdef OBJ_ELF
+
+void
+m88k_elf_final_processing ()
+{
+  if (current_cpu == 88110)
+    elf_elfheader (stdoutput)->e_flags |= EF_M88110;
+}
+
 
 /* Round up a section size to the appropriate boundary.  */
 /* XXX taken straight from 68k */
