@@ -410,8 +410,8 @@ in the following sections.
 \&\-mno\-optimize\-arg\-area  \-mno\-serialize\-volatile 
 \&\-mno\-underscores  \-mocs\-debug\-info 
 \&\-mocs\-frame\-position  \-moptimize\-arg\-area 
-\&\-mserialize\-volatile  \-mshort\-data\-\fR\fInum\fR  \fB\-msvr3 
-\&\-msvr4  \-mtrap\-large\-shift  \-muse\-div\-instruction 
+\&\-mserialize\-volatile  \-mshort\-data\-\fR\fInum\fR  \fB
+\&\-mtrap\-large\-shift  \-muse\-div\-instruction
 \&\-mversion\-03.00  \-mwarn\-passed\-structs\fR
 .Sp
 \&\fI\s-1RS/6000\s0 and PowerPC Options\fR
@@ -5959,29 +5959,6 @@ even when you use \fB\-m88100\fR, so that the code may be run on an
 The extra code generated to guarantee consistency may affect the
 performance of your application.  If you know that you can safely
 forgo this guarantee, you may use \fB\-mno\-serialize\-volatile\fR.
-.IP "\fB\-msvr4\fR" 4
-.IX Item "-msvr4"
-.PD 0
-.IP "\fB\-msvr3\fR" 4
-.IX Item "-msvr3"
-.PD
-Turn on (\fB\-msvr4\fR) or off (\fB\-msvr3\fR) compiler extensions
-related to System V release 4 (SVr4).  This controls the following:
-.RS 4
-.IP "1." 4
-Which variant of the assembler syntax to emit.
-.IP "2." 4
-\&\fB\-msvr4\fR makes the C preprocessor recognize \fB#pragma weak\fR
-that is used on System V release 4.
-.IP "3." 4
-\&\fB\-msvr4\fR makes \s-1GCC\s0 issue additional declaration directives used in
-SVr4.
-.RE
-.RS 4
-.Sp
-\&\fB\-msvr4\fR is the default for the m88k\-motorola\-sysv4 configuration.
-\&\fB\-msvr3\fR is the default for all other m88k configurations.
-.RE
 .IP "\fB\-mversion\-03.00\fR" 4
 .IX Item "-mversion-03.00"
 This option is obsolete, and is ignored.
