@@ -394,8 +394,8 @@ in the following sections.
 -mno-optimize-arg-area  -mno-serialize-volatile @gol
 -mno-underscores  -mocs-debug-info @gol
 -mocs-frame-position  -moptimize-arg-area @gol
--mserialize-volatile  -mshort-data-@var{num}  -msvr3 @gol
--msvr4  -mtrap-large-shift  -muse-div-instruction @gol
+-mserialize-volatile  -mshort-data-@var{num} @gol
+-mtrap-large-shift  -muse-div-instruction @gol
 -mversion-03.00  -mwarn-passed-structs}
 
 @emph{RS/6000 and PowerPC Options}
@@ -6540,29 +6540,6 @@ MC88100 processor, you may use @option{-mno-serialize-volatile}.
 The extra code generated to guarantee consistency may affect the
 performance of your application.  If you know that you can safely
 forgo this guarantee, you may use @option{-mno-serialize-volatile}.
-
-@item -msvr4
-@itemx -msvr3
-@opindex msvr4
-@opindex msvr3
-@cindex assembler syntax, 88k
-@cindex SVr4
-Turn on (@option{-msvr4}) or off (@option{-msvr3}) compiler extensions
-related to System V release 4 (SVr4).  This controls the following:
-
-@enumerate
-@item
-Which variant of the assembler syntax to emit.
-@item
-@option{-msvr4} makes the C preprocessor recognize @samp{#pragma weak}
-that is used on System V release 4.
-@item
-@option{-msvr4} makes GCC issue additional declaration directives used in
-SVr4.
-@end enumerate
-
-@option{-msvr4} is the default for the m88k-motorola-sysv4 configuration.
-@option{-msvr3} is the default for all other m88k configurations.
 
 @item -mversion-03.00
 @opindex mversion-03.00
