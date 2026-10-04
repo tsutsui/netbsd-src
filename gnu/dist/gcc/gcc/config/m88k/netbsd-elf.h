@@ -21,16 +21,13 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
-/* Identify the compiler.  */
-#undef  VERSION_INFO1
-#define VERSION_INFO1 "88open ABI"
-
 /* Default switches */
 #undef	TARGET_DEFAULT
 #define TARGET_DEFAULT	(MASK_CHECK_ZERO_DIV | \
 			 MASK_NO_POUND_SIGN)
 
 /* NetBSD/m88k ELF always uses the SVR4 assembler and section conventions.
+   This does not imply conformance to the SVR4 calling convention.
    Keep the generic m88k backend's SVR3 paths for other target headers.  */
 #undef TARGET_SVR4
 #define TARGET_SVR4 1
@@ -45,7 +42,6 @@ do						\
     builtin_define ("__CLASSIFY_TYPE__=2");	\
     builtin_define ("__m88000__");		\
     builtin_define ("__m88k__");		\
-    builtin_define ("__SVR4_ABI__");		\
     builtin_define ("__motorola__");		\
     builtin_assert ("cpu=m88k");		\
     builtin_assert ("machine=m88k");		\
