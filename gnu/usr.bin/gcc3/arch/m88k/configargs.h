@@ -2,5 +2,5 @@
 /* Generated from: 	NetBSD: mknative-gcc,v 1.15 2004/12/10 13:58:11 mrg Exp  */
 
 /* Generated automatically. */
-static const char configuration_arguments[] = "/Exports/Users/tmcintos/Development/NetBSD/wc-clean/trunk/src/tools/gcc/../../gnu/dist/gcc/configure --enable-long-long --disable-multilib --enable-threads --disable-symvers --build=powerpc-apple-darwin9.2.2 --host=m88k--netbsdelf3 --target=m88k--netbsdelf3";
+static const char configuration_arguments[] = "/usr/src/tools/gcc/../../gnu/dist/gcc/configure --enable-long-long --disable-multilib --enable-threads --disable-symvers --build=x86_64-unknown-netbsd --host=m88k--netbsdelf3 --target=m88k--netbsdelf3";
 static const char thread_model[] = "posix";
