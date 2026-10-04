@@ -45,7 +45,7 @@
 #  define	NLIST_ECOFF
 #  define	NLIST_ELF32
 #elif defined(__arm__) || defined(__i386__) || defined (__m68k__) || \
-    defined(__powerpc__) || defined(__vax__)
+    defined(__m88k__) || defined(__powerpc__) || defined(__vax__)
 #  define	NLIST_AOUT
 #  define	NLIST_ELF32
 #elif defined(__sparc__)
