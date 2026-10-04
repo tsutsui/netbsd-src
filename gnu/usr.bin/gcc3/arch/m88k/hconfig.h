@@ -28,3 +28,6 @@ typedef union tree_node *tree;
 # include "m88k/netbsd-elf.h"
 # include "defaults.h"
 #endif
+#ifndef POSIX
+# define POSIX
+#endif
