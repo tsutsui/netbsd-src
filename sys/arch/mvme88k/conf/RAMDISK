@@ -84,7 +84,7 @@ mainbus0	at root
 
 bugtty0		at mainbus0			# XXX TKM - removed in OpenBSD; needed for now?
 bussw0		at mainbus0 addr 0xfff00000
-#pcctwo0	at mainbus0 addr 0xfff00000
+pcctwo0 	at mainbus0 addr 0xfff42000		# MVME187
 #syscon0	at mainbus0 addr 0xfff00000
 
 #vme0		at bussw0 offset 0x40000
