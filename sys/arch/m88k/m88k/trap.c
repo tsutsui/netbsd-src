@@ -789,6 +789,7 @@ m88110_trap(u_int type, struct trapframe *frame)
 			 * modified and valid bits to determine if this
 			 * indeed a real write fault.  XXX smurph
 			 */
+			if (pmap_set_modify(map->pmap, va)) {
 #ifdef TRAPDEBUG
 				printf("Corrected kernel write fault, pmap %p va %lx\n",
 				    map->pmap, va);
