@@ -2,12 +2,7 @@
 
 LIB=sa
 
-NOPIC= # defined
-NOLINT= # defined
-NOPROFILE= # defined
-
 # Logically src/sys
-S=${.CURDIR}/../../../..
 DIR_SA=$S/lib/libsa
 DIR_KERN=$S/lib/libkern
 
@@ -49,22 +44,22 @@ SRCS= ${SRC_net} ${SRC_sa} ${SRC_kern} ${SRC_mvme} ${SRC_here}
 # DBG= -DDEBUG -DNETIF_DEBUG -DNFS_DEBUG -DRPC_DEBUG \
 # 	-DNET_DEBUG -DRARP_DEBUG -DETHER_DEBUG
 
-#DEFS= -DCOMPAT_UFS
-DEFS=	-D__INTERNAL_LIBSA_CREAD
-DEFS+=	-DLIBSA_NO_FS_CLOSE
+CPPFLAGS+=	-D__INTERNAL_LIBSA_CREAD
+CPPFLAGS+=	-DLIBSA_NO_FS_CLOSE
+CPPFLAGS+=	-DSUPPORT_BOOTP -DSUPPORT_DHCP
+CPPFLAGS+=	-DSUPPORT_RARP -DSUPPORT_BOOTPARAM
+CPPFLAGS+=	-DSUPPORT_NFS -DNFS_NOSYMLINK
+CPPFLAGS+=	${DBG}
 
-DEFS+=	-DSUPPORT_BOOTP -DSUPPORT_DHCP
-DEFS+=	-DSUPPORT_RARP -DSUPPORT_BOOTPARAM
-DEFS+=	-DSUPPORT_NFS -DNFS_NOSYMLINK
-
-#DEFS+=-DNETIF_DEBUG
-INCL= -I${.CURDIR} -I${.CURDIR}/../libbug -I${S}/lib/libsa -I${S}
-CFLAGS+= ${XCFLAGS} ${COPTS} ${DEFS} ${DBG} ${INCL}
+.include "../Makefile.booters"
 
 .PATH:  ${DIR_SA} ${DIR_KERN}
 
-all: libsa.a
+# only needed during build
+libinstall::
 
-install:
+all realall: lib${LIB}.a
 
+.include <bsd.own.mk>
+.undef DESTDIR
 .include <bsd.lib.mk>
