@@ -2596,7 +2596,7 @@ pmap_set_modify(pmap_t pmap, vaddr_t va)
 {
 	pt_entry_t *pte;
 	paddr_t pa;
-	vm_page_t pg;
+	struct vm_page *pg;
 	pv_entry_t pvl;
 
 	pte = pmap_pte(pmap, va);
