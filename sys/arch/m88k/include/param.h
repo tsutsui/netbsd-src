@@ -121,6 +121,12 @@
  */
 #include <machine/intr.h>
 
+/* Values for cputyp, also recorded in the on-disk cpu_kcore_hdr_t. */
+#if defined(_KERNEL) || defined(_KMEMUSER)
+#define CPU_88100	0x100
+#define CPU_88110	0x110
+#endif
+
 #ifdef   _KERNEL
 
 #define  DELAY(x)             delay(x)
@@ -129,12 +135,6 @@
 extern void delay(int);
 extern int cputyp;
 #endif
-
-/*
- * Values for the cputyp variable.
- */
-#define CPU_88100	0x100
-#define CPU_88110	0x110
 
 #ifdef M88100
 #ifdef M88110

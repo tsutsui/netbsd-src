@@ -668,6 +668,14 @@ cpu_dump(dev_type_dump((*dump)), daddr_t *blknop)
 	 * Add the machine-dependent header info.
 	 */
 	chdr->cputype = cputyp;
+	chdr->version = M88K_KCORE_VERSION;
+	chdr->sapr = pmap_kernel()->pm_apr;
+	/*
+	 * m8820x_initialize_cpu() in m8820x_machdep.c clears CMMU_BWP0
+	 * through CMMU_BWP7; no later code programs kernel DBATC mappings.
+	 * If kernel mappings are added through these write ports, update
+	 * this dump header initialization to record the configured DBATCs.
+	 */
 	/* luna88k only uses a single segment. */
 	chdr->ram_segs[0].start = 0;
 	chdr->ram_segs[0].size = ptoa(physmem);
