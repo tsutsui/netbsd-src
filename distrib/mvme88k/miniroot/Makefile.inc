@@ -8,4 +8,4 @@ IMAGEDEPENDS+=	${ARCHDIR}/dot.profile ${ARCHDIR}/install.md \
 		${DESTDIR}/etc/disktab \
 		${KERNOBJDIR}/GENERIC/netbsd \
 		${NETBSDSRCDIR}/share/termcap/termcap.src
-LISTS+=		${DISTRIBDIR}/common/list.sysinst
+#LISTS+=		${DISTRIBDIR}/common/list.sysinst
