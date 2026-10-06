@@ -5,6 +5,7 @@ USE_SHLIBDIR=	yes
 
 LIB=	kvm
 CPPFLAGS+=-DLIBC_SCCS
+CPPFLAGS.kvm_m88k.c+=-D_KMEMUSER
 .if ${MACHINE_ARCH} == "i386"
 LINTFLAGS+=-w
 .endif
