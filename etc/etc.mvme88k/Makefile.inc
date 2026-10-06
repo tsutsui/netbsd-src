@@ -1,9 +1,9 @@
 #	$NetBSD: Makefile.inc,v 1.8 2004/05/21 15:32:29 he Exp $
 #
-#	etc.mvme68k/Makefile.inc -- mvme68k-specific etc Makefile targets
+#	etc.mvme88k/Makefile.inc -- mvme88k-specific etc Makefile targets
 #
 
-KERNEL_SETS=		GENERIC VME147 VME162 VME167 VME172 VME177
+KERNEL_SETS=		GENERIC
 
 BUILD_KERNELS=		RAMDISK
 
@@ -12,7 +12,7 @@ INSTALLATION_DIRS+=	installation/miniroot	\
 			installation/tapeimage
 
 snap_md_post:
-.for file in netboot sboot
+.for file in netboot #sboot
 	${HOST_INSTALL_FILE} -m ${NONBINMODE} ${DESTDIR}/usr/mdec/${file} \
 	    ${RELEASEDIR}/${MACHINE}/installation/netboot
 .endfor
