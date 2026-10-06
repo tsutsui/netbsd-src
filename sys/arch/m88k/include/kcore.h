@@ -28,12 +28,31 @@
 #ifndef	_M88K_KCORE_H_
 #define	_M88K_KCORE_H_
 
-/* Keep this define consistent with VM_PHYSSEG_MAX in <machine/vmparam.h> */
-#define	NPHYS_RAM_SEGS	1
+#define NPHYS_RAM_SEGS 1
+
+typedef struct cpu_kcore_hdr_v0 {
+	int		cputype;
+	phys_ram_seg_t	ram_segs[NPHYS_RAM_SEGS];
+} cpu_kcore_hdr_v0_t;
+
+/*
+ * The unversioned cpu_kcore_hdr_v0_t format is version 0.
+ * Its zero-filled alignment gap at bytes 4-7 holds the version.
+ * In every version, keep the big-endian 32-bit CPU type at byte 0
+ * and version at byte 4. Prepending a version would move the
+ * existing CPU and RAM fields.
+ * Giving reserved fields a meaning requires a new version.
+ */
+#define M88K_KCORE_VERSION_0 0
+#define M88K_KCORE_VERSION   1
 
 typedef struct cpu_kcore_hdr {
-	int		cputype;	/* cpu type: 88100, 88110 */
+	uint32_t	cputype;	/* CPU_88100 or CPU_88110 */
+	uint32_t	version;	/* fixed at CPU payload byte 4 */
 	phys_ram_seg_t	ram_segs[NPHYS_RAM_SEGS];
+	uint32_t	sapr;		/* supervisor APR, physical SDT + flags */
+	uint32_t	reserved;	/* version 1: write zero, ignore on read */
+	uint32_t	dbatc[8];	/* raw data BWP0 through BWP7 */
 } cpu_kcore_hdr_t;
 
-#endif	/* _M88K_KCORE_H_ */
+#endif /* _M88K_KCORE_H_ */
