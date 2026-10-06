@@ -1450,7 +1450,7 @@ child_return(arg)
 	/* skip br instruction as in syscall() */
 #ifdef M88100
 	if (CPU_IS88100) {
-		tf->tf_snip = tf->tf_sfip & XIP_ADDR;
+		tf->tf_snip = (tf->tf_sfip & XIP_ADDR) | XIP_V;
 		tf->tf_sfip = tf->tf_snip + 4;
 	}
 #endif
