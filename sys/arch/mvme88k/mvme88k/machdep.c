@@ -487,12 +487,11 @@ cpu_dumpconf(void)
 	if (dumplo < ctod(1))
 		dumplo = ctod(1);
 
-	/* dumpsize is in page units, and doesn't include headers. */
+	/* The header describes all RAM; do not produce a partial dump. */
 	dumpsize = cpu_dump_mempagecnt();
 
-	/* Make dump fit in available space. */
 	if (dumpsize > dtoc(nblks - (dumplo + cpu_dumpsize())))
-		dumpsize = dtoc(nblks - (dumplo + cpu_dumpsize()));
+		goto bad;
 
 	/* Put dump at end of partition. */
 	if (dumplo < (nblks - (ctod(dumpsize) + cpu_dumpsize())))
@@ -527,6 +526,14 @@ cpu_dump(dev_type_dump((*dump)), daddr_t *blknop)
 	 * Add the machine-dependent header info.
 	 */
 	chdr->cputype = cputyp;
+	chdr->version = M88K_KCORE_VERSION;
+	chdr->sapr = pmap_kernel()->pm_apr;
+	/*
+	 * m8820x_initialize_cpu() in m8820x_machdep.c clears CMMU_BWP0
+	 * through CMMU_BWP7; no later code programs kernel DBATC mappings.
+	 * If kernel mappings are added through these write ports, update
+	 * this dump header initialization to record the configured DBATCs.
+	 */
 	/* mvme88k only uses a single segment. */
 	chdr->ram_segs[0].start = 0;
 	chdr->ram_segs[0].size = ptoa(physmem);
@@ -546,7 +553,7 @@ void
 dumpsys(void)
 {
 	const struct bdevsw *bdev;
-	u_long totalbytesleft, i, n;
+	u_long totalbytesleft, n;
 	paddr_t maddr;
 	int psize;
 	daddr_t blkno;
@@ -568,7 +575,7 @@ dumpsys(void)
 	 */
 	if (dumpsize == 0)
 		cpu_dumpconf();
-	if (dumplo <= 0) {
+	if (dumpsize == 0 || dumplo <= 0) {
 		printf("\ndump to dev %u,%u not possible\n", major(dumpdev),
 		    minor(dumpdev));
 		return;
@@ -594,14 +601,14 @@ dumpsys(void)
 	totalbytesleft = ptoa(dumpsize);
 	maddr = (paddr_t)0;
 
-	for (i = 0; i < totalbytesleft; i += n, totalbytesleft -= n) {
+	for (; totalbytesleft != 0; totalbytesleft -= n) {
 
 		/* Print out how many MBs we have left to go. */
 		if ((totalbytesleft % (1024*1024)) == 0)
 			printf("%ld ", totalbytesleft / (1024 * 1024));
 
 		/* Limit size for next transfer. */
-		n = totalbytesleft - i;
+		n = totalbytesleft;
 		if (n > PAGE_SIZE)
 			n = PAGE_SIZE;
 
