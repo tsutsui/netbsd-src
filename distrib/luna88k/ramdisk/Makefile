@@ -14,7 +14,7 @@ CRUNCHBIN=	ramdiskbin
 LISTS=		${.CURDIR}/list #${DISTRIBDIR}/common/list.sysinst
 MTREECONF=	${DISTRIBDIR}/common/mtree.common
 IMAGEENDIAN=	be
-MAKEDEVTARGETS=	all
+MAKEDEVTARGETS=	ramdisk
 IMAGEDEPENDS=	${CRUNCHBIN} \
 		dot.profile termcap.src \
 		${DESTDIR}/usr/mdec/boot \
