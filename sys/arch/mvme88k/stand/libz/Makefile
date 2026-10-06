@@ -1,12 +1,10 @@
 #	$OpenBSD: Makefile,v 1.1 1998/08/22 06:39:14 smurph Exp $
 
-NOPIC= # defined
-NOLINT= # defined
-NOPROFILE= # defined
+LIB=	z
 
-S=${.CURDIR}/../../../..
-ZDST=${.OBJDIR}
+.include "../Makefile.booters"
 
-.PATH: ${S}/lib/libz
+ZDST=	${.OBJDIR}
+ZDIR=	${S}/lib/libz
 
 .include "${S}/lib/libz/Makefile"

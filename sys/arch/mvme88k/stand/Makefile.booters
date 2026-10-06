@@ -1,0 +1,114 @@
+#	$NetBSD$
+
+S?=		${.CURDIR}/../../../..
+MDEC_DIR?=	/usr/mdec
+
+# Load addresses for first and second stage bootstraps.
+STAGE1_RELOC?=	0x00080000
+STAGE2_RELOC?=	0x00040000
+RELOC?=		${STAGE2_RELOC}
+COPTS?=		-O2 -Wall -Werror -Wno-main -Wno-uninitialized \
+		-Wmissing-prototypes -Wstrict-prototypes -ffreestanding
+DEFS?=
+STRIPFLAG?=
+
+NOMAN=		# defined
+NOLINT=		# defined
+NOPIC=		# defined
+NOPROFILE=	# defined
+
+INCPATH=	-I${.OBJDIR} -I${.CURDIR} -I${.CURDIR}/../libsa \
+		-I${.CURDIR}/../libbug -I${.CURDIR}/../../include \
+		-I${S} -I${S}/lib/libsa
+CFLAGS=		${XCFLAGS} -nostdinc -D_STANDALONE -DLIBSA_USE_MEMSET \
+		-DLIBSA_USE_MEMCPY ${INCPATH} ${DEFS}
+BINDIR=		${MDEC_DIR}
+
+.if exists(${.CURDIR}/version)
+SRCS+=		vers.c
+CLEANFILES+=	vers.c
+
+vers.c: version
+	${HOST_SH} ${S}/conf/newvers_stand.sh ${.CURDIR}/version ${MACHINE}
+.endif
+
+CLEANFILES+=	machine m88k
+
+machine:
+	-rm -f ${.TARGET}
+	ln -s ${S}/arch/mvme88k/include machine
+
+m88k:
+	-rm -f ${.TARGET}
+	ln -s ${S}/arch/m88k/include m88k
+
+# The dependency pass also needs the machine include links.
+beforedepend: machine m88k
+
+.if defined(LIB)
+
+lib${LIB}.a:: machine m88k ${OBJS}
+
+.else
+
+PROGDEPENDS?=	${SRTOBJ} ${OBJS} ${LIBS}
+PROGLINKOBJS?=	${PROGDEPENDS}
+
+${PROG}: machine m88k ${PROGDEPENDS}
+	${LD} ${LDFLAGS} -N -Ttext ${RELOC} -o ${.TARGET} ${PROGLINKOBJS}
+	@${SIZE} ${.TARGET}
+
+.include <bsd.own.mk>
+
+LIB_SA_DIR=	${.CURDIR}/../libsa
+LIBSA_DIR!=	cd ${LIB_SA_DIR} && ${PRINTOBJDIR}
+LIBSA=		${LIBSA_DIR}/libsa.a
+
+.PHONY: ${LIBSA}
+${LIBSA}:
+	@echo making sure the libsa is up to date...
+	@cd ${LIB_SA_DIR} && ${MAKE}
+
+LIB_BUG_DIR=	${.CURDIR}/../libbug
+LIBBUG_DIR!=	cd ${LIB_BUG_DIR} && ${PRINTOBJDIR}
+LIBBUG=		${LIBBUG_DIR}/libbug.a
+
+.PHONY: ${LIBBUG}
+${LIBBUG}:
+	@echo making sure the libbug is up to date...
+	@cd ${LIB_BUG_DIR} && ${MAKE}
+
+STAGE1=		${LIBBUG_DIR}/stage1crt.o
+STAGE2=		${LIBBUG_DIR}/stage2crt.o
+SINGLE=		${LIBBUG_DIR}/singlecrt.o
+
+.PHONY: ${STAGE1} ${STAGE2} ${SINGLE}
+${STAGE1}: ${LIBBUG}
+	@echo making sure stage1crt.o is up to date...
+	@cd ${LIB_BUG_DIR} && ${MAKE} stage1crt.o
+${STAGE2}: ${LIBBUG}
+	@echo making sure stage2crt.o is up to date...
+	@cd ${LIB_BUG_DIR} && ${MAKE} stage2crt.o
+${SINGLE}: ${LIBBUG}
+	@echo making sure singlecrt.o is up to date...
+	@cd ${LIB_BUG_DIR} && ${MAKE} singlecrt.o
+
+LIB_Z_DIR=	${.CURDIR}/../libz
+LIBZ_DIR!=	cd ${LIB_Z_DIR} && ${PRINTOBJDIR}
+LIBZ=		${LIBZ_DIR}/libz.a
+
+.PHONY: ${LIBZ}
+${LIBZ}:
+	@echo making sure the libz is up to date...
+	@cd ${LIB_Z_DIR} && ${MAKE}
+
+WRTVID_BOOT_DIR= ${.CURDIR}/../wrtvid
+WRTVID_DIR!=	cd ${WRTVID_BOOT_DIR} && ${PRINTOBJDIR}
+WRTVID=		${WRTVID_DIR}/wrtvid
+
+.PHONY: ${WRTVID}
+${WRTVID}:
+	@echo making sure the wrtvid is up to date...
+	@cd ${WRTVID_BOOT_DIR} && ${MAKE} dependall
+
+.endif
