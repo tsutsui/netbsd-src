@@ -18,9 +18,9 @@ IMAGEDEPENDS=	${CRUNCHBIN} \
 		dot.profile rd.fstab rd.welcome \
 		${NETBSDSRCDIR}/etc/master.passwd \
 		${NETBSDSRCDIR}/etc/netconfig ${NETBSDSRCDIR}/etc/protocols \
-		${NETBSDSRCDIR}/etc/services
-#XXX TKM		${DESTDIR}/usr/mdec/bootsd ${DESTDIR}/usr/mdec/bootst \
-#XXX TKM		${DESTDIR}/usr/mdec/bootxx ${DESTDIR}/usr/mdec/stboot \
+		${NETBSDSRCDIR}/etc/services \
+		${DESTDIR}/usr/mdec/bootsd ${DESTDIR}/usr/mdec/bootst \
+		${DESTDIR}/usr/mdec/bootxx ${DESTDIR}/usr/mdec/stboot
 
 # Use stubs to eliminate some large stuff from libc
 HACKSRC=	${DISTRIBDIR}/utils/libhack
