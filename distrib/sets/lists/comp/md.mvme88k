@@ -59,9 +59,6 @@
 ./usr/include/mvme88k/stdarg.h			comp-c-include
 ./usr/include/mvme88k/trap.h			comp-c-include
 ./usr/include/mvme88k/types.h			comp-c-include
-./usr/include/mvme88k/va-m88k.h			comp-c-include
 ./usr/include/mvme88k/varargs.h			comp-c-include
 ./usr/include/mvme88k/vmparam.h			comp-c-include
 ./usr/include/mvme88k/wchar_limits.h		comp-c-include
-./usr/lib/libsa.a				comp-c-lib
-./usr/lib/libsa_p.a				comp-c-lib		profile
