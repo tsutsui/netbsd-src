@@ -20,7 +20,7 @@ options		MVME197		# support for 197 (requires M88110)
 
 # Board-related options
 options		NO_PROPOLICE    # No stack protector
-options 	CLMPCC_CONSOLE_CHAN=1	# Console on port 1
+#options 	CLMPCC_CONSOLE_CHAN=1	# Console on port 1
 #options 	CLMPCC_CONSOLE_RATE=19200 # Console port at 19200 baud
 
 # Standard system options
