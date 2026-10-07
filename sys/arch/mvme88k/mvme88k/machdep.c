@@ -912,6 +912,17 @@ mvme_bootstrap(void)
 	uvm_setpagesize();
 	first_addr = round_page(first_addr);
 
+	/*
+	 * GXemul can load a kernel specified via commad line option directly
+	 * but it doesn't set "first_addr" (via r7 set by our bootloader)
+	 * value reliably.
+	 * Make sure that the first available free memory starts after
+	 * loaded kernel region.
+	 */
+	extern char *end;
+	if (first_addr < round_page((vaddr_t)&end))
+	        first_addr = round_page((vaddr_t)&end);
+
 	switch (brdtyp) {
 #ifdef MVME187
 	case BRD_187:
