@@ -1772,6 +1772,11 @@ double_reg_fixup(struct trapframe *frame)
 	return 0;
 }
 
+/*
+ * Synchronize a user address range supplied in r2 (address) and r3 (length).
+ * Trap 451 writes back data and invalidates the instruction cache for
+ * modified user code, including PLT entries and trampolines.
+ */
 void
 cache_flush(struct trapframe *tf)
 {
@@ -1798,8 +1803,10 @@ cache_flush(struct trapframe *tf)
 
 	while (len != 0) {
 	    count = min(len, PAGE_SIZE - (va & PAGE_MASK));
-	    if (pmap_extract(pmap, va, &pa) != FALSE)	
+	    if (pmap_extract(pmap, va, &pa) != FALSE) {
 	        dma_cachectl_pa(pa, count, DMA_CACHE_SYNC);
+	        pmap_proc_iflush(p, va, count);
+	    }
 	    va += count;
 	    len -= count;
 	}
