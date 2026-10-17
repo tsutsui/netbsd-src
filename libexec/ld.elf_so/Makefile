@@ -10,7 +10,7 @@ M=		${.CURDIR}/arch/${ARCHSUBDIR}
      (${MACHINE_ARCH} == "arm") || (${MACHINE_ARCH} == "armeb") ||	\
      (${MACHINE_ARCH} == "hppa") ||					\
      (${MACHINE_ARCH} == "i386") ||					\
-     (${MACHINE_ARCH} == "m68k") ||					\
+     (${MACHINE_ARCH} == "m68k") || (${MACHINE_ARCH} == "m88k") ||	\
      (${MACHINE_ARCH} == "mipsel") || (${MACHINE_ARCH} == "mipseb") ||	\
      (${MACHINE_ARCH} == "powerpc") ||					\
      (${MACHINE_ARCH} == "sh3eb") || (${MACHINE_ARCH} == "sh3el") ||	\
