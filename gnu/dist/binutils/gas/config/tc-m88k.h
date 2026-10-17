@@ -67,6 +67,29 @@ struct reloc_info_m88k
 #define TARGET_ARCH BFD_ARCH
 #endif
 
+#ifdef OBJ_ELF
+/* This is used to recognize #abdiff, #got_rel and #plt symbols.
+   The relocation type is stored in X_md.  */
+#define md_parse_name m88k_parse_name
+extern int m88k_parse_name (const char *, expressionS *, char *);
+
+/* This expression evaluates to true if the relocation is for a local
+   object for which we still want to do the relocation at runtime.
+   False if we are willing to perform this relocation while building
+   the .o file.  Only concerns pcrel relocs.  */
+
+#define TC_FORCE_RELOCATION_LOCAL(FIX)			\
+  (!(FIX)->fx_pcrel					\
+   || (FIX)->fx_plt					\
+   || (FIX)->fx_r_type == BFD_RELOC_32_PLT_PCREL	\
+   || TC_FORCE_RELOCATION (FIX))
+
+/* Keep relocations relative to the GOT, or non-PC relative.  */
+#define tc_fix_adjustable(FIX) m88k_fix_adjustable (FIX)
+extern int m88k_fix_adjustable PARAMS ((struct fix *));
+
+#endif /* OBJ_ELF */
+
 /* The m88k uses '@' to start local labels.  */
 #define LEX_AT (LEX_BEGIN_NAME | LEX_NAME)
 
