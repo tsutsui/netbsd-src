@@ -74,6 +74,14 @@
 #endif
 #endif
 
+#ifdef __STDC__
+#define WARN_REFERENCES(sym,msg) \
+	.section .gnu.warning. ## sym ; .ascii msg ; .text
+#else
+#define WARN_REFERENCES(sym,msg) \
+	.section .gnu.warning./**/sym ; .ascii msg ; .text
+#endif /* __STDC__ */
+
 #if defined(_KERNEL) || defined(_STANDALONE)
 
 #ifdef _LOCORE
