@@ -37,7 +37,7 @@
 
 ENTRY(sigpending)
 	or	r4,r2,0		/* save r2 */
-	or	r13,r0,SYS_sigpending
+	or	r13,r0,SYS_compat_13_sigpending13
 	tb0	0,r0,128
 	br	_C_LABEL(_cerror)
 	st	r2,r4,0

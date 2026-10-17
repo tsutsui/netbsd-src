@@ -42,7 +42,7 @@ SYSENTRY(sigprocmask)
 1:
 	ld	r3,r3,0			/* else load set from *set and do it */
 2:
-	or	r13,r0,SYS_sigprocmask
+	or	r13,r0,SYS_compat_13_sigprocmask13
 	tb0	0,r0,128
 	br	_C_LABEL(_cerror)
 	bcnd	eq0,r4,3f		/* if old mask not requested, done */
