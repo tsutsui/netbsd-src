@@ -86,10 +86,24 @@ ENTRY(setjmp)
 	st	r4,r2,80	/* setjmp type to _setjmp */
 	or	r15,r1,0	/* store return address in r15 */
 	or	r14,r2,0	/* store address of env in r14 */
+#ifdef PIC
+	/* Use this libc object's GOT; the saved context retains caller r25. */
+	or	r10,r1,0
+	or.u	r25,r0,hi16(.Lgot_setjmp1#abdiff)
+	bsr.n	.Lgot_setjmp1
+	 or	r25,r25,lo16(.Lgot_setjmp1#abdiff)
+.Lgot_setjmp1:	addu	r25,r25,r1
+	or	r1,r10,0
+	bsr.n	_C_LABEL(sigblock)#plt /* r2 = sigblock(0) */
+#else
 	bsr.n	_C_LABEL(sigblock) /* r2 = sigblock(0) */
+#endif
 	 or	r2,r0,0
 	or	r1,r15,0
 	st	r2,r14,4	/* save signal set in offset 4 of env */
+#ifdef PIC
+	ld	r25,r14,52	/* restore the GOT saved in jmp_buf */
+#endif
 	ld	r15,r14,12
 	ld	r14,r14,8
 	jmp.n	r1		/* return 0 */
@@ -126,9 +140,23 @@ ENTRY(longjmp)
 	ld	r29,r2,68
 	
 	st.d	r2,r31,0	/* save r2 and r3 on stack (env + return val) */
+#ifdef PIC
+	/* Use this libc object's GOT; the saved context retains caller r25. */
+	or	r10,r1,0
+	or.u	r25,r0,hi16(.Lgot_setjmp2#abdiff)
+	bsr.n	.Lgot_setjmp2
+	 or	r25,r25,lo16(.Lgot_setjmp2#abdiff)
+.Lgot_setjmp2:	addu	r25,r25,r1
+	or	r1,r10,0
+	bsr.n	_C_LABEL(sigsetmask)#plt /* restore the signal set */
+#else
 	bsr.n	_C_LABEL(sigsetmask) /* restore the signal set */
+#endif
 	 ld	r2,r2,4
 	ld.d	r2,r31,0	/* restore r2 and r3 */
+#ifdef PIC
+	ld	r25,r2,52	/* restore the target context's GOT */
+#endif
 	ld	r30,r2,72	/* restore r30 */
 	ld	r31,r2,76	/* restore r31 (sp)*/
 	ld	r1,r2,0		/* restore r1 */
@@ -139,8 +167,29 @@ ENTRY(longjmp)
 
 2:	subu	r31,r31,16	/* get a temporary stack */
 	st	r1,r31,0	/* save r1 on stack (return address) */
+#ifdef PIC
+	st	r25,r31,4
+	/* Use this libc object's GOT; the saved context retains caller r25. */
+	or	r10,r1,0
+	or.u	r25,r0,hi16(.Lgot_setjmp3#abdiff)
+	bsr.n	.Lgot_setjmp3
+	 or	r25,r25,lo16(.Lgot_setjmp3#abdiff)
+.Lgot_setjmp3:	addu	r25,r25,r1
+	or	r1,r10,0
+#endif
+#ifdef PIC
+	bsr	_C_LABEL(longjmperror)#plt
+#else
 	bsr	_C_LABEL(longjmperror)
+#endif
+#ifdef PIC
+	bsr	_C_LABEL(abort)#plt	/* NO RETURN */
+#else
 	bsr	_C_LABEL(abort)	/* NO RETURN */
+#endif
+#ifdef PIC
+	ld	r25,r31,4
+#endif
 	ld	r1,r31,0	/* restore r1 from stack */
 	jmp.n	r1	/* this should not happen but we are prepared */
 	 addu	r31,r31,16	/* restore the stack */

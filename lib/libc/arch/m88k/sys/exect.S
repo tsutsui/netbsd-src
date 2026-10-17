@@ -38,4 +38,4 @@
 ENTRY(exect)
 	or	r13,r0,SYS_execve
 	tb0	0,r0,128 		/* exect(file, argv, env) */
-	br	_C_LABEL(_cerror)
+	br	CERROR

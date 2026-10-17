@@ -123,8 +123,29 @@ ENTRY(_longjmp)
 
 2:	subu	r31,r31,16	/* get a temporary stack */
 	st	r1,r31,0	/* save r1 on stack (return address) */
+#ifdef PIC
+	st	r25,r31,4
+	/* Use this libc object's GOT; the saved context retains caller r25. */
+	or	r10,r1,0
+	or.u	r25,r0,hi16(.Lgot_setjmp1#abdiff)
+	bsr.n	.Lgot_setjmp1
+	 or	r25,r25,lo16(.Lgot_setjmp1#abdiff)
+.Lgot_setjmp1:	addu	r25,r25,r1
+	or	r1,r10,0
+#endif
+#ifdef PIC
+	bsr	_C_LABEL(longjmperror)#plt
+#else
 	bsr	_C_LABEL(longjmperror)
+#endif
+#ifdef PIC
+	bsr	_C_LABEL(abort)#plt	/* NO RETURN */
+#else
 	bsr	_C_LABEL(abort)	/* NO RETURN */
+#endif
+#ifdef PIC
+	ld	r25,r31,4
+#endif
 	ld	r1,r31,0	/* restore r1 from stack */
 	jmp.n	r1	/* this should not happen but we are prepared */
 	 addu	r31,r31,16	/* restore the stack */
