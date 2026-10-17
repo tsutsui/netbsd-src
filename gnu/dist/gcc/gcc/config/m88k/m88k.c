@@ -425,19 +425,9 @@ legitimize_address (pic, orig, reg, scratch)
 	      temp = ((reload_in_progress || reload_completed)
 		      ? reg : gen_reg_rtx (Pmode));
 
-	      emit_insn (gen_rtx_SET
-			 (VOIDmode, temp,
-			  gen_rtx_HIGH (SImode,
-					gen_rtx_UNSPEC (SImode,
-							gen_rtvec (1, addr),
-							0))));
-
-	      emit_insn (gen_rtx_SET
-			 (VOIDmode, temp,
-			  gen_rtx_LO_SUM (SImode, temp,
-					  gen_rtx_UNSPEC (SImode,
-							  gen_rtvec (1, addr),
-							  0))));
+	      /* Keep the GOT offset distinct from the symbol address during CSE.  */
+	      emit_insn (gen_movsi_high_pic (temp, addr));
+	      emit_insn (gen_movsi_lo_sum_pic (temp, temp, addr));
 	      addr = temp;
 	    }
 
@@ -1823,6 +1813,8 @@ m88k_output_function_end_prologue (stream)
 void
 m88k_expand_prologue ()
 {
+  rtx insn;
+
   m88k_layout_frame ();
 
   if (m88k_stack_size)
@@ -1845,10 +1837,16 @@ m88k_expand_prologue ()
 	  temp_reg = gen_rtx_REG (SImode, TEMP_REGNUM);
 	  emit_move_insn (temp_reg, return_reg);
 	}
-      emit_insn (gen_locate1 (pic_offset_table_rtx, label));
-      emit_insn (gen_locate2 (pic_offset_table_rtx, label));
-      emit_insn (gen_addsi3 (pic_offset_table_rtx,
+      insn = emit_insn (gen_locate1 (pic_offset_table_rtx, label));
+      REG_NOTES (insn) = gen_rtx_EXPR_LIST (REG_MAYBE_DEAD, const0_rtx,
+					REG_NOTES (insn));
+      insn = emit_insn (gen_locate2 (pic_offset_table_rtx, label));
+      REG_NOTES (insn) = gen_rtx_EXPR_LIST (REG_MAYBE_DEAD, const0_rtx,
+					REG_NOTES (insn));
+      insn = emit_insn (gen_addsi3 (pic_offset_table_rtx,
 			     pic_offset_table_rtx, return_reg));
+      REG_NOTES (insn) = gen_rtx_EXPR_LIST (REG_MAYBE_DEAD, const0_rtx,
+					REG_NOTES (insn));
       if (! save_regs[1])
 	emit_move_insn (return_reg, temp_reg);
     }
