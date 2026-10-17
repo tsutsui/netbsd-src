@@ -46,6 +46,6 @@ SYSENTRY(sigsuspend)
 	ld	r2,r2,0			/* dereference the pointer mask */
 	or	r13,r0,SYS_compat_13_sigsuspend13
 	tb0	0,r0,128
-	br	_C_LABEL(_cerror)
+	br	CERROR
 	jmp.n	r1
 	 or	r2,r0,0

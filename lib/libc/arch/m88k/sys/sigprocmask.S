@@ -44,7 +44,7 @@ SYSENTRY(sigprocmask)
 2:
 	or	r13,r0,SYS_compat_13_sigprocmask13
 	tb0	0,r0,128
-	br	_C_LABEL(_cerror)
+	br	CERROR
 	bcnd	eq0,r4,3f		/* if old mask not requested, done */
 	st	r2,r4,0			/* otherwise, set it */
 3:

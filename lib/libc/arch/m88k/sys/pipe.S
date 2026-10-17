@@ -13,7 +13,7 @@ ENTRY(_pipe)
 	or	r6,r0,r2	| save pointer
         or      r13,r0,__SYSCALLNAME(SYS_,pipe)
 	tb0	0,r0,128	| assume, that r6 is kept  XXX - is this true? -TKM
-	br      _C_LABEL(_cerror)
+	br      CERROR
  	st	r2,r6,0		| success, store fds
 	st	r3,r6,4
 	jmp.n	r1

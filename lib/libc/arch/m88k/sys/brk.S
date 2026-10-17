@@ -48,18 +48,39 @@ ASGLOBAL(__minbrk)
 	.long	_end
 
 ENTRY(_brk)
+#ifdef PIC
+/* __minbrk/curbrk belong to libc, not to the caller's GOT. */
+	or	r10,r1,0
+	or.u	r11,r0,hi16(.Lgot_brk#abdiff)
+	bsr.n	.Lgot_brk
+	 or	r11,r11,lo16(.Lgot_brk#abdiff)
+.Lgot_brk:	addu	r11,r11,r1
+	or	r1,r10,0
+	or.u	r5,r0,hi16(__minbrk#got_rel)
+	or	r5,r5,lo16(__minbrk#got_rel)
+	ld	r5,r11,r5
+	ld	r5,r5,0
+#else
 	or.u	r5,r0,hi16(__minbrk)
 	ld	r5,r5,lo16(__minbrk)
+#endif
 	cmp	r3,r5,r2
-	bb1	ls,r3,1f /* r2 should be > __minbrk; can't go below end */
+	bb1	ls,r3,1f	/* r2 should be > __minbrk; can't go below end */
 	or	r2,r5,0		/* otherwise, set r2 to __minbrk */
 1:
 	or	r4,r2,0
 	or	r13,r0,__SYSCALLNAME(SYS_,break)
 	tb0	0,r0,128
-	br	_C_LABEL(_cerror)
+	br	CERROR
+#ifdef PIC
+	or.u	r5,r0,hi16(__curbrk#got_rel)
+	or	r5,r5,lo16(__curbrk#got_rel)
+	ld	r5,r11,r5
+	st	r4,r5,0
+#else
 	or.u	r5,r0,hi16(__curbrk)
 	st	r4,r5,lo16(__curbrk)
+#endif
 	or	r2,r0,0		/* clear r2/r3 to indicate success */
 	jmp.n	r1
 	 or	r3,r0,0
