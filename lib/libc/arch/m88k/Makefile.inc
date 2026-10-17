@@ -14,7 +14,9 @@ SRCS+=	moveDI41x.s moveDI43x.s moveDI45x.s moveDI47x.s moveHI15x.s moveQI16x.s \
 .SUFFIXES: .asm .s
 
 .asm.s:
-	grep -v '^;' $< | sed -e 's/#//g' > $@
+	grep -v '^;' $< | sed -e 's/#//g' \
+	    -e 's/global[[:space:]]*\(.*\)/global \1; .type \1,@function/' \
+	    > $@
 
 $(SRCS:.s=.asm):
 	@echo "Generating m88k move sources..."
