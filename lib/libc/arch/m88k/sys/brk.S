@@ -44,15 +44,15 @@ WEAK_ALIAS(brk, _brk)
 
 	.data
 	.align 8
-ASGLOBAL(minbrk)
+ASGLOBAL(__minbrk)
 	.long	_end
 
 ENTRY(_brk)
-	or.u	r5,r0,hi16(minbrk)
-	ld	r5,r5,lo16(minbrk)
+	or.u	r5,r0,hi16(__minbrk)
+	ld	r5,r5,lo16(__minbrk)
 	cmp	r3,r5,r2
-	bb1	ls,r3,1f	/* r2 should be > minbrk; can't go below end */
-	or	r2,r5,0		/* otherwise, set r2 to minbrk */
+	bb1	ls,r3,1f /* r2 should be > __minbrk; can't go below end */
+	or	r2,r5,0		/* otherwise, set r2 to __minbrk */
 1:
 	or	r4,r2,0
 	or	r13,r0,__SYSCALLNAME(SYS_,break)
