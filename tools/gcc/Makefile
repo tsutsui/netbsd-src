@@ -4,10 +4,6 @@
 
 MODULE=		gcc
 
-.if ${MACHINE_ARCH} == "m88k"
-HOST_CFLAGS+=	-std=gnu99
-.endif
-
 CONFIGURE_ARGS=	--target=${MACHINE_GNU_PLATFORM} --disable-nls \
 		--enable-long-long \
 		--disable-multilib \
