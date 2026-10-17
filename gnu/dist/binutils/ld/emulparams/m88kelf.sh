@@ -8,3 +8,4 @@ ARCH=m88k
 MACHINE=
 TEMPLATE_NAME=elf32
 ELFSIZE=32
+ELF_INTERPRETER_NAME=\"/usr/libexec/ld.elf_so\"
