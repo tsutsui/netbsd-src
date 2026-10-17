@@ -34,8 +34,13 @@
 
 #define	_ASM_LABEL(name)	name
 
+#ifdef __ELF__
+#define	_ENTRY(name) \
+	.text; .align 8; .globl name; .type name,@function; name:
+#else
 #define	_ENTRY(name) \
 	.text; .align 8; .globl name; name:
+#endif
 
 #define	ENTRY(name)		_ENTRY(_C_LABEL(name))
 #define	ASENTRY(name)		_ENTRY(_ASM_LABEL(name))
