@@ -19,6 +19,9 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
+/* The bundled linker mishandles discarded as-needed libraries.  */
+#undef HAVE_LD_AS_NEEDED
+
 /* TARGET_OS_CPP_BUILTINS() common to all NetBSD ELF targets.  */
 #define NETBSD_OS_CPP_BUILTINS_ELF()		\
   do						\
