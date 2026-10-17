@@ -47,7 +47,7 @@ ENTRY(__clone)
 	or	r2,r0,r4
 	or	r13,r0,SYS___clone	/* (flags, stack) */
 	tb0	0,r0,128
-	br	_C_LABEL(_cerror)	/* error... */
+	br	CERROR			/* error... */
 
 	bcnd	ne0,r2,1f
 	jsr	r1		/* We're the parent, just return. */
@@ -56,8 +56,19 @@ ENTRY(__clone)
 	jsr.n	r6		/* Call the clone's entry point. */
 	 or	r2,r0,r5	/* arg */
 
+#ifdef PIC
+	/* Use this libc object's GOT; the saved context retains caller r25. */
+	or	r10,r1,0
+	or.u	r25,r0,hi16(.Lgot_clone1#abdiff)
+	bsr.n	.Lgot_clone1
+	 or	r25,r25,lo16(.Lgot_clone1#abdiff)
+.Lgot_clone1:	addu	r25,r25,r1
+	or	r1,r10,0
+	bsr	_C_LABEL(_exit)#plt
+#else
 	bsr	_C_LABEL(_exit)
+#endif
 
 2:
 	or	r2,r0,EINVAL
-	br	_C_LABEL(_cerror)
+	br	CERROR

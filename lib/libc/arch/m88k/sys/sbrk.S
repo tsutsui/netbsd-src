@@ -49,18 +49,43 @@ __curbrk:
 	.text
 
 ENTRY(_sbrk)
+#ifdef PIC
+/* Keep caller r25 unchanged while reading libc's data through GOT. */
+	or	r10,r1,0
+	or.u	r11,r0,hi16(.Lgot_sbrk#abdiff)
+	bsr.n	.Lgot_sbrk
+	 or	r11,r11,lo16(.Lgot_sbrk#abdiff)
+.Lgot_sbrk:	addu	r11,r11,r1
+	or	r1,r10,0
+	or.u	r5,r0,hi16(__curbrk#got_rel)
+	or	r5,r5,lo16(__curbrk#got_rel)
+	ld	r5,r11,r5
+	ld	r5,r5,0
+#else
 	or.u	r5,r0,hi16(__curbrk)
 	ld	r5,r5,lo16(__curbrk)
+#endif
 	add	r2,r2,r5
 	or	r4,r2,0
 	or	r13,r0,SYS_break
 	tb0	0,r0,128
-	br 	_C_LABEL(_cerror)
+	br 	CERROR
 	/* Save old __curbrk */
+#ifdef PIC
+	or.u	r5,r0,hi16(__curbrk#got_rel)
+	or	r5,r5,lo16(__curbrk#got_rel)
+	ld	r5,r11,r5
+	ld	r2,r5,0
+#else
 	or.u	r5,r0,hi16(__curbrk)
 	ld	r2,r5,lo16(__curbrk)
+#endif
 	/* Update __curbrk */
+#ifdef PIC
+	st	r4,r5,0
+#else
 	st	r4,r5,lo16(__curbrk)
+#endif
 	/* and return old __curbrk */
 	jmp.n	r1
 	 or	r3,r0,0

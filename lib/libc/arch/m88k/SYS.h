@@ -65,7 +65,7 @@
 	__ENTRY(p,x);							\
 	__ALIAS(p,x);							\
 	__DO_SYSCALL(y);						\
-	br _C_LABEL(_cerror)
+	br CERROR
 
 /*
  * The kernel side syscall implementation in sys/arch/m88k/m88k/trap.c
@@ -114,5 +114,12 @@
 #endif
 
 #define	ASMSTR		.asciz
+
+/* The adopted PLT uses r11 and does not require the caller's GOT. */
+#ifdef PIC
+#define CERROR		_C_LABEL(_cerror)#plt
+#else
+#define CERROR		_C_LABEL(_cerror)
+#endif
 
 	.globl	_C_LABEL(_cerror)

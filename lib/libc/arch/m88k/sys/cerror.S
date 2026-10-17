@@ -37,8 +37,22 @@
 
 	.globl	_C_LABEL(errno)
 ENTRY(_cerror)
+#ifdef PIC
+/* Preserve global errno and the incoming GOT; use our own GOT slot. */
+	or	r10,r1,0
+	or.u	r11,r0,hi16(.Lgot_cerror#abdiff)
+	bsr.n	.Lgot_cerror
+	 or	r11,r11,lo16(.Lgot_cerror#abdiff)
+.Lgot_cerror:	addu	r11,r11,r1
+	or	r1,r10,0
+	or.u	r4,r0,hi16(_C_LABEL(errno)#got_rel)
+	or	r4,r4,lo16(_C_LABEL(errno)#got_rel)
+	ld	r4,r11,r4
+	st	r2,r4,0
+#else
 	or.u	r4,r0,hi16(_C_LABEL(errno))
 	st	r2,r4,lo16(_C_LABEL(errno))
+#endif
 	sub	r2,r0,0x1
 	jmp.n	r1
 	 sub	r3,r0,0x1
