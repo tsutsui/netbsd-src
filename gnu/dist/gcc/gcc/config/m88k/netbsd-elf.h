@@ -21,6 +21,9 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
+/* NetBSD ELF gas supports the m88k PIC relocation modifiers.  */
+#define GOT_REL
+
 /* Default switches */
 #undef	TARGET_DEFAULT
 #define TARGET_DEFAULT	(MASK_CHECK_ZERO_DIV | \
