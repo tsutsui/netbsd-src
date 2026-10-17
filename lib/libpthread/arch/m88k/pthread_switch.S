@@ -243,12 +243,12 @@ ENTRY(pthread__upcall_switch)
  * rounded to a multiple of 16, so it's really 16.
  */
 
-	.type locked_return,@function
-	
 ENTRY(pthread__locked_switch)
 #if 1
 /* TODO m88k */
 #else
+	.type locked_return,@function
+
 #ifdef PIC
 	mflr	%r10
 	bl	_GLOBAL_OFFSET_TABLE_@local-4
