@@ -420,10 +420,9 @@ NOPIC=		# defined
 .endif
 
 #
-# The m88k port is incomplete.
+# gdb on m88k is not ready for prime-time.
 #
 .if ${MACHINE_ARCH} == "m88k"
-NOPIC=		# defined
 MKGDB=		no
 .endif
 
