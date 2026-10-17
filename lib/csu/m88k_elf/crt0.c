@@ -1,4 +1,4 @@
-/*	$OpenBSD: crt0.c,v 1.9 2005/08/04 16:33:05 espie Exp $	*/
+/*	$OpenBSD: crt0.c,v 1.10 2013/01/05 11:20:55 miod Exp $	*/
 
 /*   
  *   Mach Operating System
@@ -38,30 +38,30 @@
 
 #include "common.h"
 
-struct kframe {
-	int argc;
-	char *argv[0];
-};
+void __start(int, char **, char **, void (*)(void), const Obj_Entry *);
 
-void
-__start(struct kframe *kfp);
-
+/* Preserve the loader's cleanup/Obj before replacing r3/r4 with argv/envp. */
 __asm__ (
 "	.text\n"
 "	.align 8\n"
 "	.globl _start\n"
 "_start:\n"
+"	or	r5, r3, r0\n"
+"	or	r6, r4, r0\n"
+"	ld	r2, r31, 0\n"
+"	addu	r3, r31, 4\n"
+"	lda	r4, r3[r2]\n"
 "	br.n	__start\n"
-"	 or	r2, r31, r0\n"
+"	 addu	r4, r4, 4\n"
 );
 
 void
-__start(struct kframe *kfp)
+__start(int argc, char **argv, char **envp, void (*cleanup)(void),
+    const Obj_Entry *obj)
 {
-	char **argv, *ap;
+	char *ap;
 
-	argv = &kfp->argv[0];
-	environ = argv + kfp->argc + 1;
+	environ = envp;
 
 	if ((ap = argv[0]) != NULL) {
 		if ((__progname = _strrchr(ap, '/')) == NULL)
@@ -70,13 +70,22 @@ __start(struct kframe *kfp)
 			++__progname;
 	}
 
+#ifdef DYNAMIC
+	/* NetBSD common_elf checks Obj and registers the DSO cleanup first. */
+	if (&_DYNAMIC != NULL)
+		_rtld_setup(cleanup, obj);
+#endif
+
 #ifdef MCRT0
 	atexit(_mcleanup);
 	monstartup((u_long)&_eprol, (u_long)&_etext);
 #endif
 
+	atexit(_fini);
+	_init();
+
 __asm__ ("__callmain:");	/* Defined for the benefit of debuggers */
-	exit(main(kfp->argc, argv, environ));
+	exit(main(argc, argv, environ));
 }
 
 #include "common.c"
