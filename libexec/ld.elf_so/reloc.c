@@ -187,11 +187,12 @@ _rtld_relocate_objects(Obj_Entry *first, bool bind_now)
 		dbg(("doing lazy PLT binding"));
 		if (_rtld_relocate_plt_lazy(obj) < 0)
 			ok = 0;
-#if defined(__hppa__)
+#if defined(__hppa__) || defined(__m88k__)
+	/* m88k lazy code is retained; runtime enabling needs SL-D007 review. */
 		bind_now = 1;
 #endif
 #if defined(__i386__) || defined(__arm__) || defined(__hppa__) \
-    || defined(__sparc64__) || defined(__sparc__)
+    || defined(__sparc64__) || defined(__sparc__) || defined(__m88k__)
 		if (bind_now) {
 			dbg(("doing immediate PLT binding"));
 			if (_rtld_relocate_plt_objects(obj) < 0)
