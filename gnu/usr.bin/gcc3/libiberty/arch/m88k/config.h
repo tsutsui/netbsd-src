@@ -38,7 +38,7 @@
 /* #undef vfork */
 
 /* Define to `unsigned long' if <sys/types.h> doesn't define.  */
-/* #undef uintptr_t */
+#define uintptr_t unsigned long
 
 /* Define if you have the _doprnt function.  */
 /* #undef HAVE__DOPRNT */
