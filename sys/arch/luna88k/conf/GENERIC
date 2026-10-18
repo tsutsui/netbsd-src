@@ -39,15 +39,15 @@ options 	ERRATA__XXX_USR
 #options 	NTP			# NTP phase/frequency locked loop
 options 	KTRACE
 #options 	SYSTRACE		# system call vetting via systrace(1)
-#options 	SYSVMSG			# System V message queues
-#options 	SYSVSEM			# System V semaphores
+options 	SYSVMSG			# System V message queues
+options 	SYSVSEM			# System V semaphores
 #options 	SEMMNI=10		# number of semaphore identifiers
 #options 	SEMMNS=60		# number of semaphores in system
 #options 	SEMUME=10		# max number of undo entries per process
 #options 	SEMMNU=30		# number of undo structures in system
-#options 	SYSVSHM			# System V shared memory
+options 	SYSVSHM			# System V shared memory
 #optoins 	SHMMAXPGS=1024		# 1024 pages is the default
-#options 	P1003_1B_SEMAPHORE	# p1003.1b semaphore support
+options 	P1003_1B_SEMAPHORE	# p1003.1b semaphore support
 #options 	LKM			# loadable kernel modules
 options 	USERCONF		# userconf(4) support
 #options 	PIPE_SOCKETPAIR		# smaller, but slower pipe(2)
