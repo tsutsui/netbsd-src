@@ -126,8 +126,11 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if (argc < 1)
+	if (argc < 1) {
+		if (fflag)
+			return 0;
 		usage();
+	}
 
 	checkdot(argv);
 
@@ -168,9 +171,8 @@ rm_tree(char **argv)
 		flags |= FTS_NOSTAT;
 	if (Wflag)
 		flags |= FTS_WHITEOUT;
-	if (!(fts = fts_open(argv, flags,
-	    (int (*)(const FTSENT **, const FTSENT **))NULL)))
-		err(1, NULL);
+	if ((fts = fts_open(argv, flags, NULL)) == NULL)
+		err(1, "fts_open failed");
 	while ((p = fts_read(fts)) != NULL) {
 	
 		switch (p->fts_info) {
