@@ -87,13 +87,6 @@ $(BUGCRT):
 	@echo making sure the bugcrt is up to date...
 	@(cd ${LIB_BUG_DIR}; ${MAKE} bugstart.o)
 
-WRTVID_BOOT_DIR=  ${.CURDIR}/../wrtvid
-WRTVID_DIR!=	cd ${WRTVID_BOOT_DIR} && ${PRINTOBJDIR}
-WRTVID=${WRTVID_DIR}/wrtvid
-
-.PHONY: ${WRTVID}
-${WRTVID}:
-	@echo making sure the wrtvid is up to date...
-	@(cd ${WRTVID_BOOT_DIR}; ${MAKE} dependall)
+WRTVID=${TOOL_MVME68KWRTVID}
 
 .endif
