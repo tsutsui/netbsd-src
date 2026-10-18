@@ -89,3 +89,70 @@ ASENTRY(.rtld_start)
 	or	r2, r30, 0
 	jmp.n	r11
 	 or	r31, r30, 0
+
+/*
+ * PLT resolver entry point.
+ * Invoked with the following stack frame:
+ *	r31(0x00)	zero
+ *	r31(0x04)	ELF object
+ *	r31(0x08)	saved r11
+ *	r31(0x0c)	saved r1
+ * All registers but r1 and r11 must be preserved. The resolver must return
+ * to the resolved address with r1 restored.
+ *
+ * Retained OpenBSD _dl_bind_start frame, adapted to NetBSD Obj_Entry/binder.
+ * MI forces eager binding on m88k, so this is not an active runtime path.
+ * Enabling lazy binding requires the follow-up runtime review in SL-D007.
+ */
+#define	OBJECT_OFFSET	(4 * 1)
+#define	R11_OFFSET	(4 * 2)
+#define	R1_OFFSET	(4 * 3)
+#define	PLT_FRAME_SIZE	(4 * 4)
+#define	REG_SIZE	(4 * 12)
+ENTRY(_rtld_bind_start)
+	/*
+	 * Preserve caller-saved registers.
+	 */
+	subu	r31, r31, REG_SIZE
+	st.d	r2,  r31, 4 * 0
+	st.d	r4,  r31, 4 * 2
+	st.d	r6,  r31, 4 * 4
+	st.d	r8,  r31, 4 * 6
+	st	r10, r31, 4 * 8
+	st.d	r12, r31, 4 * 10
+
+	/*
+	 * Invoke resolver entry point.
+	 */
+	ld	r2,  r31, REG_SIZE + OBJECT_OFFSET	/* Obj */
+	bsr.n	_rtld_bind
+	 ld	r3,  r31, REG_SIZE + R11_OFFSET	/* relocation byte offset */
+
+	/*
+	 * Preserve the resolved function address.
+	 */
+	or	r11, r2,  r0
+
+	/*
+	 * Restore caller-saved registers.
+	 */
+	ld.d	r12, r31, 4 * 10
+	ld	r10, r31, 4 * 8
+	ld.d	r8,  r31, 4 * 6
+	ld.d	r6,  r31, 4 * 4
+	ld.d	r4,  r31, 4 * 2
+	ld.d	r2,  r31, 4 * 0
+	ld	r1,  r31, REG_SIZE + R1_OFFSET
+
+	jmp.n	r11
+	 addu	r31, r31, REG_SIZE + PLT_FRAME_SIZE
+
+/*
+ * Adapted from OpenBSD _dl_cacheflush. Synchronize the address in r2 and
+ * byte length in r3 with data writeback followed by I-cache invalidation.
+ * Trap success skips the _cerror branch and returns through r1.
+ */
+ENTRY(_rtld_sync_icache)
+	tb0	0, r0, 451
+	br	_C_LABEL(_cerror)	/* never hit */
+	jmp	r1
