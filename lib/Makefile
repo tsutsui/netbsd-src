@@ -4,9 +4,9 @@
 .include <bsd.own.mk>
 
 SUBDIR=	csu libc .WAIT libarch libbsdmalloc libbz2 libcompat libcrypt \
-	libcurses libedit libevent libform libintl libkvm libl libm \
+	libcurses libevent libform libintl libkvm libl libm \
 	libmenu libossaudio libpcap libpci libpmc libposix libpthread \
-	libpthread_dbg libradius libresolv librmt librpcsvc librt libterm \
+	libpthread_dbg libresolv librmt librpcsvc librt libterm \
 	libusbhid libutil libwrap liby libz
 
 .if (${MKSKEY} != "no")
@@ -35,8 +35,7 @@ SUBDIR+= libcrypto_rc5
 
 .if (${MKKERBEROS} != "no")
 # Heimdal Kerberos 5 libraries
-SUBDIR+= libroken libvers libcom_err libsl libss libasn1 libhdb \
-	 libkadm5srv libkadm5clnt libgssapi libkafs
+SUBDIR+= .WAIT libroken libvers libcom_err .WAIT libasn1
 
 .if (${MKKERBEROS4} != "no")
 # KTH Kerberos 4 libraries
@@ -57,27 +56,39 @@ SUBDIR+=	i18n_module
 # Libraries that depend upon any listed previously
 # (and those that depend upon these [and ...])
 #
+#==================== 1st library dependency barrier ====================
 SUBDIR+=	.WAIT
-SUBDIR+=	libcdk 
+
+SUBDIR+=	libcdk		# depends on libcurses
+
+SUBDIR+=	libedit		# depends on libterm
 
 SUBDIR+=	libmagic	# depends on libz
 
-.if (${MKCRYPTO} != "no")
-SUBDIR+=	libssl
-.endif
-.if (${MKKERBEROS} != "no")
-SUBDIR+=	libkrb5
-.endif
-.if (${MKKERBEROS4} != "no")
-SUBDIR+=	libkrb
-.endif
+SUBDIR+=	libradius	# depends on libcrypto - only if ${MKCRYPTO}
 
 .if (${MKCRYPTO} != "no")
-SUBDIR+=	.WAIT libssh
+SUBDIR+=	libssl		# depends on libcrypto
+SUBDIR+=	libssh		# depends on libcrypto
+.endif
+
+.if (${MKKERBEROS} != "no")
+SUBDIR+=	libkrb5		# depends on libcrypto and more
+.endif
+.if (${MKKERBEROS4} != "no")
+SUBDIR+=	libkrb		# depends on libdes, libcom_err and libroken
+.endif
+
+#==================== 2nd library dependency barrier ====================
+SUBDIR+=	.WAIT
+
+.if (${MKKERBEROS} != "no")
+# Heimdal Kerberos 5 libraries depending on libkrb5 and more
+SUBDIR+=	libgssapi libhdb .WAIT libkadm5srv libkadm5clnt libkafs libsl libss
 .endif
 
 .if (${MKPAM} != "no")
-SUBDIR+=	.WAIT libpam
+SUBDIR+=	.WAIT libpam		# depends on libkrb5, libkafs and more
 .endif
 
 .include <bsd.subdir.mk>
