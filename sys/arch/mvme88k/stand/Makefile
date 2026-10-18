@@ -5,8 +5,4 @@ SUBDIR= libbug libsa libz .WAIT tftpboot bootxx bootsd bootst netboot \
 # not really written yet...
 # SUBDIR+=	sboot
 
-.ifmake !(install)
-SUBDIR+= wrtvid prtvid
-.endif
-
 .include <bsd.subdir.mk>

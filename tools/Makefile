@@ -60,6 +60,14 @@ SUBDIR+=	prep-mkbootimage
 SUBDIR+=	m88k-elf2aout
 .endif
 
+.if ${MACHINE} == "mvme68k"
+SUBDIR+=	mvme68k-wrtvid
+.endif
+
+.if ${MACHINE} == "mvme88k"
+SUBDIR+=	mvme88k-wrtvid
+.endif
+
 .if (${MACHINE_ARCH} == "mipsel" || ${MACHINE_ARCH} == "mipseb")
 SUBDIR+=	mips-elf2ecoff
 .endif

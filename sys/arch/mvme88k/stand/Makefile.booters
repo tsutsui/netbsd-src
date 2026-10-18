@@ -102,13 +102,6 @@ ${LIBZ}:
 	@echo making sure the libz is up to date...
 	@cd ${LIB_Z_DIR} && ${MAKE}
 
-WRTVID_BOOT_DIR= ${.CURDIR}/../wrtvid
-WRTVID_DIR!=	cd ${WRTVID_BOOT_DIR} && ${PRINTOBJDIR}
-WRTVID=		${WRTVID_DIR}/wrtvid
-
-.PHONY: ${WRTVID}
-${WRTVID}:
-	@echo making sure the wrtvid is up to date...
-	@cd ${WRTVID_BOOT_DIR} && ${MAKE} dependall
+WRTVID=		${TOOL_MVME88KWRTVID}
 
 .endif
