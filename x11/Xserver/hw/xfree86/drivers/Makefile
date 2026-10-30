@@ -25,4 +25,10 @@ SUBDIR= sunffb sunleo suncg6 suncg3 suncg14 suntcx sunbw2 ati atimisc \
 	r128 radeon
 .endif
 
+.include <bsd.x11.mk>
+
+.if ${X11_WSFB_DUMBFB:Uno} == "yes"
+SUBDIR=	wsfb
+.endif
+
 .include <bsd.subdir.mk>

@@ -8,4 +8,10 @@ SUBDIR=	acecad mouse calcomp citron digitaledge dmc dynapro elographics fpit \
 SUBDIR=	mouse kbd void
 .endif
 
+.include <bsd.x11.mk>
+
+.if ${X11_WSFB_DUMBFB:Uno} == "yes"
+SUBDIR=	mouse
+.endif
+
 .include <bsd.subdir.mk>

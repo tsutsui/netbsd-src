@@ -46,9 +46,17 @@ CPPSCRIPTFLAGS_XF86Config.98=${CPPSCRIPTFLAGS} \
 ${CPPSCRIPTS}: Makefile
 
 FILES=		${CPPSCRIPTS}
+.if ${MACHINE} == "luna88k"
+FILES+=		XF86Config.luna-mono
+.endif
 FILESDIR=	${X11LIBDIR}
 
 .include <bsd.x11.mk>
 .include <bsd.files.mk>
+.if ${X11_WSFB_DUMBFB:Uno} == "yes"
+SUBDIR=	doc drivers input loader pcidata xf1bpp xf86 \
+	xf86_os xf86config
+.endif
+
 .include <bsd.subdir.mk>
 .include <bsd.obj.mk>

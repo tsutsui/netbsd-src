@@ -22,7 +22,6 @@ CPPFLAGS+=	-I${X11SRCDIR.xc}/programs/Xserver/hw/xfree86/drivers/dummy \
 		-I${X11SRCDIR.xc}/programs/Xserver/hw/xfree86/ramdac \
 		-I${X11SRCDIR.xc}/programs/Xserver/Xext \
 		-I${X11SRCDIR.xc}/programs/Xserver/hw/xfree86/xf1bpp \
-		-I${X11SRCDIR.xc}/programs/Xserver/hw/xfree86/xf4bpp \
 		-I${X11SRCDIR.xc}/programs/Xserver/hw/xfree86/rac \
 		-I${X11SRCDIR.xc}/programs/Xserver/miext/shadow \
                 -I${DESTDIR}${X11INCDIR}/X11/extensions \

@@ -41,9 +41,13 @@ XSERVER_XNEWSMIPS?=	yes
 .endif
 
 # XFree86 servers all need XFONT as well.
-.if ${MACHINE} == "i386" || ${MACHINE} == "amd64" || \
-    ${MACHINE} == "macppc" || ${MACHINE} == "cats" || \
-    ${MACHINE} == "sgimips" || ${MACHINE} == "sparc64"
+.if ${MACHINE} == "amd64" || \
+    ${MACHINE} == "cats" || \
+    ${MACHINE} == "i386" || \
+    ${MACHINE} == "luna88k" || \
+    ${MACHINE} == "macppc" || \
+    ${MACHINE} == "sgimips" || \
+    ${MACHINE} == "sparc64"
 XSERVER_NEEDS_XFONT=	yes
 XSERVER_NEEDS_MIEXT=	yes
 XSERVER_XFREE86=	yes

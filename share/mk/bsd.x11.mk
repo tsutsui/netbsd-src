@@ -72,12 +72,21 @@ X11FLAGS.EXTENSION+=	-D__GLX_ALIGN64
 .if ${MACHINE} == "amd64"	|| \
     ${MACHINE} == "cats"	|| \
     ${MACHINE} == "i386"	|| \
+    ${MACHINE} == "luna88k"	|| \
     ${MACHINE} == "macppc"	|| \
     ${MACHINE} == "sgimips"	|| \
     ${MACHINE} == "sparc64"
 #	LOADABLE
 X11FLAGS.LOADABLE=	-DXFree86LOADER -DIN_MODULE -DXFree86Module \
 			-fno-merge-constants
+.endif
+
+.if ${MACHINE} == "luna88k"
+X11_WSFB_DUMBFB=	yes
+.endif
+
+.if ${X11_WSFB_DUMBFB:Uno} == "yes"
+X11FLAGS.SERVER+=	-DFAKEIT -DWSFB_DUMBFB
 .endif
 
 # Extract X11VERSION

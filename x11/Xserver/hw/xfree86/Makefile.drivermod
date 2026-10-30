@@ -5,7 +5,7 @@ LIB=${MODULE}
 # XXX this is a really bad hack to install an archive as a .o
 # This hack is not required for targets that use the dlopen() module scheme.
 
-.if ${MACHINE} != "sgimips"
+.if ${MACHINE} != "sgimips" && ${MACHINE} != "luna88k"
 
 __archivebuild: .USE
 	${_MKTARGET_BUILD}

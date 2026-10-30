@@ -96,6 +96,13 @@ IDRIVERS=	mouse keyboard acecad calcomp citron digitaledge \
 		mutouch penmount spaceorb summa wacom void \
 		magellan hyperpen jamstudio fpit palmax usbtablet
 
+.include <bsd.x11.mk>
+
+.if ${X11_WSFB_DUMBFB:Uno} == "yes"
+DRIVERS=	wsfb
+IDRIVERS=	mouse keyboard
+.endif
+
 CPPFLAGS.xf86Bus.c=		-DBUILDERADDR='"xfree86@xfree86.org"'
 CPPFLAGS.xf86Init.c=		-DOSNAME='"NetBSD/${MACHINE} ${OS_RELEASE} -"' \
 				-DXORG_RELEASE='"Release 6.6"' \
@@ -112,5 +119,4 @@ CPPFLAGS.xf86AutoConfig.c=	-DPROJECTROOT='"${X11ROOTDIR}"' \
 				-DDRIVERS='"${DRIVERS}"' \
 				-DIDRIVERS='"${IDRIVERS}"'
 
-.include <bsd.x11.mk>
 .include <bsd.lib.mk>

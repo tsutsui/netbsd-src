@@ -30,6 +30,8 @@ CPPFLAGS.${_FN}+=	-DPCVT_SUPPORT -DWSCONS_SUPPORT \
 .endfor
 .endif
 
+.include <bsd.x11.mk>
+
 .if ${MACHINE} == "macppc"
 SRCS.bsd+=	ppc_video.c bsdResource.c pm_noop.c lnx_agp.c ioperm_noop.c
 .for _FN in ${SRCS.bsd}
@@ -59,6 +61,13 @@ CPPFLAGS.${_FN}=        -DPCVT_SUPPORT -DWSCONS_SUPPORT -DUSESTDRES -DHAVE_SYSV_
 .endfor
 .endif
 
+.if ${X11_WSFB_DUMBFB:Uno} == "yes"
+SRCS.bsd+=	wsfb_video.c bsdResource.c pm_noop.c agp_noop.c ioperm_noop.c
+.for _FN in ${SRCS.bsd}
+CPPFLAGS.${_FN}=	-DWSCONS_SUPPORT -DUSESTDRES -DHAVE_SYSV_IPC
+.endfor
+.endif
+
 .PATH:	${X11SRCDIR.xc}/programs/Xserver/hw/xfree86/os-support/bus
 SRCS.bus=	Pci.c
 
@@ -82,9 +91,12 @@ CPPFLAGS.IODelay.S=	-DUSE_GAS
 CPPFLAGS.SlowBcopy.S=	-DUSE_GAS
 .endif
 
-.if 	${MACHINE} == "amd64" || ${MACHINE} == "macppc" || \
-	${MACHINE} == "cats" || ${MACHINE} == "sgimips" || \
-	${MACHINE} == "sparc64"
+.if 	${MACHINE} == "amd64" || \
+	${MACHINE} == "cats" || \
+	${MACHINE} == "macppc" || \
+	${MACHINE} == "sgimips" || \
+	${MACHINE} == "sparc64" || \
+	${X11_WSFB_DUMBFB:Uno} == "yes"
 SRCS.misc+=	CBUSmemcpy.c CIODelay.c CSlowBcopy.c
 .endif
 
@@ -110,5 +122,4 @@ CPPFLAGS+=	-I${X11SRCDIR.xc}/programs/Xserver/hw/xfree86/common \
 CPPFLAGS+=	${X11FLAGS.DRI}
 .endif
 
-.include <bsd.x11.mk>
 .include <bsd.lib.mk>

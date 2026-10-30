@@ -41,5 +41,9 @@ CPPFLAGS.dixsym.c=	${X11FLAGS.EXTENSION}
 COPTS.coffloader.c=	-Wno-error
 COPTS.elfloader.c=	-Wno-error
 
+.if ${MACHINE_ARCH} == "m88k"
+CPPFLAGS+=	-DDLOPEN_ONLY
+.endif
+
 .include <bsd.x11.mk>
 .include <bsd.lib.mk>

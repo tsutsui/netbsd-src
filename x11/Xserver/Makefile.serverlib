@@ -3,7 +3,8 @@
 NOLINT=         1
 NOPROFILE=      1
 
-.if ${MACHINE_ARCH} != "mipseb" && ${MACHINE_ARCH} != "mipsel"
+.if ${MACHINE_ARCH} != "mipseb" && ${MACHINE_ARCH} != "mipsel" && \
+    ${MACHINE_ARCH} != "m88k"
 NOPIC=		1
 .endif
 
@@ -34,7 +35,8 @@ XSERVERINCDIR!=	cd ${NETBSDSRCDIR}/x11/Xserver/include && ${PRINTOBJDIR}
 
 .if defined(XMODULEDIR)
 CPPFLAGS+=	${X11FLAGS.LOADABLE}
-.if ${MACHINE_ARCH} == "mipseb" || ${MACHINE_ARCH} == "mipsel"
+.if ${MACHINE_ARCH} == "mipseb" || ${MACHINE_ARCH} == "mipsel" || \
+    ${MACHINE_ARCH} == "m88k"
 SHLIB_MAJOR=	0
 SHLIB_MINOR=	0
 MKPICLIB=	yes
