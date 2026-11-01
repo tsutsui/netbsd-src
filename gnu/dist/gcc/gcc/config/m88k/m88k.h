@@ -1328,9 +1328,9 @@ enum reg_class { NO_REGS, AP_REG, XRF_REGS, GENERAL_REGS, AGRF_REGS,
   {"reg_or_bbx_mask_operand", {SUBREG, REG, CONST_INT}},		\
   {"real_or_0_operand", {SUBREG, REG, CONST_DOUBLE}},			\
   {"reg_or_0_operand", {SUBREG, REG, CONST_INT}},                       \
-  {"relop", {EQ, NE, LT, LE, GE, GT, LTU, LEU, GEU, GTU}},		\
-  {"even_relop", {EQ, LT, GT, LTU, GTU}},		\
-  {"odd_relop", { NE, LE, GE, LEU, GEU}},		\
+  {"relop", {UNORDERED, ORDERED, EQ, NE, LT, LE, GE, GT, LTU, LEU, GEU, GTU}},		\
+  {"even_relop", {UNORDERED, EQ, LT, GT, LTU, GTU}},		\
+  {"odd_relop", {ORDERED, NE, LE, GE, LEU, GEU}},		\
   {"partial_ccmode_register_operand", { SUBREG, REG}},			\
   {"relop_no_unsigned", {EQ, NE, LT, LE, GE, GT}},			\
   {"equality_op", {EQ, NE}},						\

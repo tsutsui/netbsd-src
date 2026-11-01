@@ -1262,6 +1262,8 @@ relop (op, mode)
 {
   switch (GET_CODE (op))
     {
+    case UNORDERED:
+    case ORDERED:
     case EQ:
     case NE:
     case LT:
@@ -1285,6 +1287,7 @@ even_relop (op, mode)
 {
   switch (GET_CODE (op))
     {
+    case UNORDERED:
     case EQ:
     case LT:
     case GT:
@@ -1303,6 +1306,7 @@ odd_relop (op, mode)
 {
   switch (GET_CODE (op))
     {
+    case ORDERED:
     case NE:
     case LE:
     case GE:
@@ -2778,7 +2782,7 @@ emit_bcnd (op, label)
     emit_jump_insn (gen_bcnd
 		    (gen_rtx (op, VOIDmode,m88k_compare_op0, const0_rtx),
 		     label));
-  else if (m88k_compare_op0 == const0_rtx)
+  else if (m88k_compare_op0 == const0_rtx && swap_condition (op) != op)
     emit_jump_insn (gen_bcnd
 		    (gen_rtx (swap_condition (op),
 			      VOIDmode, m88k_compare_op1, const0_rtx),
@@ -3009,6 +3013,12 @@ print_operand (file, x, code)
       fputs (m88k_pound_sign, file);
       switch (xc)
 	{
+	case UNORDERED:
+	  fputs ("nc", file);
+	  return;
+	case ORDERED:
+	  fputs ("cp", file);
+	  return;
 	case EQ:  fputs ("eq", file); return;
 	case NE:  fputs ("ne", file); return;
 	case GT:  fputs ("gt", file); return;
