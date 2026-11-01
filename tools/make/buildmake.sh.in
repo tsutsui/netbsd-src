@@ -4,6 +4,8 @@
 # buildmake.sh.in - Autoconf-processed shell script for building make(1).
 #
 
+: ${NETBSDSRCDIR:=@srcdir@/../..}
+
 : ${HOST_CC="@CC@"}
 : ${HOST_CFLAGS="@CPPFLAGS@ @CFLAGS@"}
 : ${HOST_LDFLAGS="@LDFLAGS@ @LIBS@"}
@@ -14,7 +16,8 @@ docmd () {
 	$1 || exit 1
 }
 
-SRCDIR=@srcdir@/../../usr.bin/make
+SRCDIR=${NETBSDSRCDIR}/usr.bin/make
+HOST_CFLAGS="${HOST_CFLAGS} -D_PATH_DEFSYSPATH=\"${NETBSDSRCDIR}/share/mk\""
 
 for f in $SRCDIR/*.c $SRCDIR/lst.lib/*.c; do
 	docmd "${HOST_CC} ${HOST_CFLAGS} @DEFS@ -c $f"
