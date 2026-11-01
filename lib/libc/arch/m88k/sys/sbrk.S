@@ -55,7 +55,8 @@ ENTRY(_sbrk)
 	or.u	r11,r0,hi16(.Lgot_sbrk#abdiff)
 	bsr.n	.Lgot_sbrk
 	 or	r11,r11,lo16(.Lgot_sbrk#abdiff)
-.Lgot_sbrk:	addu	r11,r11,r1
+.Lgot_sbrk:
+	addu	r11,r11,r1
 	or	r1,r10,0
 	or.u	r5,r0,hi16(__curbrk#got_rel)
 	or	r5,r5,lo16(__curbrk#got_rel)

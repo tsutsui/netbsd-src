@@ -62,7 +62,8 @@ ENTRY(__clone)
 	or.u	r25,r0,hi16(.Lgot_clone1#abdiff)
 	bsr.n	.Lgot_clone1
 	 or	r25,r25,lo16(.Lgot_clone1#abdiff)
-.Lgot_clone1:	addu	r25,r25,r1
+.Lgot_clone1:
+	addu	r25,r25,r1
 	or	r1,r10,0
 	bsr	_C_LABEL(_exit)#plt
 #else

@@ -43,7 +43,8 @@ ENTRY(_cerror)
 	or.u	r11,r0,hi16(.Lgot_cerror#abdiff)
 	bsr.n	.Lgot_cerror
 	 or	r11,r11,lo16(.Lgot_cerror#abdiff)
-.Lgot_cerror:	addu	r11,r11,r1
+.Lgot_cerror:
+	addu	r11,r11,r1
 	or	r1,r10,0
 	or.u	r4,r0,hi16(_C_LABEL(errno)#got_rel)
 	or	r4,r4,lo16(_C_LABEL(errno)#got_rel)

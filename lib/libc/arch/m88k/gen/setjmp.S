@@ -92,7 +92,8 @@ ENTRY(setjmp)
 	or.u	r25,r0,hi16(.Lgot_setjmp1#abdiff)
 	bsr.n	.Lgot_setjmp1
 	 or	r25,r25,lo16(.Lgot_setjmp1#abdiff)
-.Lgot_setjmp1:	addu	r25,r25,r1
+.Lgot_setjmp1:
+	addu	r25,r25,r1
 	or	r1,r10,0
 	bsr.n	_C_LABEL(sigblock)#plt /* r2 = sigblock(0) */
 #else
@@ -146,7 +147,8 @@ ENTRY(longjmp)
 	or.u	r25,r0,hi16(.Lgot_setjmp2#abdiff)
 	bsr.n	.Lgot_setjmp2
 	 or	r25,r25,lo16(.Lgot_setjmp2#abdiff)
-.Lgot_setjmp2:	addu	r25,r25,r1
+.Lgot_setjmp2:
+	addu	r25,r25,r1
 	or	r1,r10,0
 	bsr.n	_C_LABEL(sigsetmask)#plt /* restore the signal set */
 #else
@@ -174,7 +176,8 @@ ENTRY(longjmp)
 	or.u	r25,r0,hi16(.Lgot_setjmp3#abdiff)
 	bsr.n	.Lgot_setjmp3
 	 or	r25,r25,lo16(.Lgot_setjmp3#abdiff)
-.Lgot_setjmp3:	addu	r25,r25,r1
+.Lgot_setjmp3:
+	addu	r25,r25,r1
 	or	r1,r10,0
 #endif
 #ifdef PIC

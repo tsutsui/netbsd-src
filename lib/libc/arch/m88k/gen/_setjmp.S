@@ -130,7 +130,8 @@ ENTRY(_longjmp)
 	or.u	r25,r0,hi16(.Lgot_setjmp1#abdiff)
 	bsr.n	.Lgot_setjmp1
 	 or	r25,r25,lo16(.Lgot_setjmp1#abdiff)
-.Lgot_setjmp1:	addu	r25,r25,r1
+.Lgot_setjmp1:
+	addu	r25,r25,r1
 	or	r1,r10,0
 #endif
 #ifdef PIC
